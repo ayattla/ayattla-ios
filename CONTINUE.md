@@ -1,33 +1,37 @@
-# CONTINUE — نقطة الاستئناف (الفرع: main)
+# CONTINUE — نقطة الاستئناف (الفرع: main؛ العمل الجاري على claude/peaceful-bell-g613dx)
 
-آخر تحديث: 2026-11-02 06:05 UTC
+آخر تحديث: 2026-11-02 06:20 UTC
 
 ## 1. آخر حالة دقيقة
 
-- المستودع: `ayattla/ayattla-ios`. الفرع الرئيسي `main` (أول رفع من الحزمة، 71 ملفا). فرع العمل: `claude/peaceful-bell-g613dx`.
-- لا يوجد PR مفتوح. لم يحتج البناء أي إصلاح: كل الشيفرة بنيت ونجحت من أول تشغيل.
-- آخر CI على main: **نجح** — https://github.com/ayattla/ayattla-ios/actions/runs/41396763300
-  - packages: AyatCalc 6/6، AyatContent 5/5، AyatTiming 5/5.
-  - app: البناء على المحاكي + SmokeTests 1/1 (`TEST SUCCEEDED`) + لقطة الشاشة.
-- عائق بيئة (ليس خطأ شيفرة): الجلسة السحابية لا تستطيع تنزيل artifact `ci-output` لأن سياسة الشبكة ترفض `productionresultssa2.blob.core.windows.net`. الحل المؤقت: على فرع العمل خطوة في `ci.yml` تطبع الصورة base64 في السجل (التشغيل 41397101732)، ثم تُستخرج من السجل. لا تُدمج هذه الخطوة في main.
-- لا خطأ حالي.
+- المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx`.
+- PR مفتوح: https://github.com/ayattla/ayattla-ios/pull/1 (شاشتا مواقيت الصلاة والقبلة، قائمة المدن الـ36، الصلاة القادمة، لقطات CI لكل شاشة على الفرع `ci-shots`).
+- CI الـ PR: التشغيل 41397637081 قيد العمل — https://github.com/ayattla/ayattla-ios/actions/runs/41397637081
+- آخر CI ناجح على main: https://github.com/ayattla/ayattla-ios/actions/runs/41396763300 (packages 16/16، app ناجح، لقطة الرئيسية أُرسلت للمالك).
+- عائق بيئة: الجلسة لا تنزل artifacts (المضيف `productionresultssa2.blob.core.windows.net` محجوب). البديل: CI يرفع اللقطات إلى الفرع `ci-shots`.
+- لا خطأ معروف حتى الآن (الشيفرة الجديدة لم تبن بعد وقت كتابة هذا).
 
 ## 2. الخطوة التالية بالضبط
 
-1. استخراج اللقطة من سجل تشغيل فرع العمل:
+1. تابع CI الـ PR وأصلح أي خطأ على نفس الفرع حتى تنجح packages وapp:
    ```
-   RUN=$(gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 1 --json databaseId -q '.[0].databaseId')
-   gh run view $RUN -R ayattla/ayattla-ios --log | sed -n '/SHOT-BEGIN/,/SHOT-END/p' | sed 's/^.*Z //' | grep -v SHOT- | base64 -d > ci-shots/home.png
+   gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 3
+   gh run view <RUN_ID> -R ayattla/ayattla-ios --log-failed | grep -E "error:|failed|XCTAssert" | head -50
    ```
-2. متابعة PHASE 4 حسب `docs/APP_ARCHITECTURE.md` ولوحات `design/` بما يمكن بناؤه واختباره على CI فقط (لا Mac):
-   حزمة `AyatDesign` (الألوان والمكونات من `design/System.dc.html`) ← شاشات تعتمد على AyatCalc: مواقيت الصلاة (`design/Prayer.dc.html`)، القبلة (`design/Qibla.dc.html`)، المسبحة (`design/Tasbih.dc.html`)، ثم الختمة. كل تغيير على فرع + PR، وينتظر نجاح packages وapp قبل الدمج.
-3. بعد كل مرحلة: تحديث هذا الملف ورفعه.
+2. افحص اللقطات وقارنها باللوحات `design/Prayer.dc.html` و`design/Qibla.dc.html`:
+   ```
+   git fetch origin ci-shots && git worktree add /tmp/shots origin/ci-shots && ls /tmp/shots
+   ```
+3. ادمج الـ PR بعد النجاح (squash)، ثم حدّث هذا الملف.
+4. التالي حسب `docs/APP_ARCHITECTURE.md`: حزمة `AyatDesign` (ألوان ومكونات `design/System.dc.html`)، ثم المسبحة (`design/Tasbih.dc.html`، العبارات من حزمة المحتوى فقط)، ثم الختمة (`design/Khatma.dc.html`)، ثم الهجري بالتحويل في الاتجاهين.
 
 ## قرارات اتخذت دون سؤال المالك
 
-- لم يُفتح PR للإصلاح لأن البناء نجح دون أخطاء.
-- البناء والاختبار عبر GitHub Actions يعد بديلا عن Mac لكتابة شيفرة قابلة للبناء والاختبار (بطلب المالك: «بعد نجاح البناء تابع المراحل»).
-- لا تُبنى حزمة المحتوى الحقيقية ولا يُكتب أي نص ديني في هذه المرحلة؛ الشاشات المعتمدة على القرآن والأذكار تنتظر حزمة المحتوى من المصادر المعتمدة.
+- لم يُفتح PR لإصلاح البناء الأول لأنه نجح دون أخطاء.
+- البناء والاختبار عبر GitHub Actions بديل عن Mac (بطلب المالك: «بعد نجاح البناء تابع المراحل»).
+- الصلاة القادمة لا تشمل الشروق؛ بعد العشاء تكون فجر الغد.
+- تنبيه قبل الأذان لم ينفذ لأن اللوحة لا تحدد المدة؛ والخريطة بديلا عن البوصلة مؤجلة.
+- لا يُكتب أي نص ديني؛ الشاشات المعتمدة على القرآن والأذكار والتسبيح تنتظر حزمة المحتوى من المصادر المعتمدة.
 
 ## نص المتابعة
 
