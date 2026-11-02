@@ -9,17 +9,24 @@ jobs:
       - name: Read
         run: |
           B=https://ayattla.com
-          curl -sS -m 30 $B/ -o h.html
-          echo "=== link tags"; grep -oE '<link[^>]+>' h.html | head -20
-          echo "=== inline style head"; python3 -c "
-          import re;s=open('h.html').read()
-          for m in re.finditer(r'<style[^>]*>(.*?)</style>', s, re.S):
-              css=m.group(1); i=css.find(':root'); print(len(css)); print(css[i:i+3500] if i>=0 else css[:1500]); break"
-          echo "=== tajweed css"; curl -sS -m 30 $B/tools/tajweed -o t.html; grep -oE '\.tj-[a-z_]+\{[^}]*\}' t.html | sort -u | head -40
-          grep -oE '<select[^>]*>.{0,600}' t.html | head -c 800; echo
-          echo "=== words options"; curl -sS -m 30 $B/tools/word-by-word -o w.html; grep -oE '<option[^>]*>[^<]*' w.html | head -30; grep -oE "fetch\([^)]*\)" w.html | head
-          echo "=== logos"; for f in favicon.svg logo-horizontal.svg logo-full.svg; do echo "--- $f"; curl -sS -m 30 $B/tools/$f | head -c 2500; echo; done
-          echo "=== manifest"; curl -sS -m 30 $B/tools/manifest.webmanifest | head -c 1500; echo
-          echo "=== asma fields"; curl -sS -m 30 $B/tools/asma-ul-husna -o a.html; python3 -c "
-          import re,json;s=open('a.html').read();m=re.search(r'const AS=(\[.*?\]);',s,re.S);a=json.loads(m.group(1));print(len(a),a[0],a[-1],set(k for x in a for k in x))
-          i=s.find('const AS');print(s[i+len(m.group(0)):i+len(m.group(0))+1500])"
+          curl -sS -m 30 $B/ -o h.html; curl -sS -m 30 $B/tools/tajweed -o t.html; curl -sS -m 30 $B/tools/asma-ul-husna -o a.html
+          python3 - <<'PY'
+          import re, json
+          for name in ["h.html", "t.html"]:
+              s = open(name, encoding="utf-8").read()
+              css = " ".join(re.findall(r"<style[^>]*>(.*?)</style>", s, re.S))
+              print("===", name, len(css))
+              for m in re.finditer(r"(:root[^{]*|\[data-theme=dark\][^{]*|html\[data-theme=.dark.\][^{]*)\{([^}]*)\}", css):
+                  print("ROOT", m.group(1)[:60], m.group(2)[:2500])
+              for m in re.finditer(r"(\.tj-[a-z_]+[^{]*)\{([^}]*)\}", css):
+                  print("TJ", m.group(1), m.group(2))
+              for k in ["body{", ".hero", ".card{", ".btn{", "h1{", ".tool-card", "--grad", "border-radius"]:
+                  i = css.find(k)
+                  if i >= 0: print("CSS", k, css[i:i+300])
+          s = open("a.html", encoding="utf-8").read()
+          i = s.find("const AS=")
+          j = s.find("];", i)
+          arr = json.loads(s[i+9:j+1])
+          print("ASMA", len(arr), arr[:2], arr[-1], sorted(set(k for x in arr for k in x)))
+          print("ASMA_JS", s[j:j+1800])
+          PY
