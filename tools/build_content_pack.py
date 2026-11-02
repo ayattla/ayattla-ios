@@ -96,6 +96,78 @@ def tasbih_from_site(path):
     return phrases
 
 
+class _GuideParser(__import__("html.parser").parser.HTMLParser):
+    """Reads /tools/prayer-guide: <h2> sections, each followed by <article class="xt-hadith"> items
+    (text in p.ref, source and grade in p.hint span.ref, explanation link to hadeethenc.com)."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.sections, self.lead = [], ""
+        self._tag, self._buf, self._item, self._spans, self._in_hint, self._in_ref = None, "", None, [], False, False
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        cls = a.get("class") or ""
+        if tag == "h2" or (tag == "p" and cls == "lead"):
+            self._tag, self._buf = tag, ""
+        elif tag == "article" and "xt-hadith" in cls:
+            self._item = {"text": "", "source": "", "grade": "", "url": ""}
+            self._spans = []
+        elif self._item is not None and tag == "p" and cls == "ref":
+            self._in_ref, self._buf = True, ""
+        elif self._item is not None and tag == "p" and cls == "hint":
+            self._in_hint = True
+        elif self._item is not None and self._in_hint and tag == "span":
+            self._tag, self._buf = "span", ""
+        elif self._item is not None and tag == "a" and "hadeethenc.com" in (a.get("href") or ""):
+            self._item["url"] = a["href"]
+
+    def handle_endtag(self, tag):
+        if tag == "h2" and self._tag == "h2":
+            self.sections.append({"title": self._buf.strip(), "items": []})
+            self._tag = None
+        elif tag == "p" and self._tag == "p":
+            self.lead, self._tag = self._buf.strip(), None
+        elif tag == "p" and self._in_ref:
+            self._item["text"], self._in_ref = self._buf.strip(), False
+        elif tag == "span" and self._tag == "span":
+            self._spans.append(self._buf.strip())
+            self._tag = None
+        elif tag == "p" and self._in_hint:
+            self._in_hint = False
+            if self._spans:
+                self._item["source"] = self._spans[0]
+                self._item["grade"] = self._spans[1] if len(self._spans) > 1 else ""
+        elif tag == "article" and self._item is not None:
+            if self.sections and self._item["text"]:
+                self.sections[-1]["items"].append(self._item)
+            self._item = None
+
+    def handle_data(self, data):
+        if self._tag in ("h2", "p", "span") or self._in_ref:
+            self._buf += data
+
+
+def guide_from_site(path):
+    p = _GuideParser()
+    p.feed(open(path, encoding="utf-8").read())
+    sections = [s for s in p.sections if s["items"]]
+    if not sections:
+        raise ValueError("no prayer-guide sections found")
+    return {"lead": p.lead, "source": "موسوعة الأحاديث النبوية", "source_url": "https://hadeethenc.com",
+            "sections": sections}
+
+
+def duas_from_site(path):
+    """/api/duas: Quran duas are kept as references only (their text comes from this pack);
+    duas by need (Hisn al-Muslim chapters) are kept as the site serves them."""
+    d = json.load(open(path, encoding="utf-8"))
+    quran = [{"s": q["s"], "a": q["a"], "b": q["b"]} for q in d["quran"]]
+    if not quran or not d.get("needs"):
+        raise ValueError("duas: empty sections")
+    return {"quran": quran, "needs": d["needs"]}
+
+
 def load_surahs(path):
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
@@ -174,11 +246,21 @@ def build(args):
             reciters += 1
 
     tasbih = tasbih_from_site(args.tasbih_html) if getattr(args, "tasbih_html", None) else []
+    guide = guide_from_site(args.guide_html) if getattr(args, "guide_html", None) else None
+    duas = duas_from_site(args.duas) if getattr(args, "duas", None) else None
+    if duas:
+        for q in duas["quran"]:
+            n = db.execute("SELECT count(*) FROM ayah WHERE surah=? AND ayah BETWEEN ? AND ?",
+                           (q["s"], q["a"], q["b"])).fetchone()[0]
+            if n != q["b"] - q["a"] + 1:
+                raise ValueError(f"dua reference {q} not in the pack")
 
     sources = {"quran": qdoc["data"].get("edition", {}).get("identifier", "unknown"),
                "editions": sorted(editions), "azkar": azkar_source}
     meta = {"content_version": str(args.version), "basmala": basmala,
             "tasbih_phrases": json.dumps(tasbih, ensure_ascii=False),
+            "prayer_guide": json.dumps(guide, ensure_ascii=False) if guide else "",
+            "duas": json.dumps(duas, ensure_ascii=False) if duas else "",
             "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ayah_count": str(total), "sources_json": json.dumps(sources, ensure_ascii=False)}
     db.executemany("INSERT INTO meta VALUES(?,?)", meta.items())
@@ -193,7 +275,9 @@ def build(args):
     digest = h.hexdigest()
     with open(args.out + ".sha256", "w") as f:
         f.write(f"{digest}  {args.out.rsplit('/', 1)[-1]}\n")
-    return {"ayat": total, "editions": editions, "reciters": reciters, "tasbih": len(tasbih), "basmala_surahs": len(basmala_flags), "sha256": digest}
+    return {"ayat": total, "editions": editions, "reciters": reciters, "tasbih": len(tasbih),
+            "guide_items": sum(len(x["items"]) for x in guide["sections"]) if guide else 0,
+            "duas": (len(duas["quran"]), len(duas["needs"])) if duas else None, "basmala_surahs": len(basmala_flags), "sha256": digest}
 
 
 def main(argv=None):
@@ -202,6 +286,8 @@ def main(argv=None):
     p.add_argument("--quran", required=True)
     p.add_argument("--edition", action="append")
     p.add_argument("--azkar")
+    p.add_argument("--guide-html", help="saved ayattla.com/tools/prayer-guide page")
+    p.add_argument("--duas", help="saved ayattla.com/api/duas JSON")
     p.add_argument("--tasbih-html", help="saved ayattla.com/tools/tasbih page (phrase list)")
     p.add_argument("--reciters", help="ayattla.com /api/meta JSON (reciter ids, names, EveryAyah folders)")
     p.add_argument("--out", required=True)

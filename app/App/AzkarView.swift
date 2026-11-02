@@ -162,10 +162,10 @@ struct AzkarSession: View {
 
     private var actions: some View {
         HStack(spacing: 8) {
-            Button {} label: { Text("اصنع حالة").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
-                .disabled(true)
-                .accessibilityHint("قريبا")
             if let z = current {
+                NavigationLink {
+                    TextCardView(title: "حالة", text: z.text, reference: z.reference ?? category.title, initialRatio: .story)
+                } label: { Text("اصنع حالة").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
                 ShareLink(item: Self.shareText(z)) { Text("مشاركة").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
             }
             Button { withAnimation { index = min(index + 1, items.count - 1) } } label: {

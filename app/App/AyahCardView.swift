@@ -77,7 +77,8 @@ struct AyahCardView: View {
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     private let lib = ContentLibrary.shared
 
-    init(surah: Int = 2, from: Int = 255, to: Int? = nil) {
+    init(surah: Int = 2, from: Int = 255, to: Int? = nil, templateID: String = "") {
+        _template = State(initialValue: CardOptions.templates.first { $0.id == templateID } ?? CardOptions.templates[0])
         _surah = State(initialValue: surah)
         _from = State(initialValue: from)
         _to = State(initialValue: to ?? from)
@@ -185,6 +186,8 @@ struct CardCanvas: View {
         let fontScale: Double
         let ratio: CardOptions.Ratio
         let lightBackground: Bool
+        /// Mushaf font for Quran text; Amiri for dhikr and hadith.
+        var fontName: String = ContentLibrary.mushafFont
     }
 
     let model: Model
@@ -231,7 +234,7 @@ struct CardCanvas: View {
                     }
                     Spacer(minLength: 0)
                     Text(model.text)
-                        .font(.custom(ContentLibrary.mushafFont, size: baseSize * unit * model.fontScale))
+                        .font(.custom(model.fontName, size: baseSize * unit * model.fontScale))
                         .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.4)

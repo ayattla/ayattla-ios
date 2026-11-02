@@ -115,7 +115,7 @@ struct StartView: View {
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio", "qada", "sawm", "clip"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio", "qada", "sawm", "clip", "duas", "hadith", "checker", "guide", "radio", "hifz"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
@@ -141,6 +141,12 @@ enum DebugScreen {
         case "qada": QadaView()
         case "sawm": SawmView()
         case "clip": ClipMakerView()
+        case "duas": DuasView()
+        case "hadith": HadithView()
+        case "checker": HadithCheckerView()
+        case "guide": PrayerGuideView()
+        case "radio": RadioView()
+        case "hifz": HifzTestView()
         default: ToolsView()
         }
     }

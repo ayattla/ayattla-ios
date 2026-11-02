@@ -75,6 +75,13 @@ struct QuranView: View {
                             }
                         }
                     }
+                    if query.isEmpty {
+                        Section {
+                            NavigationLink { RadioView() } label: { Label("الإذاعات", systemImage: "antenna.radiowaves.left.and.right") }
+                            NavigationLink { HifzTestView() } label: { Label("اختبار الحفظ", systemImage: "eye.slash") }
+                            NavigationLink { DuasView() } label: { Label("الأدعية", systemImage: "hands.sparkles") }
+                        }
+                    }
                     Section(query.isEmpty ? "السور" : "السور المطابقة") {
                         ForEach(surahResults) { s in
                             NavigationLink { MushafReader(startPage: s.pageStart ?? 1) } label: { SurahRow(surah: s) }

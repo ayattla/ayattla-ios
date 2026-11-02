@@ -33,8 +33,11 @@ jobs:
           curl -sSfL --retry 3 "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=false&quranType=uthmani&outType=txt-2&agree=true" -o src/tanzil-uthmani.txt || echo "tanzil download failed"
       - name: Reciter list from the live site (read only)
         run: curl -sSf --retry 3 -m 30 https://ayattla.com/api/meta -o src/meta.json
-      - name: Tasbih page from the live site (read only)
-        run: curl -sSf --retry 3 -m 30 https://ayattla.com/tools/tasbih -o src/tasbih.html
+      - name: Tasbih page, prayer guide and duas from the live site (read only)
+        run: |
+          curl -sSf --retry 3 -m 30 https://ayattla.com/tools/tasbih -o src/tasbih.html
+          curl -sSf --retry 3 -m 30 https://ayattla.com/tools/prayer-guide -o src/prayer-guide.html
+          curl -sSf --retry 3 -m 30 https://ayattla.com/api/duas -o src/duas.json
       - name: Fonts (Amiri Quran and Amiri, OFL 1.1)
         run: |
           mkdir -p pack
@@ -48,7 +51,7 @@ jobs:
         run: |
           python3 tools/normalize_azkar.py src/azkar-db/azkar.json --source "osamayy/azkar-db@$AZKAR_REF" --out src/azkar.json
           mkdir -p pack
-          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --reciters src/meta.json --tasbih-html src/tasbih.html --out pack/content-v1.sqlite
+          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --reciters src/meta.json --tasbih-html src/tasbih.html --guide-html src/prayer-guide.html --duas src/duas.json --out pack/content-v1.sqlite
           python3 tools/check_content_sql.py app/Packages/AyatContent/Sources/AyatContent/ContentStore.swift pack/content-v1.sqlite
           python3 - <<'PY'
           import sqlite3
@@ -130,7 +133,7 @@ jobs:
           xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
           xcrun simctl location "$UDID" set 24.7136,46.6753 || true
           mkdir -p shots
-          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm clip; do
+          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm clip duas hadith checker guide radio hifz; do
             xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/$s.png"

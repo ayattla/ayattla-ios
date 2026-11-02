@@ -46,12 +46,22 @@ class BuildTest(unittest.TestCase):
                   open(self.r, "w", encoding="utf-8"), ensure_ascii=False)
         self.h = os.path.join(self.tmp, "tasbih.html")
         open(self.h, "w", encoding="utf-8").write("<script>const Z=['عبارة أولى','عبارة ثانية'];let zi=0;</script>")
+        self.g = os.path.join(self.tmp, "guide.html")
+        open(self.g, "w", encoding="utf-8").write(
+            '<main><p class="lead">مقدمة</p><h2>باب أ</h2><article class="xt-hadith"><p class="ref">نص حديث</p>'
+            '<p class="hint"><span class="ref">مصدر</span> · الحكم: <span class="ref">حكم</span></p>'
+            '<div class="acts"><a href="https://hadeethenc.com/ar/browse/hadith/1">الشرح</a></div></article>'
+            '<h2>باب ب</h2><article class="xt-hadith"><p class="ref">نص ثان</p><p class="hint"><span class="ref">م</span></p></article></main>')
+        self.d = os.path.join(self.tmp, "duas.json")
+        json.dump({"quran": [{"s": 2, "a": 1, "b": 2, "ayat": []}], "needs": [{"need": "حاجة", "chapters": []}]},
+                  open(self.d, "w", encoding="utf-8"), ensure_ascii=False)
         self.out = os.path.join(self.tmp, "content-v1.sqlite")
 
     def run_build(self, *extra):
         return bcp.build(bcp.argparse.Namespace(version=1, quran=self.q, edition=list(extra) or None,
                                                 azkar=self.z, out=self.out, allow_partial=True,
-                                                reciters=self.r, tasbih_html=self.h))
+                                                reciters=self.r, tasbih_html=self.h,
+                                                guide_html=self.g, duas=self.d))
 
     def test_counts_and_text_kept_exactly(self):
         r = self.run_build(f"muyassar={self.t}")
@@ -81,6 +91,17 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(r["tasbih"], 2)
         self.assertEqual(json.loads(db.execute("select value from meta where key='tasbih_phrases'").fetchone()[0]),
                          ["عبارة أولى", "عبارة ثانية"])
+
+    def test_guide_and_duas(self):
+        r = self.run_build()
+        db = sqlite3.connect(self.out)
+        self.assertEqual(r["guide_items"], 2)
+        g = json.loads(db.execute("select value from meta where key='prayer_guide'").fetchone()[0])
+        self.assertEqual(g["lead"], "مقدمة")
+        self.assertEqual(g["sections"][0]["items"][0],
+                         {"text": "نص حديث", "source": "مصدر", "grade": "حكم", "url": "https://hadeethenc.com/ar/browse/hadith/1"})
+        d = json.loads(db.execute("select value from meta where key='duas'").fetchone()[0])
+        self.assertEqual(d["quran"], [{"s": 2, "a": 1, "b": 2}])
 
     def test_reciters(self):
         r = self.run_build()
