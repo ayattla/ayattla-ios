@@ -91,7 +91,14 @@ def build(args):
     qdoc, surahs = load_surahs(args.quran)
     basmala, basmala_flags = split_basmala(surahs)
     if len(basmala_flags) != EXPECTED_BASMALA and not args.allow_partial:
-        raise ValueError(f"basmala found in {len(basmala_flags)} surahs, expected {EXPECTED_BASMALA}")
+        b = surahs[0]["ayahs"][0]["text"].replace(BOM, "").strip()
+        missing = [x["number"] for x in surahs[1:] if x["number"] not in basmala_flags and x["number"] != 9]
+        for n in missing:
+            t = surahs[n - 1]["ayahs"][0]["text"].replace(BOM, "")
+            i = next((i for i, (p, q) in enumerate(zip(b + " ", t)) if p != q), None)
+            print(f"surah {n}: differs at char {i}: source {[hex(ord(c)) for c in t[max(0, i - 2):i + 6]]}"
+                  f" vs 1:1 {[hex(ord(c)) for c in (b + ' ')[max(0, i - 2):i + 6]]}", file=sys.stderr)
+        raise ValueError(f"basmala found in {len(basmala_flags)} surahs, expected {EXPECTED_BASMALA}: {missing}")
     db = sqlite3.connect(args.out)
     db.executescript(SCHEMA)
     total = 0
