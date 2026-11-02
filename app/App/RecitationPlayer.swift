@@ -15,6 +15,8 @@ final class RecitationPlayer {
     private(set) var current: Position?
     private(set) var isPlaying = false
     private(set) var failed = false
+    /// Stop after this ayah (e.g. the end of a ruqya passage).
+    @ObservationIgnored var stopAt: Position?
     var repeatEach = 1
     /// Stop after the last ayah of the surah instead of moving on (kids' Juz Amma, as on the site).
     var stopsAtSurahEnd = false
@@ -51,7 +53,8 @@ final class RecitationPlayer {
         failed = false
         current = p
         playedThisAyah = 0
-        let item = AVPlayerItem(url: url)
+        // A downloaded copy (Library → التنزيلات) plays without internet.
+        let item = AVPlayerItem(url: RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah) ?? url)
         statusObserver = item.observe(\.status) { [weak self] item, _ in
             if item.status == .failed { DispatchQueue.main.async { self?.failed = true; self?.isPlaying = false } }
         }
@@ -81,6 +84,7 @@ final class RecitationPlayer {
 
     func next() {
         guard let c = current else { return }
+        if c == stopAt { stop(); return }
         if c.ayah < ayahCount(c.surah) { play(from: .init(surah: c.surah, ayah: c.ayah + 1)) }
         else if stopsAtSurahEnd { stop() }
         else if c.surah < 114 { play(from: .init(surah: c.surah + 1, ayah: 1)) }

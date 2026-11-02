@@ -37,7 +37,7 @@ struct StudioView: View {
             case .asmaCard: "sparkles"
             }
         }
-        var isReady: Bool { self != .asmaCard }
+        var isReady: Bool { true }
     }
 
     var body: some View {
@@ -51,7 +51,7 @@ struct StudioView: View {
                         case .status: StatusSourceView()
                         case .dedication: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
                         case .hadithCard: HadithView()
-                        case .asmaCard: PlaceholderScreen(title: c.title)
+                        case .asmaCard: AsmaView()
                         }
                     } label: {
                         HStack(spacing: 12) {

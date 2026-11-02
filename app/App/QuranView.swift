@@ -80,6 +80,10 @@ struct QuranView: View {
                             NavigationLink { RadioView() } label: { Label("الإذاعات", systemImage: "antenna.radiowaves.left.and.right") }
                             NavigationLink { HifzTestView() } label: { Label("اختبار الحفظ", systemImage: "eye.slash") }
                             NavigationLink { DuasView() } label: { Label("الأدعية", systemImage: "hands.sparkles") }
+                            NavigationLink { TajweedView() } label: { Label("المصحف الملون بالتجويد", systemImage: "paintpalette") }
+                            NavigationLink { WordByWordView() } label: { Label("معاني الكلمات", systemImage: "character.book.closed") }
+                            NavigationLink { RuqyaView() } label: { Label("الرقية الشرعية", systemImage: "shield") }
+                            NavigationLink { AsmaView() } label: { Label("الأسماء الحسنى", systemImage: "sparkles") }
                         }
                     }
                     Section(query.isEmpty ? "السور" : "السور المطابقة") {
@@ -170,6 +174,7 @@ struct MushafReader: View {
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     @AppStorage(Favorites.key) private var favorites = ""
     @State private var page = 1
+    @State private var layer = QuranLayer.mushaf
     @State private var selected: RecitationPlayer.Position?
     @State private var player = RecitationPlayer()
     private let lib = ContentLibrary.shared
@@ -182,12 +187,18 @@ struct MushafReader: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            LayerChips()
+            LayerChips(selection: $layer)
             TabView(selection: $page) {
                 ForEach(1...max(lib.pageCount, 1), id: \.self) { n in
-                    MushafPage(number: n, scale: FontScale(rawValue: fontScale)?.factor ?? 1,
-                               highlighted: player.current ?? focus)
-                        .tag(n)
+                    Group {
+                        if layer == .mushaf {
+                            MushafPage(number: n, scale: FontScale(rawValue: fontScale)?.factor ?? 1,
+                                       highlighted: player.current ?? focus)
+                        } else {
+                            LayerPage(number: n, layer: layer, scale: FontScale(rawValue: fontScale)?.factor ?? 1)
+                        }
+                    }
+                    .tag(n)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -258,30 +269,42 @@ extension RecitationPlayer.Position: Identifiable {
     var id: String { "\(surah):\(ayah)" }
 }
 
-/// Display layers from the design. Only the mushaf is available until the Quran Foundation
-/// permission (tajweed, word meanings) and the tafsir licence are confirmed.
+/// Display layers from the design, as on the site: the mushaf, tajweed colors, word meanings, tafsir.
+enum QuranLayer: String, CaseIterable, Identifiable {
+    case mushaf, tajweed, words, tafsir
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .mushaf: "المصحف"
+        case .tajweed: "التجويد"
+        case .words: "معاني الكلمات"
+        case .tafsir: "التفسير"
+        }
+    }
+}
+
 struct LayerChips: View {
+    @Binding var selection: QuranLayer
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("المصحف", on: true)
-                chip("التجويد", on: false)
-                chip("معاني الكلمات", on: false)
-                chip("التفسير", on: false)
+                ForEach(QuranLayer.allCases) { l in
+                    let on = selection == l
+                    Button { selection = l } label: {
+                        Text(l.title)
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(on ? .white : .primary)
+                            .padding(.horizontal, 14).frame(minHeight: 36)
+                            .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
+                            .overlay(Capsule().stroke(on ? .clear : Brand.line, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? [.isSelected] : [])
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
         }
-    }
-
-    private func chip(_ title: String, on: Bool) -> some View {
-        Text(title)
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(on ? .white : .secondary)
-            .padding(.horizontal, 14).frame(minHeight: 36)
-            .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
-            .overlay(Capsule().stroke(on ? .clear : Brand.line, lineWidth: 1))
-            .accessibilityAddTraits(on ? [.isSelected] : [])
-            .accessibilityHint(on ? "" : "قريبا")
     }
 }
 

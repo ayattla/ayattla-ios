@@ -199,6 +199,9 @@ struct CardCanvas: View {
         var fontName: String = ContentLibrary.mushafFont
         /// Text only, on a transparent background (overlay for animated video backgrounds).
         var clearBackground = false
+        /// Word to highlight (0-based among the ayah's words; pause marks are not counted), and its color.
+        var highlightWord: Int? = nil
+        var highlightColor: UInt32 = 0xF7CD6E
     }
 
     let model: Model
@@ -246,7 +249,7 @@ struct CardCanvas: View {
                         .opacity(0.9)
                     }
                     Spacer(minLength: 0)
-                    Text(model.text)
+                    Text(QuranWords.highlighted(model.text, word: model.highlightWord, color: Color(hex: model.highlightColor)))
                         .font(.custom(model.fontName, size: baseSize * unit * model.fontScale))
                         .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
                         .multilineTextAlignment(.center)
@@ -261,5 +264,37 @@ struct CardCanvas: View {
                 .padding(.vertical, 22 * unit)
             }
         }
+    }
+}
+
+/// Words of an ayah as Quran.com counts them for timings: space-separated tokens, without the
+/// pause marks (ۖ ۗ ۚ …) and the ayah-number ornament, which Quran.com does not time.
+enum QuranWords {
+    static func isMark(_ token: Substring) -> Bool {
+        token.unicodeScalars.allSatisfy { (0x06D6...0x06ED).contains($0.value) || $0.properties.generalCategory == .nonspacingMark }
+    }
+
+    static func isEndMarker(_ token: Substring) -> Bool { token.unicodeScalars.first?.value == 0x06DD }
+
+    static func count(_ text: String) -> Int {
+        text.split(separator: " ").filter { !isMark($0) && !isEndMarker($0) }.count
+    }
+
+    /// The text with word `word` colored; other text unchanged.
+    static func highlighted(_ text: String, word: Int?, color: Color) -> AttributedString {
+        guard let word else { return AttributedString(text) }
+        var out = AttributedString()
+        var k = 0
+        let tokens = text.split(separator: " ", omittingEmptySubsequences: false)
+        for (i, t) in tokens.enumerated() {
+            var part = AttributedString(String(t))
+            if !isMark(t) && !isEndMarker(t) && !t.isEmpty {
+                if k == word { part.foregroundColor = color }
+                k += 1
+            }
+            out += part
+            if i < tokens.count - 1 { out += AttributedString(" ") }
+        }
+        return out
     }
 }

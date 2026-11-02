@@ -112,6 +112,129 @@ enum VideoEngine {
         guard writer.status == .completed else { throw Failure.writer(writer.error?.localizedDescription ?? "finish") }
     }
 
+    /// A text frame that starts at `time` (seconds) and stays until the next one; drawn when needed
+    /// so long clips with word highlighting never hold every frame in memory.
+    struct Keyframe {
+        let time: Double
+        let make: @MainActor () -> UIImage?
+    }
+
+    /// Renders one continuous audio range (e.g. a Quran.com chapter recitation cut to the chosen ayat)
+    /// with text keyframes (one per highlighted word). Used for word highlighting, as on the site.
+    static func renderTimeline(audio: URL, range: CMTimeRange, keyframes: [Keyframe], size: CGSize, to out: URL,
+                               background: MotionBackground? = nil,
+                               progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+        guard !keyframes.isEmpty else { throw Failure.noSegments }
+        try? FileManager.default.removeItem(at: out)
+        let comp = AVMutableComposition()
+        guard let audioTrack = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw Failure.writer("audio track")
+        }
+        let asset = AVURLAsset(url: audio)
+        guard let src = try await asset.loadTracks(withMediaType: .audio).first else { throw Failure.noAudioTrack(0) }
+        let full = try await asset.load(.duration)
+        let r = CMTimeRangeGetIntersection(range, otherRange: CMTimeRange(start: .zero, duration: full))
+        try audioTrack.insertTimeRange(r, of: src, at: .zero)
+        let total = r.duration
+        progress(0.05)
+
+        let silent = out.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + "-v.mp4")
+        defer { try? FileManager.default.removeItem(at: silent) }
+        let (writer, input, adaptor, w, h) = try makeWriter(url: silent, size: size)
+        let rect = CGRect(x: 0, y: 0, width: w, height: h)
+        let end = total.seconds
+        let sorted = keyframes.sorted { $0.time < $1.time }
+
+        func draw(_ overlay: CGImage?, t: Double, into buffer: CVPixelBuffer, still: Bool) {
+            CVPixelBufferLockBaseAddress(buffer, [])
+            if let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: w, height: h, bitsPerComponent: 8,
+                                   bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
+                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue) {
+                if let background, !still { background.draw(in: ctx, size: rect.size, t: t, total: end) }
+                if let overlay { ctx.draw(overlay, in: rect) }
+            }
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+        }
+        func buffer() throws -> CVPixelBuffer {
+            var pb: CVPixelBuffer?
+            if let pool = adaptor.pixelBufferPool { CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) }
+            if pb == nil {
+                CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_32BGRA,
+                                    [kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary, &pb)
+            }
+            guard let b = pb else { throw Failure.writer("pixel buffer") }
+            return b
+        }
+        func append(_ b: CVPixelBuffer, _ t: CMTime) async throws {
+            while !input.isReadyForMoreMediaData { try await Task.sleep(nanoseconds: 5_000_000) }
+            guard adaptor.append(b, withPresentationTime: t) else { throw Failure.writer(writer.error?.localizedDescription ?? "append") }
+        }
+
+        if background == nil {
+            // Still background: one frame per keyframe (the text frame already contains its background).
+            var last: CGImage?
+            for (i, k) in sorted.enumerated() where k.time < end {
+                try Task.checkCancellation()
+                let img = await MainActor.run { k.make()?.cgImage }
+                last = img ?? last
+                let b = try buffer(); draw(last, t: k.time, into: b, still: true)
+                try await append(b, CMTime(seconds: max(0, k.time), preferredTimescale: 600))
+                if i % 10 == 0 { progress(0.05 + 0.45 * Double(i) / Double(sorted.count)) }
+            }
+            let tail = CMTime(seconds: max(0, end - 1.0 / Double(fps)), preferredTimescale: 600)
+            if let last, tail.seconds > (sorted.last?.time ?? 0) {
+                let b = try buffer(); draw(last, t: end, into: b, still: true)
+                try await append(b, tail)
+            }
+        } else {
+            // Animated: every frame; the overlay is redrawn only when a new keyframe starts.
+            let frames = max(1, Int((end * Double(fps)).rounded(.up)))
+            var k = -1
+            var overlay: CGImage?
+            for i in 0..<frames {
+                try Task.checkCancellation()
+                let t = Double(i) / Double(fps)
+                var next = k
+                while next + 1 < sorted.count && sorted[next + 1].time <= t { next += 1 }
+                if next != k, next >= 0 {
+                    k = next
+                    overlay = await MainActor.run { sorted[k].make()?.cgImage } ?? overlay
+                }
+                let b = try buffer(); draw(overlay, t: t, into: b, still: false)
+                try await append(b, CMTime(value: CMTimeValue(i), timescale: fps))
+                if i % 15 == 0 { progress(0.05 + 0.45 * Double(i) / Double(frames)) }
+            }
+        }
+        input.markAsFinished()
+        writer.endSession(atSourceTime: total)
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw Failure.writer(writer.error?.localizedDescription ?? "finish") }
+
+        let video = AVURLAsset(url: silent)
+        guard let vsrc = try await video.loadTracks(withMediaType: .video).first,
+              let vtrack = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw Failure.writer("video track")
+        }
+        let vdur = try await video.load(.duration)
+        try vtrack.insertTimeRange(CMTimeRange(start: .zero, duration: min(vdur, total)), of: vsrc, at: .zero)
+        guard let export = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else {
+            throw Failure.export("session")
+        }
+        export.outputURL = out
+        export.outputFileType = .mp4
+        export.shouldOptimizeForNetworkUse = true
+        let ticker = Task {
+            while !Task.isCancelled {
+                progress(0.5 + 0.5 * Double(export.progress))
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+        await export.export()
+        ticker.cancel()
+        guard export.status == .completed else { throw Failure.export(export.error?.localizedDescription ?? "\(export.status.rawValue)") }
+        progress(1)
+    }
+
     private static func makeWriter(url: URL, size: CGSize) throws -> (AVAssetWriter, AVAssetWriterInput, AVAssetWriterInputPixelBufferAdaptor, Int, Int) {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let w = Int(size.width) / 2 * 2, h = Int(size.height) / 2 * 2
@@ -202,10 +325,17 @@ struct RecitationFetcher {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         var out: [URL] = []
         for (i, it) in items.enumerated() {
+            let dest = dir.appendingPathComponent(String(format: "%03d%03d-%d.mp3", it.surah, it.ayah, i))
+            if let local = RecitationDownloads.shared.local(folder: folder, surah: it.surah, ayah: it.ayah) {
+                try? FileManager.default.removeItem(at: dest)
+                try FileManager.default.copyItem(at: local, to: dest)
+                out.append(dest)
+                progress(Double(i + 1) / Double(items.count))
+                continue
+            }
             guard let url = RecitationPlayer.url(folder: folder, surah: it.surah, ayah: it.ayah) else { throw URLError(.badURL) }
             let (tmp, resp) = try await URLSession.shared.download(from: url)
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-            let dest = dir.appendingPathComponent(String(format: "%03d%03d-%d.mp3", it.surah, it.ayah, i))
             try? FileManager.default.removeItem(at: dest)
             try FileManager.default.moveItem(at: tmp, to: dest)
             out.append(dest)
