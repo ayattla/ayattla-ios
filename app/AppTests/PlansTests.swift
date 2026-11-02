@@ -50,3 +50,31 @@ final class PlansTests: XCTestCase {
         XCTAssertEqual(img.size.height * img.scale, 1350, accuracy: 1)
     }
 }
+
+final class TrackersTests: XCTestCase {
+    func testQada() {
+        var s = QadaState(days: 10)
+        XCTAssertEqual(s.totalRemaining, 50)
+        s.makeUp(0); s.makeUp(0); s.undo(0)
+        XCTAssertEqual(s.remaining(0), 9)
+        XCTAssertEqual(s.daysLeft, 10)
+        s.perDay = 3
+        XCTAssertEqual(s.daysLeft, 4)
+        for _ in 0..<20 { s.makeUp(1) }
+        XCTAssertEqual(s.remaining(1), 0)
+    }
+
+    func testSawm() {
+        let cal = Calendar(identifier: .gregorian)
+        var s = SawmState(); s.required = 3
+        let d = Date(timeIntervalSince1970: 1_800_000_000)
+        s.tap(d, mode: .qada, cal: cal)
+        s.tap(d.addingTimeInterval(86_400), mode: .tatawwu, cal: cal)
+        XCTAssertEqual(s.qadaRemaining, 2)
+        XCTAssertEqual(s.tatawwu, 1)
+        s.tap(d, mode: .qada, cal: cal)
+        XCTAssertEqual(s.qadaRemaining, 3)
+        s.tap(d, mode: .tatawwu, cal: cal)
+        XCTAssertEqual(s.tatawwu, 2)
+    }
+}
