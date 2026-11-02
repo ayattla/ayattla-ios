@@ -6,23 +6,17 @@ jobs:
   look:
     runs-on: ubuntu-latest
     steps:
-      - name: Read
+      - name: Brand files as base64
         run: |
-          B=https://ayattla.com
-          for f in tools/favicon.svg tools/logo-full.svg tools/logo-full-light.svg tools/logo-horizontal.svg; do
-            echo "=== $f"; curl -sS -m 30 $B/$f | head -c 2500; echo; done
-          curl -sS -m 30 -o t.png -w "apple-touch %{http_code} %{size_download}\n" $B/apple-touch-icon.png; file t.png
-          curl -sS -m 30 $B/ -o h.html
-          python3 - <<'PY'
-          import re, html
-          s = open("h.html", encoding="utf-8").read()
-          m = re.search(r"<main.*?</main>", s, re.S)
-          t = m.group(0) if m else s
-          t = re.sub(r"<(script|style|svg).*?</\1>", "", t, flags=re.S)
-          # section structure: tags with class and their first text
-          for mm in re.finditer(r'<(section|h1|h2|h3|a|p|div)\b([^>]*)>([^<]{0,120})', t):
-              cls = re.search(r'class="([^"]*)"', mm.group(2))
-              txt = html.unescape(mm.group(3)).strip()
-              if txt or (cls and mm.group(1) in ("section",)):
-                  print(mm.group(1), (cls.group(1) if cls else "")[:40], "|", txt[:100])
-          PY
+          sudo apt-get install -y -qq librsvg2-bin >/dev/null
+          B=https://ayattla.com/tools
+          for f in favicon logo-full logo-full-light logo-horizontal logo-horizontal-light; do
+            curl -sSf -m 30 $B/$f.svg -o $f.svg
+            echo "B64 $f.svg $(base64 -w0 $f.svg)"
+          done
+          # App icon: the favicon mark on a full square (iOS rounds the corners itself)
+          sed 's/rx="112"//' favicon.svg > icon-square.svg
+          rsvg-convert -w 1024 -h 1024 icon-square.svg -o AppIcon-1024.png
+          python3 -c "
+          import struct,zlib;d=open('AppIcon-1024.png','rb').read();print('PNG', len(d))"
+          echo "B64 AppIcon-1024.png $(base64 -w0 AppIcon-1024.png)"
