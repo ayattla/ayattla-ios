@@ -215,11 +215,11 @@ def ruqya_from_site(path, db):
 def asma_from_site(path):
     """The 99 names from /tools/asma-ul-husna (the page's `const AS=[...]`), as written there."""
     page = open(path, encoding="utf-8").read()
-    i = page.find("const AS=")
-    j = page.find("];", i)
-    if i < 0 or j < 0:
-        raise ValueError("asma list not found")
-    names = json.loads(page[i + 9:j + 1])
+    m = re.search(r"\bAS\s*=\s*(\[\s*\{.*?\}\s*\])", page, re.S)
+    if not m:
+        i = page.find("AS")
+        raise ValueError(f"asma list not found ({len(page)} bytes): {page[max(0, i - 80):i + 160]!r}")
+    names = json.loads(m.group(1))
     if len(names) != 99:
         raise ValueError(f"asma: {len(names)} names, expected 99")
     return names
