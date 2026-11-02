@@ -22,7 +22,7 @@ struct OnboardingView: View {
         .location: Page(symbol: "location", title: "موقعك للمواقيت",
                         body: "نستخدم موقعك على جهازك فقط لحساب المواقيت والقبلة. يمكنك اختيار مدينتك يدويا بدلا من ذلك"),
         .notifications: Page(symbol: "bell", title: "التنبيهات",
-                             body: "تذكير بأذكار الصباح والمساء وآية اليوم وورد الختمة، وتختار ما تريد منها في الإعدادات"),
+                             body: "تذكير بأذكار الصباح والمساء وآية اليوم وورد الختمة. فعل ما تريد منها من الإعدادات بعد تنزيل المحتوى"),
         .reciter: Page(symbol: "waveform", title: "القارئ المفضل",
                        body: "يستخدم في المصحف وصانع المقاطع، ويمكنك تغييره في أي وقت"),
     ]
@@ -99,7 +99,7 @@ struct OnboardingView: View {
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background(Brand.primary, in: Capsule())
                     .buttonStyle(.plain)
-                if step == .location || step == .notifications {
+                if step == .location {
                     Button("ليس الآن") { advance() }
                         .font(.subheadline).foregroundStyle(Brand.primaryInk)
                         .frame(minHeight: Brand.minTap)
@@ -125,7 +125,7 @@ struct OnboardingView: View {
 
     private var primaryTitle: String {
         switch step {
-        case .location, .notifications: "السماح"
+        case .location: "السماح"
         case .reciter: "ابدأ"
         default: "التالي"
         }
@@ -136,11 +136,6 @@ struct OnboardingView: View {
         case .location:
             location.requestLocation()
             advance()
-        case .notifications:
-            Task { @MainActor in
-                _ = await SettingsView.requestNotifications()
-                advance()
-            }
         default:
             advance()
         }
