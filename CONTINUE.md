@@ -1,35 +1,38 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main؛ العمل الجاري على claude/peaceful-bell-g613dx)
 
-آخر تحديث: 2026-11-02 06:20 UTC
+آخر تحديث: 2026-11-02 06:20 UTC بعد دمج PR #1
 
 ## 1. آخر حالة دقيقة
 
-- المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx`.
-- PR مفتوح: https://github.com/ayattla/ayattla-ios/pull/1 (شاشتا مواقيت الصلاة والقبلة، قائمة المدن الـ36، الصلاة القادمة، لقطات CI لكل شاشة على الفرع `ci-shots`).
-- CI الـ PR: التشغيل 41397637081 قيد العمل — https://github.com/ayattla/ayattla-ios/actions/runs/41397637081
-- آخر CI ناجح على main: https://github.com/ayattla/ayattla-ios/actions/runs/41396763300 (packages 16/16، app ناجح، لقطة الرئيسية أُرسلت للمالك).
-- عائق بيئة: الجلسة لا تنزل artifacts (المضيف `productionresultssa2.blob.core.windows.net` محجوب). البديل: CI يرفع اللقطات إلى الفرع `ci-shots`.
-- لا خطأ معروف حتى الآن (الشيفرة الجديدة لم تبن بعد وقت كتابة هذا).
+- المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx` (يُدمج فيه main بعد كل دمج PR).
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/1 **مدموج** (squash `3ee143c`): المواقيت، القبلة، الهجري بالاتجاهين، المناسبات، المدن الـ36، أرقام عربية هندية في كل التطبيق، لقطات CI.
+- آخر CI ناجح للـ PR: https://github.com/ayattla/ayattla-ios/actions/runs/41398392011 — packages: AyatCalc 13، AyatContent 5، AyatTiming 5؛ app: 4 اختبارات + 7 لقطات.
+- اللقطات على الفرع `ci-shots` (تُستبدل في كل تشغيل): home، tools، prayer، qibla، zakat، hijri، occasions. أُرسلت للمالك.
+- لا خطأ حالي. عائق البيئة الوحيد: مضيف artifacts محجوب، والبديل الفرع `ci-shots`.
 
 ## 2. الخطوة التالية بالضبط
 
-1. تابع CI الـ PR وأصلح أي خطأ على نفس الفرع حتى تنجح packages وapp:
+1. ابدأ من main دون فرض الدفع:
+   ```
+   git fetch origin && git checkout claude/peaceful-bell-g613dx && git merge origin/main
+   ```
+2. أعد بناء شاشة الأدوات حسب `design/Tools.dc.html`: حقل بحث، بطاقة الصلاة القادمة مع زر القبلة، قسم «اليوم» (الأذكار، المسبحة، الأدعية: «قيد البناء» حتى حزمة المحتوى)، وقسم «العبادات والحساب» شبكة (الهجري، الزكاة، قضاء الصلوات، الصيام، المساجد، الأحاديث)، ورابط «كل الأدوات».
+3. بعدها: حزمة `AyatDesign` (نقل `Brand` و`card()` و`Num`)، ثم المساجد القريبة بـ MapKit `MKLocalSearch` (نصف القطر 1/3/5 كم كما في الموقع)، ثم الإعدادات (`design/Settings.dc.html`) والترحيب (`design/Onboarding.dc.html`).
+4. لكل تغيير: push ← PR ← انتظر CI:
    ```
    gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 3
    gh run view <RUN_ID> -R ayattla/ayattla-ios --log-failed | grep -E "error:|failed|XCTAssert" | head -50
+   git fetch origin ci-shots && git worktree add -f ci-shots origin/ci-shots
    ```
-2. افحص اللقطات وقارنها باللوحات `design/Prayer.dc.html` و`design/Qibla.dc.html`:
-   ```
-   git fetch origin ci-shots && git worktree add /tmp/shots origin/ci-shots && ls /tmp/shots
-   ```
-3. ادمج الـ PR بعد النجاح (squash)، ثم حدّث هذا الملف.
-4. التالي حسب `docs/APP_ARCHITECTURE.md`: حزمة `AyatDesign` (ألوان ومكونات `design/System.dc.html`)، ثم المسبحة (`design/Tasbih.dc.html`، العبارات من حزمة المحتوى فقط)، ثم الختمة (`design/Khatma.dc.html`)، ثم الهجري بالتحويل في الاتجاهين.
+   ثم دمج squash وتحديث هذا الملف.
 
 ## قرارات اتخذت دون سؤال المالك
 
 - لم يُفتح PR لإصلاح البناء الأول لأنه نجح دون أخطاء.
 - البناء والاختبار عبر GitHub Actions بديل عن Mac (بطلب المالك: «بعد نجاح البناء تابع المراحل»).
 - الصلاة القادمة لا تشمل الشروق؛ بعد العشاء تكون فجر الغد.
+- قضاء الصلوات والصيام والختمة مؤجلة: الجرد لا يبين كل سلوكها (قضاء: لا زر «قضيت»)، والختمة تحتاج أسماء السور من حزمة المحتوى.
+- PHASE 1 أُغلقت اعتمادا على `docs/WEBSITE_TOOLS_WALKTHROUGH.md` (قرار المالك).
 - تنبيه قبل الأذان لم ينفذ لأن اللوحة لا تحدد المدة؛ والخريطة بديلا عن البوصلة مؤجلة.
 - لا يُكتب أي نص ديني؛ الشاشات المعتمدة على القرآن والأذكار والتسبيح تنتظر حزمة المحتوى من المصادر المعتمدة.
 
