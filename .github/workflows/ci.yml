@@ -47,8 +47,8 @@ jobs:
               if t: print("EL", m.group(1), t[:80])
           for m in re.finditer(r"<script[^>]*>(.*?)</script>", s, re.S):
               js = m.group(1)
-              if "tasbih" in js.lower() or "سبحان" in js:
-                  print("JS", js[:2500])
+              if "z.replace" in js or "localStorage" in js:
+                  print("JS", js[:4000])
           PY
       - name: Fonts (Amiri Quran and Amiri, OFL 1.1)
         run: |
@@ -75,7 +75,6 @@ jobs:
           PY
           ls -l pack
       - name: Compare with Tanzil
-        continue-on-error: true
         run: test -s src/tanzil-uthmani.txt && python3 tools/compare_tanzil.py pack/content-v1.sqlite src/tanzil-uthmani.txt
       - uses: actions/upload-artifact@v4
         with:
