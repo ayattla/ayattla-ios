@@ -1,33 +1,40 @@
-# CONTINUE — نقطة الاستئناف (الفرع: main)
+# CONTINUE — نقطة الاستئناف (الفرع: main؛ العمل الجاري على claude/peaceful-bell-g613dx)
 
-آخر تحديث: 2026-11-02 06:05 UTC
+آخر تحديث: 2026-11-02 06:20 UTC بعد دمج PR #1
 
 ## 1. آخر حالة دقيقة
 
-- المستودع: `ayattla/ayattla-ios`. الفرع الرئيسي `main` (أول رفع من الحزمة، 71 ملفا). فرع العمل: `claude/peaceful-bell-g613dx`.
-- لا يوجد PR مفتوح. لم يحتج البناء أي إصلاح: كل الشيفرة بنيت ونجحت من أول تشغيل.
-- آخر CI على main: **نجح** — https://github.com/ayattla/ayattla-ios/actions/runs/41396763300
-  - packages: AyatCalc 6/6، AyatContent 5/5، AyatTiming 5/5.
-  - app: البناء على المحاكي + SmokeTests 1/1 (`TEST SUCCEEDED`) + لقطة الشاشة.
-- عائق بيئة (ليس خطأ شيفرة): الجلسة السحابية لا تستطيع تنزيل artifact `ci-output` لأن سياسة الشبكة ترفض `productionresultssa2.blob.core.windows.net`. الحل المؤقت: على فرع العمل خطوة في `ci.yml` تطبع الصورة base64 في السجل (التشغيل 41397101732)، ثم تُستخرج من السجل. لا تُدمج هذه الخطوة في main.
-- لا خطأ حالي.
+- المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx` (يُدمج فيه main بعد كل دمج PR).
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/1 **مدموج** (squash `3ee143c`): المواقيت، القبلة، الهجري بالاتجاهين، المناسبات، المدن الـ36، أرقام عربية هندية في كل التطبيق، لقطات CI.
+- آخر CI ناجح للـ PR: https://github.com/ayattla/ayattla-ios/actions/runs/41398392011 — packages: AyatCalc 13، AyatContent 5، AyatTiming 5؛ app: 4 اختبارات + 7 لقطات.
+- اللقطات على الفرع `ci-shots` (تُستبدل في كل تشغيل): home، tools، prayer، qibla، zakat، hijri، occasions. أُرسلت للمالك.
+- لا خطأ حالي. عائق البيئة الوحيد: مضيف artifacts محجوب، والبديل الفرع `ci-shots`.
 
 ## 2. الخطوة التالية بالضبط
 
-1. استخراج اللقطة من سجل تشغيل فرع العمل:
+1. ابدأ من main دون فرض الدفع:
    ```
-   RUN=$(gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 1 --json databaseId -q '.[0].databaseId')
-   gh run view $RUN -R ayattla/ayattla-ios --log | sed -n '/SHOT-BEGIN/,/SHOT-END/p' | sed 's/^.*Z //' | grep -v SHOT- | base64 -d > ci-shots/home.png
+   git fetch origin && git checkout claude/peaceful-bell-g613dx && git merge origin/main
    ```
-2. متابعة PHASE 4 حسب `docs/APP_ARCHITECTURE.md` ولوحات `design/` بما يمكن بناؤه واختباره على CI فقط (لا Mac):
-   حزمة `AyatDesign` (الألوان والمكونات من `design/System.dc.html`) ← شاشات تعتمد على AyatCalc: مواقيت الصلاة (`design/Prayer.dc.html`)، القبلة (`design/Qibla.dc.html`)، المسبحة (`design/Tasbih.dc.html`)، ثم الختمة. كل تغيير على فرع + PR، وينتظر نجاح packages وapp قبل الدمج.
-3. بعد كل مرحلة: تحديث هذا الملف ورفعه.
+2. أعد بناء شاشة الأدوات حسب `design/Tools.dc.html`: حقل بحث، بطاقة الصلاة القادمة مع زر القبلة، قسم «اليوم» (الأذكار، المسبحة، الأدعية: «قيد البناء» حتى حزمة المحتوى)، وقسم «العبادات والحساب» شبكة (الهجري، الزكاة، قضاء الصلوات، الصيام، المساجد، الأحاديث)، ورابط «كل الأدوات».
+3. بعدها: حزمة `AyatDesign` (نقل `Brand` و`card()` و`Num`)، ثم المساجد القريبة بـ MapKit `MKLocalSearch` (نصف القطر 1/3/5 كم كما في الموقع)، ثم الإعدادات (`design/Settings.dc.html`) والترحيب (`design/Onboarding.dc.html`).
+4. لكل تغيير: push ← PR ← انتظر CI:
+   ```
+   gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 3
+   gh run view <RUN_ID> -R ayattla/ayattla-ios --log-failed | grep -E "error:|failed|XCTAssert" | head -50
+   git fetch origin ci-shots && git worktree add -f ci-shots origin/ci-shots
+   ```
+   ثم دمج squash وتحديث هذا الملف.
 
 ## قرارات اتخذت دون سؤال المالك
 
-- لم يُفتح PR للإصلاح لأن البناء نجح دون أخطاء.
-- البناء والاختبار عبر GitHub Actions يعد بديلا عن Mac لكتابة شيفرة قابلة للبناء والاختبار (بطلب المالك: «بعد نجاح البناء تابع المراحل»).
-- لا تُبنى حزمة المحتوى الحقيقية ولا يُكتب أي نص ديني في هذه المرحلة؛ الشاشات المعتمدة على القرآن والأذكار تنتظر حزمة المحتوى من المصادر المعتمدة.
+- لم يُفتح PR لإصلاح البناء الأول لأنه نجح دون أخطاء.
+- البناء والاختبار عبر GitHub Actions بديل عن Mac (بطلب المالك: «بعد نجاح البناء تابع المراحل»).
+- الصلاة القادمة لا تشمل الشروق؛ بعد العشاء تكون فجر الغد.
+- قضاء الصلوات والصيام والختمة مؤجلة: الجرد لا يبين كل سلوكها (قضاء: لا زر «قضيت»)، والختمة تحتاج أسماء السور من حزمة المحتوى.
+- PHASE 1 أُغلقت اعتمادا على `docs/WEBSITE_TOOLS_WALKTHROUGH.md` (قرار المالك).
+- تنبيه قبل الأذان لم ينفذ لأن اللوحة لا تحدد المدة؛ والخريطة بديلا عن البوصلة مؤجلة.
+- لا يُكتب أي نص ديني؛ الشاشات المعتمدة على القرآن والأذكار والتسبيح تنتظر حزمة المحتوى من المصادر المعتمدة.
 
 ## نص المتابعة
 
