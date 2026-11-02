@@ -9,20 +9,20 @@ jobs:
       - name: Read
         run: |
           B=https://ayattla.com
-          echo "=== qf/tajweed"; curl -sS -m 30 $B/api/qf/tajweed/112 | head -c 1500; echo
-          echo "=== qf/words"; curl -sS -m 30 "$B/api/qf/words/112" | head -c 1500; echo
-          curl -sS -m 30 $B/tools/word-by-word -o w.html; echo "=== words page JS"; grep -o "fetch([^)]*)" w.html | sort -u; grep -o "<option[^>]*value=\"[^\"]*\"[^>]*>[^<]*</option>" w.html | head -20
-          curl -sS -m 30 $B/tools/tajweed -o t.html; echo "=== tajweed JS"; python3 -c "
-          import re;s=open('t.html').read()
-          for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S):
-              js=m.group(1)
-              if 'tajweed' in js and 'fetch' in js: i=js.find('qf/tajweed'); print(js[max(0,i-1500):i+2500])
-          i=s.find('tj-legend'); print('LEGEND', re.sub(r'\s+',' ',s[i:i+2500]))"
-          curl -sS -m 30 $B/tools/asma-ul-husna -o a.html; echo "=== asma"; python3 -c "
-          s=open('a.html').read(); i=s.find('const AS'); print(s[i:i+1500]); print('...', s[i+1500:i+1700])"
-          curl -sS -m 30 $B/ -o h.html; echo "=== brand"; grep -o '<link[^>]*icon[^>]*>' h.html | head; grep -o '<img[^>]*class="lg-[ld]"[^>]*>' h.html | head -4; grep -o '<img[^>]*src="[^"]*brand[^"]*"[^>]*>' h.html | head -6
-          echo "=== qf chapter_reciters"; curl -sS -m 30 "https://api.quran.com/api/v4/resources/chapter_reciters?language=en" | python3 -c "
-          import json,sys;d=json.load(sys.stdin)['reciters']
-          for r in d: print(r['id'], r.get('name'), (r.get('style') or {}).get('name'), r.get('translated_name',{}).get('name'))"
-          echo "=== qf timings sample"; curl -sS -m 30 "https://api.quran.com/api/v4/chapter_recitations/7/112?segments=true" | head -c 1500; echo
-          curl -sS -m 30 "https://api.qurancdn.com/api/qdc/audio/reciters/7/audio_files?chapter=112&segments=true" | head -c 1500; echo
+          for f in tools/favicon.svg tools/logo-full.svg tools/logo-full-light.svg tools/logo-horizontal.svg; do
+            echo "=== $f"; curl -sS -m 30 $B/$f | head -c 2500; echo; done
+          curl -sS -m 30 -o t.png -w "apple-touch %{http_code} %{size_download}\n" $B/apple-touch-icon.png; file t.png
+          curl -sS -m 30 $B/ -o h.html
+          python3 - <<'PY'
+          import re, html
+          s = open("h.html", encoding="utf-8").read()
+          m = re.search(r"<main.*?</main>", s, re.S)
+          t = m.group(0) if m else s
+          t = re.sub(r"<(script|style|svg).*?</\1>", "", t, flags=re.S)
+          # section structure: tags with class and their first text
+          for mm in re.finditer(r'<(section|h1|h2|h3|a|p|div)\b([^>]*)>([^<]{0,120})', t):
+              cls = re.search(r'class="([^"]*)"', mm.group(2))
+              txt = html.unescape(mm.group(3)).strip()
+              if txt or (cls and mm.group(1) in ("section",)):
+                  print(mm.group(1), (cls.group(1) if cls else "")[:40], "|", txt[:100])
+          PY
