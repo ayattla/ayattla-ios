@@ -67,6 +67,7 @@ enum ToolItem: String, CaseIterable, Identifiable {
 /// Tools tab, per design/Tools.dc.html.
 struct ToolsView: View {
     @State private var query = ""
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Group {
@@ -106,7 +107,9 @@ struct ToolsView: View {
     private func section(_ title: String, _ items: [ToolItem]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title).font(.headline)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+            // One column at accessibility text sizes so titles are never cut off.
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+                                     count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
                 ForEach(items) { item in
                     NavigationLink { item.destination } label: { ToolTile(item: item) }
                         .buttonStyle(.plain)

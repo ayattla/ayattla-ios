@@ -102,6 +102,7 @@ struct SettingsView: View {
                 NavigationLink("مصادر المحتوى والتراخيص") { LicensesView() }
                 NavigationLink("الخصوصية") { PrivacyView() }
                 LabeledContent("الإصدار", value: Self.versionText())
+                LabeledContent("حزمة المحتوى", value: Self.contentText(nil))
             }
         }
         .tint(Brand.primary)
@@ -139,12 +140,15 @@ struct SettingsView: View {
         }
     }
 
-    /// "١.٠.٠ · المحتوى غير منزل" — app version and content-pack version.
-    static func versionText(bundle: Bundle = .main, contentVersion: String? = nil) -> String {
+    /// App version with Arabic-Indic digits, isolated left-to-right so "١.٠.٠" keeps its order.
+    static func versionText(bundle: Bundle = .main) -> String {
         let v = bundle.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let content = contentVersion.map { "محتوى \(Num.digits($0))" } ?? "المحتوى غير منزل"
-        // Isolated left-to-right so "1.0.0" does not get reordered inside Arabic text.
-        return "\u{2066}\(Num.digits(v))\u{2069} · \(content)"
+        return "\u{2066}\(Num.digits(v))\u{2069}"
+    }
+
+    /// Content-pack version, or that it has not been downloaded yet.
+    static func contentText(_ version: String?) -> String {
+        version.map { "\u{2066}\(Num.digits($0))\u{2069}" } ?? "غير منزلة"
     }
 }
 

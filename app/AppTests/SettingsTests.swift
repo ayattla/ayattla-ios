@@ -10,10 +10,10 @@ final class SettingsTests: XCTestCase {
     }
 
     func testVersionTextUsesArabicDigits() {
-        let s = SettingsView.versionText(contentVersion: nil)
+        let s = SettingsView.versionText()
         XCTAssertFalse(s.contains(where: { $0.isASCII && $0.isNumber }), s)
-        XCTAssertTrue(s.hasSuffix("المحتوى غير منزل"), s)
-        XCTAssertTrue(SettingsView.versionText(contentVersion: "2026.11").contains("محتوى ٢٠٢٦"))
+        XCTAssertEqual(SettingsView.contentText(nil), "غير منزلة")
+        XCTAssertTrue(SettingsView.contentText("2026.11").contains("٢٠٢٦.١١"))
     }
 
     func testCatalogMatchesSite() {
