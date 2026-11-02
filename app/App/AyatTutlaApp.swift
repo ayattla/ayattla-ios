@@ -1,13 +1,12 @@
 import SwiftUI
 
-// STATUS: skeleton written without Xcode; not compiled yet.
 @main
 struct AyatTutlaApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            StartView()
                 .environment(\.layoutDirection, .rightToLeft)
-                .environment(\.locale, Locale(identifier: "ar"))
+                .environment(\.locale, Num.locale)
                 .tint(Brand.primary)
         }
     }
@@ -77,3 +76,35 @@ struct PlaceholderScreen: View {
             .navigationTitle(title)
     }
 }
+
+/// Debug builds accept `-screen <name>` (used by CI to screenshot each screen).
+struct StartView: View {
+    var body: some View {
+        #if DEBUG
+        if let s = UserDefaults.standard.string(forKey: "screen"), s != "home" {
+            NavigationStack { DebugScreen.view(s) }
+        } else {
+            RootView()
+        }
+        #else
+        RootView()
+        #endif
+    }
+}
+
+#if DEBUG
+enum DebugScreen {
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions"]
+
+    @ViewBuilder static func view(_ name: String) -> some View {
+        switch name {
+        case "prayer": PrayerTimesView()
+        case "qibla": QiblaView()
+        case "zakat": ZakatView()
+        case "hijri": HijriView()
+        case "occasions": OccasionsView()
+        default: ToolsView()
+        }
+    }
+}
+#endif

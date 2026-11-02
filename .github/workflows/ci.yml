@@ -34,6 +34,8 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     needs: packages
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -54,15 +56,31 @@ jobs:
             CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM= \
             -derivedDataPath build test | tee build.log | grep -E "error:|warning: |Test Suite|Executed|BUILD|TEST" || true
           test ${PIPESTATUS[0]} -eq 0
-      - name: Screenshot on simulator
+      - name: Screenshots on simulator
         if: success()
         run: |
-          xcrun simctl boot "${{ steps.sim.outputs.udid }}" || true
+          UDID="${{ steps.sim.outputs.udid }}"
+          BUNDLE=com.ayattla.AyatTutla
+          xcrun simctl boot "$UDID" || true
           APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
-          xcrun simctl install "${{ steps.sim.outputs.udid }}" "$APP"
-          xcrun simctl launch "${{ steps.sim.outputs.udid }}" com.ayattla.AyatTutla
-          sleep 8
-          mkdir -p shots && xcrun simctl io "${{ steps.sim.outputs.udid }}" screenshot shots/home.png
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
+          xcrun simctl location "$UDID" set 24.7136,46.6753 || true
+          mkdir -p shots
+          for s in home tools prayer qibla zakat hijri occasions; do
+            xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "shots/$s.png"
+          done
+      - name: Publish screenshots to the ci-shots branch
+        if: success()
+        run: |
+          cd shots
+          for f in *.png; do sips -Z 1400 "$f" >/dev/null; done
+          git init -q -b ci-shots
+          git add *.png
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Screenshots from run ${{ github.run_id }} (${{ github.sha }})"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-shots
       - uses: actions/upload-artifact@v4
         if: always()
         with:

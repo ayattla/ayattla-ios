@@ -2,28 +2,18 @@ import SwiftUI
 import AyatCalc
 import CoreLocation
 
-// STATUS: first real feature screens (qibla and zakat) on top of AyatCalc; not compiled yet.
 struct ToolsView: View {
     var body: some View {
         List {
             Section("العبادات والحساب") {
+                NavigationLink("مواقيت الصلاة") { PrayerTimesView() }
+                NavigationLink("اتجاه القبلة") { QiblaView() }
                 NavigationLink("حاسبة الزكاة") { ZakatView() }
-                NavigationLink("التاريخ الهجري") { HijriTodayView() }
+                NavigationLink("التاريخ الهجري") { HijriView() }
+                NavigationLink("المناسبات") { OccasionsView() }
             }
         }
         .navigationTitle("الأدوات")
-    }
-}
-
-struct HijriTodayView: View {
-    var body: some View {
-        let h = Hijri.fromGregorian(Date())
-        VStack(spacing: 8) {
-            Text("\(h.day.formatted(.number.locale(Locale(identifier: "ar")))) \(Hijri.months[h.month - 1]) \(h.year.formatted(.number.grouping(.never).locale(Locale(identifier: "ar")))) هـ")
-                .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(Brand.primaryInk)
-        }
-        .navigationTitle("التاريخ الهجري")
     }
 }
 

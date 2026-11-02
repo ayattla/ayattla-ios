@@ -7,7 +7,7 @@ public struct PrayerTimes: Equatable, Sendable {
 
     /// Calculation settings of one city on the site: Fajr angle, and Isha angle
     /// or (if > 30) minutes after Maghrib. `90` becomes `120` in Ramadan, as on the site.
-    public struct Method: Equatable, Sendable {
+    public struct Method: Hashable, Sendable {
         public let fajrAngle: Double
         public let isha: Double
         public init(fajrAngle: Double, isha: Double) { self.fajrAngle = fajrAngle; self.isha = isha }

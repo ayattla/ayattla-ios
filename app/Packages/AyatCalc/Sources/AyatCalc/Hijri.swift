@@ -2,7 +2,10 @@ import Foundation
 
 /// Hijri dates on the Umm al-Qura calendar, as the site does with Intl `islamic-umalqura`.
 public enum Hijri {
-    public struct Date: Equatable, Sendable { public let year, month, day: Int }
+    public struct Date: Hashable, Sendable {
+        public let year, month, day: Int
+        public init(year: Int, month: Int, day: Int) { self.year = year; self.month = month; self.day = day }
+    }
 
     /// Month names, same order and spelling as the site (UI text, no tashkeel).
     public static let months = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة",
