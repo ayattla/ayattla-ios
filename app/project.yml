@@ -11,6 +11,8 @@ settings:
     DEVELOPMENT_TEAM: TODO_TEAM_ID
     TARGETED_DEVICE_FAMILY: "1,2"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
 packages:
   AyatCalc: {path: Packages/AyatCalc}
   AyatContent: {path: Packages/AyatContent}
@@ -30,6 +32,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: آيات تتلى
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: ar
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
