@@ -130,7 +130,7 @@ jobs:
           xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
           xcrun simctl location "$UDID" set 24.7136,46.6753 || true
           mkdir -p shots
-          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library; do
+          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm; do
             xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/$s.png"

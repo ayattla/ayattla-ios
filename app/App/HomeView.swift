@@ -109,9 +109,11 @@ struct HomeView: View {
         }
     }
 
-    /// The studio is not built yet; tiles stay visible and open the placeholder.
+    /// Only the card editor is built; the other tiles open the placeholder until the video engine lands.
     private func createTile(_ title: String, _ symbol: String) -> some View {
-        NavigationLink { PlaceholderScreen(title: title) } label: {
+        NavigationLink {
+            if title == "بطاقة" { AyahCardView() } else { PlaceholderScreen(title: title) }
+        } label: {
             VStack(spacing: 6) {
                 Image(systemName: symbol).font(.title3).foregroundStyle(Brand.primary)
                     .frame(width: 40, height: 40).background(Brand.tint, in: RoundedRectangle(cornerRadius: 12))
@@ -121,7 +123,7 @@ struct HomeView: View {
             .card()
         }
         .buttonStyle(.plain)
-        .accessibilityHint("قريبا")
+        .accessibilityHint(title == "بطاقة" ? "" : "قريبا")
     }
 
     private var continueReading: some View {
@@ -192,12 +194,30 @@ struct LibraryView: View {
                 ContentUnavailableView("لا تنزيلات", systemImage: "arrow.down.circle",
                                        description: Text("حفظ التلاوات للاستماع دون إنترنت يتاح بعد إذن مصدر التلاوات"))
             case .plans:
-                ContentUnavailableView("لا خطط", systemImage: "calendar",
-                                       description: Text("خطة الختمة قريبا"))
+                List {
+                    NavigationLink { KhatmaView() } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("خطة الختمة").font(.headline)
+                                Text(khatmaLine).font(.caption).foregroundStyle(.secondary)
+                            }
+                        } icon: { Image(systemName: "calendar").foregroundStyle(Brand.primary) }
+                        .frame(minHeight: Brand.minTap)
+                    }
+                }
             }
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("مكتبتي")
+    }
+
+    @AppStorage(KhatmaStore.key) private var khatmaRaw = ""
+
+    private var khatmaLine: String {
+        guard let p = KhatmaStore.load(khatmaRaw) else { return "وزع الختمة على الأيام والصلوات" }
+        let d = min(max(p.day(on: Date()), 1), p.days)
+        guard let r = p.range(day: d) else { return "اليوم \(Num.int(d)) من \(Num.int(p.days))" }
+        return "اليوم \(Num.int(d)) من \(Num.int(p.days)) · ورد اليوم: صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound))"
     }
 
     @ViewBuilder private var favoritesList: some View {
