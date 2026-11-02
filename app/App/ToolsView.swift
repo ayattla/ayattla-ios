@@ -46,7 +46,7 @@ enum ToolItem: String, CaseIterable, Identifiable {
         }
     }
 
-    var isReady: Bool { [.prayer, .qibla, .hijri, .occasions, .zakat, .mosques].contains(self) }
+    var isReady: Bool { [.prayer, .qibla, .hijri, .occasions, .zakat, .mosques, .azkar, .tasbih].contains(self) }
 
     @ViewBuilder var destination: some View {
         switch self {
@@ -56,6 +56,8 @@ enum ToolItem: String, CaseIterable, Identifiable {
         case .occasions: OccasionsView()
         case .zakat: ZakatView()
         case .mosques: MosquesView()
+        case .azkar: AzkarView()
+        case .tasbih: TasbihView()
         default: PlaceholderScreen(title: title)
         }
     }

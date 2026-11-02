@@ -66,21 +66,10 @@ struct RootView: View {
         switch t {
         case .tools: ToolsView()
         case .home: HomeView()
-        default: PlaceholderScreen(title: t.title)
+        case .quran: QuranView()
+        case .library: LibraryView()
+        case .studio: PlaceholderScreen(title: t.title)
         }
-    }
-}
-
-/// Home is still a placeholder; it already carries the settings button from design/Main.dc.html.
-struct HomeView: View {
-    var body: some View {
-        PlaceholderScreen(title: Tab.home.title)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
-                        .accessibilityLabel("الإعدادات")
-                }
-            }
     }
 }
 
@@ -121,7 +110,7 @@ struct StartView: View {
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
@@ -133,6 +122,14 @@ enum DebugScreen {
         case "mosques": MosquesView()
         case "settings": SettingsView()
         case "onboarding": OnboardingView()
+        case "quran": QuranView()
+        case "reader": MushafReader(startPage: 2)
+        case "azkar": AzkarView()
+        case "azkar-session":
+            if let c = (try? ContentLibrary.shared.store?.azkarCategories())?.first { AzkarSession(category: c) }
+        case "tasbih": TasbihView()
+        case "library": LibraryView()
+        case "home-feed": HomeView()
         default: ToolsView()
         }
     }

@@ -1,0 +1,4 @@
+*.sqlite
+*.sha256
+*.ttf
+*-OFL.txt
