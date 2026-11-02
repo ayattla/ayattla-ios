@@ -42,7 +42,7 @@ class BuildTest(unittest.TestCase):
             {"id": 1, "text": "ذكر اختبار", "count": 3, "reference": "مرجع"}]}]},
                   open(self.z, "w", encoding="utf-8"), ensure_ascii=False)
         self.r = os.path.join(self.tmp, "meta.json")
-        json.dump({"reciters": [{"id": "r1", "name": "قارئ", "folder": "Folder_64kbps", "highlight": True}]},
+        json.dump({"reciters": [{"id": "basit_mujawwad", "name": "قارئ", "folder": "Folder_64kbps", "highlight": True}]},
                   open(self.r, "w", encoding="utf-8"), ensure_ascii=False)
         self.h = os.path.join(self.tmp, "tasbih.html")
         open(self.h, "w", encoding="utf-8").write("<script>const Z=['عبارة أولى','عبارة ثانية'];let zi=0;</script>")
@@ -55,13 +55,25 @@ class BuildTest(unittest.TestCase):
         self.d = os.path.join(self.tmp, "duas.json")
         json.dump({"quran": [{"s": 2, "a": 1, "b": 2, "ayat": []}], "needs": [{"need": "حاجة", "chapters": []}]},
                   open(self.d, "w", encoding="utf-8"), ensure_ascii=False)
+        self.qf = os.path.join(self.tmp, "qf.json")
+        json.dump({"reciters": [{"id": 9, "name": "Other", "style": {"name": "Murattal"}},
+                                {"id": 2, "name": "Abdul Basit Abdul Samad", "style": {"name": "Murattal"}},
+                                {"id": 1, "name": "Abdul Basit Abdul Samad", "style": {"name": "Mujawwad"}}]},
+                  open(self.qf, "w", encoding="utf-8"))
+        self.rq = os.path.join(self.tmp, "ruqya.json")
+        json.dump({"status": "x", "source_chapter": "باب", "items": [{"s": 1, "a": 1, "b": 2, "ayat": []}]},
+                  open(self.rq, "w", encoding="utf-8"), ensure_ascii=False)
+        self.asma = os.path.join(self.tmp, "asma.html")
+        open(self.asma, "w", encoding="utf-8").write(
+            "<script>const AS=" + json.dumps([{"n": i, "name": f"اسم {i}"} for i in range(1, 100)], ensure_ascii=False) + ";</script>")
         self.out = os.path.join(self.tmp, "content-v1.sqlite")
 
     def run_build(self, *extra):
         return bcp.build(bcp.argparse.Namespace(version=1, quran=self.q, edition=list(extra) or None,
                                                 azkar=self.z, out=self.out, allow_partial=True,
                                                 reciters=self.r, tasbih_html=self.h,
-                                                guide_html=self.g, duas=self.d))
+                                                guide_html=self.g, duas=self.d, qf_reciters=self.qf,
+                                                ruqya=self.rq, asma_html=self.asma))
 
     def test_counts_and_text_kept_exactly(self):
         r = self.run_build(f"muyassar={self.t}")
@@ -107,7 +119,15 @@ class BuildTest(unittest.TestCase):
         r = self.run_build()
         db = sqlite3.connect(self.out)
         self.assertEqual(r["reciters"], 1)
-        self.assertEqual(db.execute("select folder, highlight from reciter").fetchall(), [("Folder_64kbps", 1)])
+        self.assertEqual(db.execute("select folder, highlight, qf_id from reciter").fetchall(), [("Folder_64kbps", 1, 1)])
+
+    def test_ruqya_and_asma(self):
+        r = self.run_build()
+        db = sqlite3.connect(self.out)
+        self.assertEqual((r["ruqya"], r["asma"]), (1, 99))
+        self.assertEqual(json.loads(db.execute("select value from meta where key='ruqya'").fetchone()[0])["items"],
+                         [{"s": 1, "a": 1, "b": 2}])
+        self.assertEqual(json.loads(db.execute("select value from meta where key='asma'").fetchone()[0])[98]["name"], "اسم 99")
 
     def test_search_ignores_tashkeel(self):
         self.run_build()

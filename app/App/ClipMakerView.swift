@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import AVFoundation
 import PhotosUI
 import AyatDesign
 import AyatContent
@@ -15,6 +16,21 @@ struct ClipJob {
     var settings: EditorSettings? = nil
     /// Animated background or a photo with the slow zoom; nil = still background drawn in each frame.
     var motion: MotionBackground? = nil
+    /// Word highlighting with Quran.com timings (chapter recitation id and color), as on the site.
+    var highlight: (qfID: Int, color: UInt32)? = nil
+}
+
+/// Highlight colors on the site's clip maker (--c-hi-gold, --c-hi-green, --c-hi-sky).
+enum HighlightColor: UInt32, CaseIterable, Identifiable {
+    case gold = 0xF7CD6E, green = 0x7EE0B5, sky = 0x9BD3FF
+    var id: UInt32 { rawValue }
+    var name: String {
+        switch self {
+        case .gold: "ذهبي"
+        case .green: "أخضر"
+        case .sky: "سماوي"
+        }
+    }
 }
 
 /// Background choices for clips: the site's six still and four animated backgrounds, or a photo.
@@ -54,6 +70,8 @@ struct ClipMakerView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
     @State private var slowZoom = true
+    @State private var highlight = true
+    @State private var hiColor = HighlightColor.gold
     private let lib = ContentLibrary.shared
 
     init(surah: Int = 1, from: Int = 1, to: Int = 7, ratio: CardOptions.Ratio = .story, backgroundID: String = "emerald",
@@ -82,10 +100,21 @@ struct ClipMakerView: View {
                 Stepper("إلى آية \(Num.int(to))", value: $to, in: from...min(ayahCount, from + Self.maxAyat - 1))
             } header: { Text("الآيات") } footer: { Text("حتى \(Num.int(Self.maxAyat)) آية في المقطع، كما في الموقع.") }
 
-            Section("القارئ") {
+            Section {
                 Picker("القارئ", selection: $reciter) {
-                    ForEach(Catalog.reciters) { Text($0.name).tag($0.id) }
+                    ForEach(Catalog.reciters) { Text($0.wordHighlight ? "\($0.name) ★" : $0.name).tag($0.id) }
                 }
+                if qfID != nil {
+                    Toggle("تظليل الكلمة", isOn: $highlight)
+                    if highlight {
+                        Picker("لون التظليل", selection: $hiColor) {
+                            ForEach(HighlightColor.allCases) { Text($0.name).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+            } header: { Text("القارئ") } footer: {
+                Text(qfID != nil ? "تظليل الكلمات بتوقيتات Quran.com وتلاوة السورة منه، كما في الموقع." : "★ القراء الذين يدعمون تظليل الكلمات.")
             }
             Section("الشكل") {
                 Picker("المقاس", selection: $ratio) { ForEach(CardOptions.Ratio.allCases) { Text($0.label).tag($0) } }
@@ -191,6 +220,7 @@ struct ClipMakerView: View {
     }
 
     private var ayahCount: Int { lib.surah(surah)?.ayahCount ?? 1 }
+    private var qfID: Int? { (try? lib.store?.reciterQuranComIDs())?[reciter] }
     private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
     private var reference: String {
         let s = lib.surah(surah)?.shortName ?? ""
@@ -228,7 +258,9 @@ struct ClipMakerView: View {
         case .photo: if let photo { motion = .photo(photo, slowZoom: slowZoom) }
         case .still: motion = nil
         }
-        return ClipJob(items: frames, ratio: ratio, folder: folder, title: reference, settings: settings, motion: motion)
+        var job = ClipJob(items: frames, ratio: ratio, folder: folder, title: reference, settings: settings, motion: motion)
+        if highlight, let id = qfID { job.highlight = (id, hiColor.rawValue) }
+        return job
     }
 
     /// One frame per ayah; a basmala frame first when the clip starts at ayah 1 of a surah that has it
@@ -317,6 +349,15 @@ struct ClipExportView: View {
             let fetcher = RecitationFetcher(folder: job.folder)
             defer { fetcher.cleanUp() }
             do {
+                if let hi = job.highlight {
+                    let out = try await renderHighlighted(qfID: hi.qfID, color: hi.color)
+                    let thumb = Self.thumbnail(first: CardCanvas.render(job.items.last!.model, photo: job.motion == nil ? job.photo : nil),
+                                               motion: job.motion, size: job.ratio.size)
+                    try? ProjectStore.shared.add(kind: .clip, title: job.title, file: out, thumbnail: thumb,
+                                                 ratio: job.ratio.rawValue, settings: job.settings)
+                    phase = .done(out)
+                    return
+                }
                 let audio = try await fetcher.fetch(job.items.map { ($0.surah, $0.ayah) }) { p in
                     Task { @MainActor in phase = .working("جلب التلاوة", p * 0.3) }
                 }
@@ -344,6 +385,56 @@ struct ClipExportView: View {
                 phase = .failed("حدث خطأ أثناء الإنشاء")
             }
         }
+    }
+
+    /// Word highlighting as on the site: the reciter's chapter audio and word timings from Quran.com,
+    /// cut to the chosen ayat; one text frame per word. Ayat whose word count differs from the timings
+    /// are shown without highlighting.
+    @MainActor private func renderHighlighted(qfID: Int, color: UInt32) async throws -> URL {
+        let clip = job.items.filter { $0.surah == job.items.last!.surah }
+        let surah = clip[0].surah
+        phase = .working("جلب توقيتات الكلمات", 0.02)
+        let rec = try await QF.recitation(qfID, chapter: surah)
+        let stamps = Dictionary(rec.audio_file.timestamps.map { ($0.verse_key, $0) }, uniquingKeysWith: { a, _ in a })
+        guard let first = stamps["\(surah):\(clip.first!.ayah)"], let last = stamps["\(surah):\(clip.last!.ayah)"],
+              let audioURL = URL(string: rec.audio_file.audio_url) else { throw URLError(.cannotParseResponse) }
+        phase = .working("جلب التلاوة", 0.05)
+        let (tmp, resp) = try await URLSession.shared.download(from: audioURL)
+        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+        let audio = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp3")
+        try FileManager.default.moveItem(at: tmp, to: audio)
+        defer { try? FileManager.default.removeItem(at: audio) }
+        try Task.checkCancellation()
+
+        let start = Double(first.timestamp_from) / 1000, end = Double(last.timestamp_to) / 1000
+        let photo = job.motion == nil ? job.photo : nil
+        var keys: [VideoEngine.Keyframe] = []
+        for item in clip {
+            guard let st = stamps["\(surah):\(item.ayah)"] else { continue }
+            let base = Double(st.timestamp_from) / 1000 - start
+            let segs = st.segments.filter { $0.count >= 3 }
+            let words = QuranWords.count(item.model.text)
+            if !segs.isEmpty, segs.allSatisfy({ Int($0[0]) >= 1 && Int($0[0]) <= words }) {
+                for (i, seg) in segs.enumerated() {
+                    var m = item.model
+                    m.highlightWord = Int(seg[0]) - 1
+                    m.highlightColor = color
+                    let t = i == 0 ? min(base, seg[1] / 1000 - start) : seg[1] / 1000 - start
+                    keys.append(.init(time: max(0, t)) { CardCanvas.render(m, photo: photo) })
+                }
+            } else {
+                let m = item.model
+                keys.append(.init(time: max(0, base)) { CardCanvas.render(m, photo: photo) })
+            }
+        }
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("آيات-تتلى-\(UUID().uuidString.prefix(6)).mp4")
+        try await VideoEngine.renderTimeline(audio: audio,
+                                             range: CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600),
+                                                                end: CMTime(seconds: end, preferredTimescale: 600)),
+                                             keyframes: keys, size: job.ratio.size, to: out, background: job.motion) { p in
+            Task { @MainActor in phase = .working("إنشاء المقطع", 0.1 + 0.9 * p) }
+        }
+        return out
     }
 
     /// First frame for Library: the text over the background it was rendered on.

@@ -14,7 +14,10 @@ struct AyatTutlaApp: App {
                 .tint(Brand.primary)
         }
         .onChange(of: phase) { _, p in
-            if p == .active { Task { await Reminders.reschedule() } }
+            if p == .active {
+                QF.purgeOld()
+                Task { await Reminders.reschedule() }
+            }
         }
     }
 }
@@ -160,6 +163,11 @@ enum DebugScreen {
         case "guide": PrayerGuideView()
         case "radio": RadioView()
         case "hifz": HifzTestView()
+        case "tajweed": TajweedView()
+        case "wbw": WordByWordView()
+        case "ruqya": RuqyaView()
+        case "asma": AsmaView()
+        case "downloads": DownloadsView().navigationTitle("التنزيلات")
         default: ToolsView()
         }
     }

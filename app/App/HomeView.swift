@@ -216,9 +216,7 @@ struct LibraryView: View {
             switch section {
             case .favorites: favoritesList
             case .projects: ProjectsGrid()
-            case .downloads:
-                ContentUnavailableView("لا تنزيلات", systemImage: "arrow.down.circle",
-                                       description: Text("حفظ التلاوات للاستماع دون إنترنت يتاح بعد إذن مصدر التلاوات"))
+            case .downloads: DownloadsView()
             case .plans:
                 List {
                     NavigationLink { KhatmaView() } label: {
