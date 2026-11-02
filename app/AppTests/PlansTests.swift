@@ -37,7 +37,7 @@ final class PlansTests: XCTestCase {
     }
 
     func testCardSizesMatchSite() {
-        XCTAssertEqual(CardOptions.Ratio.allCases.map(\.rawValue).sorted(), ["1:1", "16:9", "4:5", "9:16"])
+        XCTAssertEqual(Set(CardOptions.Ratio.allCases.map(\.rawValue)), ["1:1", "16:9", "4:5", "9:16"])
         XCTAssertEqual(CardOptions.Ratio.story.size, CGSize(width: 1080, height: 1920))
         XCTAssertEqual(CardOptions.templates.count, 6)
     }
