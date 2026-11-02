@@ -121,9 +121,12 @@ struct ToolTile: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: item.symbol).font(.title3)
-                .foregroundStyle(item.isReady ? Brand.primary : .secondary)
+                .foregroundStyle(item.isReady ? Brand.primary : Brand.muted)
             Text(item.title).font(.subheadline).multilineTextAlignment(.center).lineLimit(2)
-                .foregroundStyle(item.isReady ? .primary : .secondary)
+                .foregroundStyle(.primary)
+            if !item.isReady {
+                Text("قريبا").font(.caption2).foregroundStyle(Brand.muted)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 88)
         .padding(.horizontal, 6)

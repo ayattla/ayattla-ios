@@ -19,6 +19,7 @@ struct MosquesView: View {
     enum Phase: Equatable { case idle, searching, done, failed }
 
     static let radii = [1, 3, 5]
+    static let maxPins = 12
 
     @AppStorage("mosques.radius") private var radiusKm = 3
     @State private var location = LocationService()
@@ -34,6 +35,7 @@ struct MosquesView: View {
                     ForEach(Self.radii, id: \.self) { Text("\(Num.int($0)) كم").tag($0) }
                 }
                 .pickerStyle(.segmented)
+                .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
 
@@ -110,7 +112,8 @@ struct MosquesView: View {
     private var map: some View {
         Map(position: $camera) {
             UserAnnotation()
-            ForEach(mosques) { m in
+            // Nearest only: dozens of pins on a 240pt map are unreadable; the full list is below.
+            ForEach(mosques.prefix(Self.maxPins)) { m in
                 Marker(m.name, systemImage: "building.columns", coordinate: m.coordinate).tint(Brand.primary)
             }
         }
@@ -167,7 +170,7 @@ struct MosquesView: View {
             found += resp.mapItems.map { item in
                 let p = item.placemark.coordinate
                 return Mosque(id: "\(item.name ?? "")|\(Int(p.latitude * 1e4))|\(Int(p.longitude * 1e4))",
-                              name: item.name ?? "مسجد", address: item.placemark.title,
+                              name: item.name ?? "مسجد", address: Self.shortAddress(item.placemark),
                               coordinate: p, item: item)
             }
         }
@@ -175,6 +178,12 @@ struct MosquesView: View {
         mosques = Self.nearby(found, from: c, radiusKm: radiusKm)
         camera = .region(region)
         phase = .done
+    }
+
+    /// Street and district only — no postcode, building code or country (they truncate on a phone).
+    static func shortAddress(_ p: MKPlacemark) -> String? {
+        let parts = [p.thoroughfare, p.subLocality ?? p.locality].compactMap { $0 }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: "، ")
     }
 
     /// "مسجد واحد"، "مسجدان"، "٣ مساجد"، "١١ مسجدا".

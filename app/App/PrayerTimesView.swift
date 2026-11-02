@@ -91,13 +91,19 @@ struct PrayerTimesView: View {
                         in: RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
 
+            if d.next.isTomorrow {
+                Text("مواقيت الغد").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityAddTraits(.isHeader)
+            }
             VStack(spacing: 0) {
+                let shown = d.next.isTomorrow ? d.tomorrow : d.today
                 ForEach(Prayer.allCases) { p in
-                    let isNext = !d.next.isTomorrow && p == d.next.prayer
+                    let isNext = p == d.next.prayer
                     HStack {
                         Text(p.name).fontWeight(isNext ? .semibold : .regular)
                         Spacer()
-                        Text(Num.time(d.today.hours(p)))
+                        Text(Num.time(shown.hours(p)))
                             .foregroundStyle(isNext ? Brand.primaryInk : .secondary)
                             .fontWeight(isNext ? .semibold : .regular)
                     }
