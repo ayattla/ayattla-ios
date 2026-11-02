@@ -88,7 +88,10 @@ struct TasbihView: View {
             Button("إضافة") { addPhrase() }
             Button("إلغاء", role: .cancel) { newPhrase = "" }
         }
-        .onAppear(perform: rollDay)
+        .onAppear {
+            rollDay()
+            if phrase.isEmpty, let first = sourcePhrases.first { phrase = first }
+        }
     }
 
     private var sourcePhrases: [String] { ContentLibrary.shared.tasbihPhrases }
