@@ -1,0 +1,20 @@
+name: Discover site APIs (temporary, read only)
+on:
+  push:
+    branches: ['claude/discover-*']
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read endpoints
+        run: |
+          show() { echo "=== $1"; curl -sS -m 30 "https://ayattla.com$1" -o out.json -w "HTTP %{http_code} %{content_type} %{size_download}\n"; head -c 2500 out.json; echo; }
+          show /api/duas
+          show "/api/hadith/search?q=%D8%A7%D9%84%D8%B5%D9%84%D8%A7%D8%A9"
+          show /api/radios
+          show /api/azkar/audio-map
+          for p in hadith hadith-checker prayer-guide duas radio asma-ul-husna ruqya hifz-test; do
+            curl -sS -m 30 "https://ayattla.com/tools/$p" -o p.html -w "=== /tools/$p HTTP %{http_code}\n"
+            grep -o "fetch([^)]*)" p.html | sort -u | head -10
+            grep -o "/api/[a-zA-Z0-9_/{}.-]*" p.html | sort -u | head -15
+          done
