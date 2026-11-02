@@ -75,7 +75,8 @@ final class MotionTests: XCTestCase {
         try await VideoEngine.render([.init(frame: overlay, audio: url)], size: CGSize(width: 540, height: 540), to: out,
                                      background: .style(.aurora))
         let asset = AVURLAsset(url: out)
-        XCTAssertEqual(try await asset.load(.duration).seconds, 1, accuracy: 0.15)
+        let duration = try await asset.load(.duration).seconds
+        XCTAssertEqual(duration, 1, accuracy: 0.15)
         let gen = AVAssetImageGenerator(asset: asset)
         gen.requestedTimeToleranceBefore = .zero; gen.requestedTimeToleranceAfter = .zero
         let f1 = try await gen.image(at: CMTime(value: 1, timescale: 10)).image
