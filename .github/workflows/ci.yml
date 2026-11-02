@@ -1,0 +1,73 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packages:
+    name: Swift packages (swift test)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version && swift --version
+      - name: Test AyatCalc
+        working-directory: app/Packages/AyatCalc
+        run: swift test
+      - name: Test AyatContent
+        working-directory: app/Packages/AyatContent
+        run: swift test
+      - name: Test AyatTiming
+        working-directory: app/Packages/AyatTiming
+        run: swift test
+
+  app:
+    name: App build, tests and screenshots (simulator)
+    runs-on: macos-15
+    timeout-minutes: 45
+    needs: packages
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: app
+        run: xcodegen generate
+      - name: Pick simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Build and test
+        working-directory: app
+        run: |
+          xcodebuild -project AyatTutla.xcodeproj -scheme AyatTutla \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM= \
+            -derivedDataPath build test | tee build.log | grep -E "error:|warning: |Test Suite|Executed|BUILD|TEST" || true
+          test ${PIPESTATUS[0]} -eq 0
+      - name: Screenshot on simulator
+        if: success()
+        run: |
+          xcrun simctl boot "${{ steps.sim.outputs.udid }}" || true
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "${{ steps.sim.outputs.udid }}" "$APP"
+          xcrun simctl launch "${{ steps.sim.outputs.udid }}" com.ayattla.AyatTutla
+          sleep 8
+          mkdir -p shots && xcrun simctl io "${{ steps.sim.outputs.udid }}" screenshot shots/home.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-output
+          path: |
+            app/build.log
+            shots/
+          if-no-files-found: ignore

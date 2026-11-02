@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>نظام التصميم</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;family=Amiri+Quran&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2C5E37}a:hover{color:#1F4628}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1010px; height: 820px; box-sizing: border-box; background: #FFFFFF; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20; padding: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px">
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 600">الألوان</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #2F6B3B"></div><span style="font-size: 13px; font-weight: 500">أخضر داكن</span><span style="font-size: 12px; color: #56665B">#2F6B3B</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #427E45"></div><span style="font-size: 13px; font-weight: 500">الأساسي</span><span style="font-size: 12px; color: #56665B">#427E45</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #2E9145"></div><span style="font-size: 13px; font-weight: 500">التمييز</span><span style="font-size: 12px; color: #56665B">#2E9145</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #2C5E37"></div><span style="font-size: 13px; font-weight: 500">حبر الروابط</span><span style="font-size: 12px; color: #56665B">#2C5E37</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #EEF5EF; border: 1px solid #E3EBE5"></div><span style="font-size: 13px; font-weight: 500">الصبغة الفاتحة</span><span style="font-size: 12px; color: #56665B">#EEF5EF</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 72px; border-radius: 14px; background: #F3D27A"></div><span style="font-size: 13px; font-weight: 500">تظليل الكلمة</span><span style="font-size: 12px; color: #56665B">[لون الموقع الحالي]</span></div>
+    </div>
+
+    <h2 style="margin: 12px 0 0; font-size: 20px; font-weight: 600">الأزرار والعناصر</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+      <button style="height: 44px; padding: 0 22px; border-radius: 22px; border: 0; background: #427E45; color: #FFFFFF; font: 600 14px 'IBM Plex Sans Arabic', sans-serif">إجراء أساسي</button>
+      <button style="height: 44px; padding: 0 22px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; color: #1C2B20; font: 500 14px 'IBM Plex Sans Arabic', sans-serif">ثانوي</button>
+      <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 0; background: #EEF5EF; color: #2C5E37; font: 500 13px 'IBM Plex Sans Arabic', sans-serif">شريحة</button>
+      <button disabled style="height: 44px; padding: 0 22px; border-radius: 22px; border: 0; background: #E3EBE5; color: #6B7A70; font: 500 14px 'IBM Plex Sans Arabic', sans-serif">معطل</button>
+    </div>
+    <div style="border-radius: 16px; border: 1px solid #E3EBE5; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 600">بطاقة</span><span style="font-size: 13px; color: #56665B">زوايا ١٦ · حد ١ بكسل #E3EBE5 · بلا ظل</span></div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 600">الخطوط</h2>
+    <div style="display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #E3EBE5; padding-bottom: 16px">
+      <span style="font-size: 32px; font-weight: 600">عنوان كبير ٣٢</span>
+      <span style="font-size: 22px; font-weight: 600">عنوان الشاشة ٢٢</span>
+      <span style="font-size: 17px; font-weight: 600">عنوان القسم ١٧</span>
+      <span style="font-size: 15px; line-height: 1.8">نص الواجهة ١٥ — IBM Plex Sans Arabic، بلا تشكيل</span>
+      <span style="font-size: 12px; color: #56665B">تسمية صغيرة ١٢</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; color: #56665B">النص القرآني — Amiri Quran، ارتفاع السطر ٢٫٢</span>
+      <p style="margin: 0; font-family: 'Amiri Quran', serif; font-size: 26px; line-height: 2.2; color: #5E5A48">[نص من المصدر المعتمد فقط]</p>
+    </div>
+    <h2 style="margin: 8px 0 0; font-size: 20px; font-weight: 600">المسافات والقواعد</h2>
+    <div style="display: flex; align-items: flex-end; gap: 12px">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 4px; height: 4px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">٤</span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 8px; height: 8px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">٨</span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 12px; height: 12px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">١٢</span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 16px; height: 16px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">١٦</span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 20px; height: 20px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">٢٠</span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 32px; height: 32px; background: #427E45"></div><span style="font-size: 11px; color: #56665B">٣٢</span></div>
+    </div>
+    <ul style="margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.9; color: #44544A">
+      <li>من اليمين لليسار في كل الشاشات، والأرقام عربية هندية</li>
+      <li>أهداف اللمس ٤٤ نقطة على الأقل</li>
+      <li>الوضع الداكن ودعم Dynamic Type وVoiceOver</li>
+      <li>اسم المصور لا يظهر في أي مكان</li>
+    </ul>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1010,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>محرر المقطع</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;family=Amiri+Quran&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2C5E37}a:hover{color:#1F4628}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #F7FAF7; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 54px 16px 8px; display: flex; align-items: center; justify-content: space-between">
+    <button aria-label="إغلاق" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C2B20" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    <span style="font-size: 16px; font-weight: 600">مقطع قرآني</span>
+    <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 0; background: {{accent}}; color: #FFFFFF; font: 600 14px 'IBM Plex Sans Arabic', sans-serif">تصدير</button>
+  </div>
+
+  <div style="display: flex; justify-content: center; padding: 6px 0 12px">
+    <div style="width: 216px; height: 384px; border-radius: 18px; overflow: hidden; position: relative; background: linear-gradient(180deg, #2B3A31 0%, #44594A 55%, #1B2620 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 18px; box-sizing: border-box; gap: 12px">
+      <div style="position: absolute; inset: 0; background: rgba(0,0,0,{{dim}})"></div>
+      <span style="position: relative; font-size: 10px; color: rgba(255,255,255,.8)">[صورة مسجد من Pixabay]</span>
+      <p style="position: relative; margin: 0; font-family: 'Amiri Quran', serif; font-size: 17px; line-height: 2.2; color: #FFFFFF; text-align: center">[نص الآيات مع <span style="color: {{highlight}}">تظليل الكلمة</span>]</p>
+      <p style="position: relative; margin: 0; font-size: 10px; color: rgba(255,255,255,.85); text-align: center">[الترجمة المختارة]</p>
+      <span style="position: absolute; bottom: 10px; font-size: 9px; color: rgba(255,255,255,.7)">ayattla.com</span>
+    </div>
+  </div>
+
+  <div style="padding: 0 16px; display: flex; align-items: center; gap: 10px">
+    <button aria-label="تشغيل المعاينة" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: #EEF5EF; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="#2C5E37" aria-hidden="true"><path d="M7 4l13 8-13 8z"></path></svg></button>
+    <div style="flex: 1; height: 44px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E3EBE5; display: flex; gap: 3px; padding: 6px; box-sizing: border-box">
+      <div style="flex: 3; border-radius: 4px; background: #CFE2D3"></div><div style="flex: 2; border-radius: 4px; background: #CFE2D3"></div><div style="flex: 4; border-radius: 4px; background: {{accent}}"></div><div style="flex: 2; border-radius: 4px; background: #CFE2D3"></div>
+    </div>
+    <span style="font-size: 12px; color: #56665B">٠:٤٨</span>
+  </div>
+
+  <div style="margin-top: 14px; flex: 1; background: #FFFFFF; border-top: 1px solid #E3EBE5; border-radius: 22px 22px 0 0; padding: 14px 16px 0; display: flex; flex-direction: column; gap: 14px">
+    <div role="tablist" aria-label="أقسام المحرر" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px">
+      <button role="tab" aria-selected="false" style="height: 44px; border: 0; border-radius: 12px; background: transparent; font: 500 12px 'IBM Plex Sans Arabic', sans-serif; color: #56665B">الآيات</button>
+      <button role="tab" aria-selected="false" style="height: 44px; border: 0; border-radius: 12px; background: transparent; font: 500 12px 'IBM Plex Sans Arabic', sans-serif; color: #56665B">القارئ</button>
+      <button role="tab" aria-selected="true" style="height: 44px; border: 0; border-radius: 12px; background: #EEF5EF; font: 600 12px 'IBM Plex Sans Arabic', sans-serif; color: #2C5E37">الخلفية</button>
+      <button role="tab" aria-selected="false" style="height: 44px; border: 0; border-radius: 12px; background: transparent; font: 500 12px 'IBM Plex Sans Arabic', sans-serif; color: #56665B">النص</button>
+      <button role="tab" aria-selected="false" style="height: 44px; border: 0; border-radius: 12px; background: transparent; font: 500 12px 'IBM Plex Sans Arabic', sans-serif; color: #56665B">المقاس</button>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 14px; font-weight: 600">صور المساجد</span>
+      <a href="#" style="font-size: 12px">بحث في Pixabay</a>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+      <button aria-label="خلفية ١" style="aspect-ratio: 3/4; border-radius: 10px; border: 2px solid {{accent}}; background: linear-gradient(180deg, #4C6656, #22322A)"></button>
+      <button aria-label="خلفية ٢" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #8A7A5C, #3D3428)"></button>
+      <button aria-label="خلفية ٣" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #5D7891, #23324A)"></button>
+      <button aria-label="خلفية ٤" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #B49B6E, #5A4630)"></button>
+      <button aria-label="خلفية ٥" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #3E5A4A, #12201A)"></button>
+      <button aria-label="خلفية ٦" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #6B8070, #2E3B33)"></button>
+      <button aria-label="خلفية ٧" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #2C3E58, #0E1626)"></button>
+      <button aria-label="خلفية ٨" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #A08864, #4A3B28)"></button>
+      <button aria-label="خلفية ٩" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #557063, #1F2D26)"></button>
+      <button aria-label="خلفية ١٠" style="aspect-ratio: 3/4; border-radius: 10px; border: 0; background: linear-gradient(180deg, #7C8C9E, #353F4C)"></button>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button style="flex: 1; height: 44px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; font: 500 13px 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20">من الصور</button>
+      <button style="flex: 1; height: 44px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; font: 500 13px 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20">الكاميرا</button>
+      <button style="flex: 1; height: 44px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; font: 500 13px 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20">خلفيات مدمجة</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#427E45"},"highlight":{"editor":"color","default":"#F3D27A"},"dim":{"editor":"number","default":0.25,"min":0,"max":0.8,"step":0.05},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#427E45', highlight: this.props.highlight ?? '#F3D27A', dim: this.props.dim ?? 0.25 };
+}
+}
+</script>
+</body>
+</html>

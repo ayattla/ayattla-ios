@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>التنزيلات</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2C5E37}a:hover{color:#1F4628}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #F7FAF7; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 54px 16px 8px; display: flex; align-items: center; justify-content: space-between">
+    <button aria-label="رجوع" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C2B20" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+    <span style="font-size: 16px; font-weight: 600">التنزيلات</span>
+    <span style="width: 44px"></span>
+  </div>
+
+  <div style="margin: 8px 16px 0; border-radius: 18px; background: #FFFFFF; border: 1px solid #E3EBE5; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 600">المساحة المستخدمة</span><span style="color: #44544A">[الحجم] من [المتاح]</span></div>
+    <div style="height: 10px; border-radius: 5px; background: #EEF5EF; display: flex; overflow: hidden"><div style="width: 30%; background: #427E45"></div><div style="width: 12%; background: #9DBFA4"></div><div style="width: 6%; background: #C8A84E"></div></div>
+    <div style="display: flex; gap: 14px; font-size: 12px; color: #44544A">
+      <span style="display: flex; align-items: center; gap: 4px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #427E45"></span>التلاوات</span>
+      <span style="display: flex; align-items: center; gap: 4px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #9DBFA4"></span>حزمة المحتوى</span>
+      <span style="display: flex; align-items: center; gap: 4px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C8A84E"></span>المشاريع</span>
+    </div>
+  </div>
+
+  <span style="margin: 18px 22px 8px; font-size: 13px; color: #56665B">التلاوات</span>
+  <div style="margin: 0 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3EBE5; overflow: hidden">
+    <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #E3EBE5">
+      <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px">[اسم القارئ]</span><span style="font-size: 12px; color: #56665B">٣٠ سورة · [الحجم]</span></div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#427E45" stroke-width="2" aria-hidden="true"><path d="M5 12l4 4 10-10"></path></svg>
+    </div>
+    <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #E3EBE5">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 15px">[اسم القارئ]</span><div style="height: 4px; border-radius: 2px; background: #EEF5EF"><div style="width: {{progress}}%; height: 4px; border-radius: 2px; background: #427E45"></div></div><span style="font-size: 12px; color: #56665B">جار التنزيل · {{progress}}٪</span></div>
+      <button aria-label="إيقاف التنزيل" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="#2C5E37" aria-hidden="true"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg></button>
+    </div>
+    <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+      <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px">[اسم القارئ]</span><span style="font-size: 12px; color: #56665B">المصحف كاملا · [الحجم]</span></div>
+      <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 0; background: #EEF5EF; color: #2C5E37; font: 600 13px 'IBM Plex Sans Arabic', sans-serif">تنزيل</button>
+    </div>
+  </div>
+
+  <span style="margin: 18px 22px 8px; font-size: 13px; color: #56665B">حزمة المحتوى</span>
+  <div style="margin: 0 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3EBE5; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px">المصحف والتفسير والأذكار</span><span style="font-size: 12px; color: #56665B">الإصدار [رقم] · محدثة</span></div>
+    <a href="#" style="font-size: 13px">التحقق</a>
+  </div>
+  <div style="margin: 14px 16px 0; display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3EBE5"><span style="font-size: 14px">التنزيل عبر Wi-Fi فقط</span><span aria-hidden="true" style="width: 50px; height: 30px; border-radius: 15px; background: #427E45; display: flex; align-items: center; padding: 3px; box-sizing: border-box"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"progress":{"editor":"number","default":64,"min":0,"max":100,"step":1},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return { progress: this.props.progress ?? 64 };
+}
+}
+</script>
+</body>
+</html>

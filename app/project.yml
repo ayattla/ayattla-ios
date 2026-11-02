@@ -1,0 +1,44 @@
+# XcodeGen spec — on the Mac:  brew install xcodegen && cd app && xcodegen && open AyatTutla.xcodeproj
+# STATUS: not generated or built yet (written without a Mac). Bundle id and team are placeholders.
+name: AyatTutla
+options:
+  bundleIdPrefix: com.ayattla
+  deploymentTarget: {iOS: "17.0"}
+  developmentLanguage: ar
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: TODO_TEAM_ID
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  AyatCalc: {path: Packages/AyatCalc}
+  AyatContent: {path: Packages/AyatContent}
+  AyatTiming: {path: Packages/AyatTiming}
+targets:
+  AyatTutla:
+    type: application
+    platform: iOS
+    sources: [App]
+    dependencies:
+      - package: AyatCalc
+      - package: AyatContent
+      - package: AyatTiming
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: آيات تتلى
+        CFBundleDevelopmentRegion: ar
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSLocationWhenInUseUsageDescription: لحساب مواقيت الصلاة واتجاه القبلة والمساجد القريبة
+        NSPhotoLibraryAddUsageDescription: لحفظ المقاطع والبطاقات في الصور
+        NSPhotoLibraryUsageDescription: لاختيار صورة خلفية من جهازك
+        NSCameraUsageDescription: لالتقاط صورة خلفية
+        ITSAppUsesNonExemptEncryption: false
+  AyatTutlaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    dependencies: [{target: AyatTutla}]

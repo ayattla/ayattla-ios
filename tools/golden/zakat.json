@@ -1,0 +1,159 @@
+{
+ "source": "transcription of ayattla.com/tools/zakat calc(): nisab 85g gold or 595g silver, rate 2.5%",
+ "cases": [
+  {
+   "input": {
+    "gp": 0,
+    "spr": 0,
+    "cash": 0,
+    "trade": 0,
+    "g24": 0,
+    "g21": 0,
+    "g18": 0,
+    "sv": 0,
+    "rec": 0,
+    "debt": 0,
+    "basis": "gold"
+   },
+   "expected": {
+    "gold": 0,
+    "silver": 0,
+    "total": 0,
+    "nisab": 0,
+    "due": 0
+   }
+  },
+  {
+   "input": {
+    "gp": 300,
+    "spr": 0,
+    "cash": 30000,
+    "trade": 0,
+    "g24": 0,
+    "g21": 0,
+    "g18": 0,
+    "sv": 0,
+    "rec": 0,
+    "debt": 0,
+    "basis": "gold"
+   },
+   "expected": {
+    "gold": 0,
+    "silver": 0,
+    "total": 30000,
+    "nisab": 25500,
+    "due": 750
+   }
+  },
+  {
+   "input": {
+    "gp": 300,
+    "spr": 0,
+    "cash": 20000,
+    "trade": 0,
+    "g24": 0,
+    "g21": 0,
+    "g18": 0,
+    "sv": 0,
+    "rec": 0,
+    "debt": 0,
+    "basis": "gold"
+   },
+   "expected": {
+    "gold": 0,
+    "silver": 0,
+    "total": 20000,
+    "nisab": 25500,
+    "due": 0
+   }
+  },
+  {
+   "input": {
+    "gp": 300,
+    "spr": 0,
+    "cash": 10000,
+    "trade": 5000,
+    "g24": 0,
+    "g21": 50,
+    "g18": 20,
+    "sv": 0,
+    "rec": 2000,
+    "debt": 3000,
+    "basis": "gold"
+   },
+   "expected": {
+    "gold": 17625,
+    "silver": 0,
+    "total": 31625,
+    "nisab": 25500,
+    "due": 790.625
+   }
+  },
+  {
+   "input": {
+    "gp": 0,
+    "spr": 3.5,
+    "cash": 2500,
+    "trade": 0,
+    "g24": 0,
+    "g21": 0,
+    "g18": 0,
+    "sv": 0,
+    "rec": 0,
+    "debt": 0,
+    "basis": "silver"
+   },
+   "expected": {
+    "gold": 0,
+    "silver": 0,
+    "total": 2500,
+    "nisab": 2082.5,
+    "due": 62.5
+   }
+  },
+  {
+   "input": {
+    "gp": 0,
+    "spr": 3.5,
+    "cash": 1500,
+    "trade": 0,
+    "g24": 0,
+    "g21": 0,
+    "g18": 0,
+    "sv": 100,
+    "rec": 0,
+    "debt": 0,
+    "basis": "silver"
+   },
+   "expected": {
+    "gold": 0,
+    "silver": 350,
+    "total": 1850,
+    "nisab": 2082.5,
+    "due": 0
+   }
+  },
+  {
+   "input": {
+    "gp": 250,
+    "spr": 0,
+    "cash": 0,
+    "trade": 0,
+    "g24": 100,
+    "g21": 0,
+    "g18": 0,
+    "sv": 0,
+    "rec": 0,
+    "debt": 0,
+    "basis": "gold"
+   },
+   "expected": {
+    "gold": 25000,
+    "silver": 0,
+    "total": 25000,
+    "nisab": 21250,
+    "due": 625
+   }
+  }
+ ]
+}

@@ -1,0 +1,129 @@
+openapi: 3.1.0
+info:
+  title: Ayat Tutla app API
+  version: 1.0.0-draft
+  description: >
+    Draft contract for the iOS app. New prefix /app/v1 on the existing server; no
+    existing site route changes. Not implemented yet — the live site must not be
+    modified without the owner's explicit request. No secrets are shipped in the app:
+    a public app id header plus per-device rate limits.
+servers:
+  - url: https://ayattla.com/app/v1
+components:
+  parameters:
+    AppId:
+      name: X-Ayat-App
+      in: header
+      required: true
+      schema: {type: string, example: ios-1}
+  schemas:
+    Manifest:
+      type: object
+      required: [version, url, bytes, sha256, min_app]
+      properties:
+        version: {type: integer}
+        url: {type: string}
+        bytes: {type: integer}
+        sha256: {type: string}
+        min_app: {type: string}
+    Timing:
+      type: object
+      description: Word timings for one surah. Cache max 6 days (Quran Foundation terms).
+      properties:
+        audio_url: {type: string}
+        expires_at: {type: string, format: date-time}
+        ayat:
+          type: array
+          items:
+            type: object
+            properties:
+              ayah: {type: integer}
+              start_ms: {type: integer}
+              end_ms: {type: integer}
+              words:
+                type: array
+                items: {type: array, items: {type: integer}, description: "[position, start_ms, end_ms]"}
+    MediaItem:
+      type: object
+      description: Pixabay item through the server broker. No photographer name is returned.
+      properties:
+        provider: {type: string, enum: [pixabay]}
+        mediaId: {type: string}
+        type: {type: string, enum: [image, video]}
+        preview: {type: string}
+        width: {type: integer}
+        height: {type: integer}
+security: []
+paths:
+  /content/manifest:
+    get:
+      parameters: [{$ref: '#/components/parameters/AppId'}]
+      responses:
+        '200': {description: Latest pack, content: {application/json: {schema: {$ref: '#/components/schemas/Manifest'}}}}
+  /content/pack/{version}:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: version, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: SQLite pack built by tools/build_content_pack.py, content: {application/octet-stream: {}}}
+  /timing/{qf_id}/{surah}:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: qf_id, in: path, required: true, schema: {type: integer}}
+        - {name: surah, in: path, required: true, schema: {type: integer, minimum: 1, maximum: 114}}
+      responses:
+        '200': {description: Timings, content: {application/json: {schema: {$ref: '#/components/schemas/Timing'}}}}
+        '404': {description: Reciter has no verified timings}
+  /media/search:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: q, in: query, schema: {type: string}}
+        - {name: collection, in: query, schema: {type: string, example: mosques}}
+        - {name: type, in: query, schema: {type: string, enum: [image, video]}}
+        - {name: orientation, in: query, schema: {type: string, enum: [vertical, horizontal, square]}}
+      responses:
+        '200': {description: Items, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/MediaItem'}}}}}
+  /media/raw/{provider}/{mediaId}:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: provider, in: path, required: true, schema: {type: string}}
+        - {name: mediaId, in: path, required: true, schema: {type: string}}
+      responses:
+        '302': {description: Short-lived file URL for on-device rendering only}
+  /azkar/audio/{id}:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: Official Hisn al-Muslim recording (stream; offline only after permission), content: {audio/mpeg: {}}}
+  /radios:
+    get:
+      parameters: [{$ref: '#/components/parameters/AppId'}]
+      responses:
+        '200': {description: Radio list from mp3quran.net}
+  /khatma:
+    post:
+      parameters: [{$ref: '#/components/parameters/AppId'}]
+      responses:
+        '201': {description: Group khatma created}
+  /khatma/{id}:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Group khatma state}
+  /mosques:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/AppId'}
+        - {name: lat, in: query, required: true, schema: {type: number}}
+        - {name: lon, in: query, required: true, schema: {type: number}}
+        - {name: r, in: query, schema: {type: integer, enum: [1, 3, 5]}}
+      responses:
+        '200': {description: Nearby mosques (MapKit on device is the fallback)}

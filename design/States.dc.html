@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الحالات</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div dir="rtl" style="width: 860px; height: 844px; box-sizing: border-box; background: #FFFFFF; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #1C2B20; padding: 32px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 24px">
+  <section style="border-radius: 20px; background: #F7FAF7; border: 1px solid #E3EBE5; padding: 24px; display: flex; flex-direction: column; gap: 14px" aria-busy="true">
+    <span style="font-size: 13px; font-weight: 600; color: #56665B">التحميل</span>
+    <div style="height: 120px; border-radius: 16px; background: #E8EFEA"></div>
+    <div style="height: 14px; width: 70%; border-radius: 7px; background: #E8EFEA"></div>
+    <div style="height: 14px; width: 90%; border-radius: 7px; background: #E8EFEA"></div>
+    <div style="height: 14px; width: 55%; border-radius: 7px; background: #E8EFEA"></div>
+    <span style="margin-top: auto; font-size: 12px; color: #56665B">هياكل بنفس شكل المحتوى، بلا مؤشر دوار</span>
+  </section>
+
+  <section style="border-radius: 20px; background: #F7FAF7; border: 1px solid #E3EBE5; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+    <span style="align-self: flex-start; font-size: 13px; font-weight: 600; color: #56665B">لا يوجد اتصال</span>
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#9DBFA4" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M3 3l18 18"></path><circle cx="12" cy="19.5" r="1"></circle></svg>
+    <span style="font-size: 17px; font-weight: 600">التلاوة تحتاج إلى اتصال</span>
+    <span style="font-size: 14px; line-height: 1.8; color: #44544A">نزل هذه السورة لتسمعها دون إنترنت، أو اختر قارئا محفوظا على جهازك</span>
+    <div style="display: flex; gap: 8px">
+      <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: #427E45; color: #FFFFFF; font: 600 14px 'IBM Plex Sans Arabic', sans-serif">إعادة المحاولة</button>
+      <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; color: #1C2B20; font: 500 14px 'IBM Plex Sans Arabic', sans-serif">القراء المحفوظون</button>
+    </div>
+  </section>
+
+  <section style="border-radius: 20px; background: #F7FAF7; border: 1px solid #E3EBE5; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+    <span style="align-self: flex-start; font-size: 13px; font-weight: 600; color: #56665B">قائمة فارغة</span>
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#9DBFA4" stroke-width="1.6" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+    <span style="font-size: 17px; font-weight: 600">لا توجد آيات محفوظة بعد</span>
+    <span style="font-size: 14px; line-height: 1.8; color: #44544A">اضغط مطولا على أي آية في المصحف ثم اختر حفظ</span>
+    <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: #EEF5EF; color: #2C5E37; font: 600 14px 'IBM Plex Sans Arabic', sans-serif">افتح المصحف</button>
+  </section>
+
+  <section style="border-radius: 20px; background: #F7FAF7; border: 1px solid #E3EBE5; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center">
+    <span style="align-self: flex-start; font-size: 13px; font-weight: 600; color: #56665B">التصدير</span>
+    <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="تقدم التصدير">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#E3EBE5" stroke-width="10"></circle>
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#427E45" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="{{offset}}" transform="rotate(-90 60 60)"></circle>
+      <text x="60" y="68" text-anchor="middle" font-size="24" font-weight="600" fill="#1C2B20">{{pct}}٪</text>
+    </svg>
+    <span style="font-size: 17px; font-weight: 600">جار تجهيز المقطع</span>
+    <span style="font-size: 14px; color: #44544A">يكمل التصدير لو خرجت من التطبيق</span>
+    <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid #E3EBE5; background: #FFFFFF; color: #1C2B20; font: 500 14px 'IBM Plex Sans Arabic', sans-serif">إلغاء</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"pct":{"editor":"number","default":68,"min":0,"max":100,"step":1},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const pct = this.props.pct ?? 68;
+return { pct: pct, offset: Math.round(314 * (1 - pct / 100)) };
+}
+}
+</script>
+</body>
+</html>
