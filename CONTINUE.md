@@ -1,6 +1,6 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-02 20:20 UTC بعد دمج PR #8
+آخر تحديث: 2026-11-02 21:45 UTC بعد دمج PR #9
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
@@ -9,11 +9,20 @@
 - PR #5 (حزمة المحتوى، المصحف، الأذكار، المسبحة، الرئيسية، مكتبتي) **مدموج** — القفل انتهى.
 - PR #6 (الختمة، البطاقة، الاستوديو، التنبيهات، قضاء الصلوات، الصيام) **مدموج** — لا قفل حاليا، كل الملفات حرة.
 - PR #7 (محرك الفيديو) وPR #8 (الأدعية والأحاديث والإذاعات واختبار الحفظ) **مدموجان** — لا قفل حاليا.
-- 2026-11-02 20:45 UTC — iPad بعمودين، الخلفيات المتحركة، المشاريع في مكتبتي، الروابط العميقة: تملكها جلسة الفرع `claude/ipad-motion-projects-links`. لا تكررها.
+- PR #9 (iPad بعمودين، الخلفيات المتحركة، المشاريع، الروابط العميقة) **مدموج** (`ed4056c`). لمن يدمج بعده: PR #9 عدل `ci.yml` (لقطات الروابط وiPad) و`AyatTutlaApp.swift` (`RouteSheet`، `AppDelegate`، `-link`)؛ ادمج main في فرعك قبل الدمج.
 - 2026-11-02 20:55 UTC — مطابقة الأدوات للموقع: «تحفيظ الأطفال جزء عم» (الأداة الناقصة) وتطابق واجهة الزكاة (العملة، الحفظ، سطر الحالة، التفصيل): تملكها جلسة الفرع `claude/tools-parity`. تعدل `ToolsView.swift` و`RecitationPlayer.swift` وتضيف `KidsJuzAmmaView.swift` و`ZakatView.swift`، ثم المسبحة وقضاء الصلوات حسب الموقع (`TasbihView.swift` و`QadaSawmViews.swift`). PR #10. لا تكررها.
 - انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
+
+- آخر PR من هذه الجلسة: https://github.com/ayattla/ayattla-ios/pull/9 **مدموج** (squash `ed4056c`). CI ناجح (المهام الثلاث، مع لقطات iPad والروابط).
+  - `EditorLayout.swift`: عمودان على iPad (معاينة + خيارات) للبطاقة والمقطع والبطاقة النصية.
+  - `MotionBackground.swift`: الخلفيات المتحركة الأربع + حركة هادئة لصورة الجهاز؛ `VideoEngine.render(..., background:)` يرسم كل إطار (٣٠ إطارا/ث) والنص طبقة شفافة (`CardCanvas.Model.clearBackground`).
+  - `ProjectStore.swift`: المشاريع (مقطع، بطاقة، حالة، بطاقة حديث) في Application Support/Projects مع `EditorSettings` لإعادة الفتح؛ `ProjectsGrid`، `ProjectDetailView`، و«آخر المشاريع» في الرئيسية. (اختير فهرس JSON بدل SwiftData: أبسط وقابل للاختبار، وتبقى الحقول كما في `APP_ARCHITECTURE.md`.)
+  - `DeepLinks.swift`: `Route.parse`، `Router`، `AppDelegate` (ضغط التنبيه)، `RouteSheet`؛ مخطط `ayattla` في `project.yml`؛ التنبيهات تحمل `userInfo.link`؛ نسخة التطوير تقبل `-link <url>`.
+- Universal Links مؤجلة: تحتاج ملف `apple-app-site-association` على ayattla.com (تعديل للموقع المباشر يحتاج طلب المالك) ومفتاح Associated Domains بحساب Apple Developer.
+
+### قبله (PR #7 و#8)
 
 - آخر PR: https://github.com/ayattla/ayattla-ios/pull/8 **مدموج** (squash `b64f8a7`)، وقبله https://github.com/ayattla/ayattla-ios/pull/7 (`7ee562f`). CI ناجح.
   - **PR #7 محرك الفيديو** (`VideoEngine.swift`): شاشة لكل آية طوال تلاوتها، AVAssetWriter + AVMutableComposition ← MP4 (H.264/AAC) بدقة ١٠٨٠. `ClipMakerView` (حتى ٣٠ آية، القارئ، المقاس، الخلفية، القالب والإهداء، البسملة عند البدء من آية ١)، و«حولها إلى فيديو بالتلاوة» في البطاقة. التلاوة تجلب من EveryAyah إلى مجلد مؤقت ثم تحذف (`RecitationFetcher`).
@@ -43,12 +52,10 @@
    git fetch origin && git checkout -b claude/<اسم> origin/main
    ```
 2. التالي بالترتيب:
-   - **iPad**: محررات بعمودين (معاينة + خيارات) ولقطات iPad في CI (`xcrun simctl` بجهاز iPad).
-   - الخلفيات المتحركة الأربع (a_stars، a_aurora، a_dust، a_dawn) في محرك الفيديو، وحركة Ken Burns لصورة الجهاز.
-   - مشاريع مكتبتي: حفظ المقاطع والبطاقات المصدرة (SwiftData حسب `APP_ARCHITECTURE.md`) وعرض «آخر المشاريع» في الرئيسية.
-   - الروابط العميقة `ayattla://` وفتح الشاشة من التنبيه.
-   - عند وصول الأذونات: تظليل الكلمات (توقيتات Quran.com)، التجويد، معاني الكلمات، التفسير، التنزيل دون إنترنت.
-   - النشر (يحتاج حساب Apple Developer وقرار المالك): أيقونة التطبيق من مجلد brand، شاشة الإطلاق، مهمة CI للتوقيع وTestFlight.
+   - **الإطلاق** (يحتاج قرار المالك المالي: حساب Apple Developer): أيقونة التطبيق من مجلد brand، شاشة الإطلاق، Universal Links، مهمة CI للتوقيع وTestFlight بأسرار GitHub.
+   - عند وصول الأذونات: تظليل الكلمات في المقاطع (توقيتات Quran.com)، التجويد، معاني الكلمات، التفسير، تنزيل التلاوات دون إنترنت، أصوات الأذكار الرسمية.
+   - بعد مراجعة المالك: الرقية (بيانات الموقع `TODO_SCHOLAR_REVIEW`)، الأسماء الحسنى (رخصة المصدر)، الفروق الإملائية الخمسة في `tools/compare_tanzil.py`.
+   - تحسينات: إلغاء/استئناف التصدير بعد إغلاق التطبيق، ولقطات iPad أفقية.
 3. لكل تغيير: push ← PR ← انتظر CI:
    ```
    gh api "repos/ayattla/ayattla-ios/actions/runs?branch=<الفرع>&per_page=1" --jq '.workflow_runs[0].id'
