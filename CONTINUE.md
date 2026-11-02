@@ -1,26 +1,27 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-02 18:30 UTC بعد دمج PR #4
+آخر تحديث: 2026-11-02 19:25 UTC بعد دمج PR #5
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
 - PR #3 (`AyatDesign`، المساجد، الإعدادات، الترحيب) **مدموج** — القفل انتهى.
 - PR #4 «تحسينات تصميم iOS من مراجعة المحاكي» **مدموج** (squash `be82665`) — القفل انتهى، وكل الملفات حرة.
-- 2026-11-02 18:40 UTC — حزمة المحتوى على CI ثم المصحف والأذكار والمسبحة والرئيسية تملكها جلسة الفرع `claude/content-pack` (PR قادم). لا تكررها.
+- PR #5 (حزمة المحتوى، المصحف، الأذكار، المسبحة، الرئيسية، مكتبتي) **مدموج** — القفل انتهى.
+- 2026-11-02 19:25 UTC — الختمة وبطاقة الآية وجدولة التنبيهات تملكها جلسة الفرع `claude/khatma-card-notify`. لا تكررها.
 - انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
 
-- آخر PR: https://github.com/ayattla/ayattla-ios/pull/4 **مدموج** (squash `be82665`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41499580661
-  - مراجعة تصميم iOS من لقطات المحاكي (مهارة Mobile App Design iOS / ios-review): https://github.com/ayattla/ayattla-ios/pull/3#issuecomment-6584511415
-  - `Brand`: ‏`tint` و`line` و`muted` و`primaryInk` تتبدل مع الوضع الداكن (`Color(light:dark:)`).
-  - المواقيت: بعد العشاء يعرض الجدول «مواقيت الغد» ويظلل الفجر.
-  - الأدوات: البلاطات غير الجاهزة بنص مقروء و«قريبا»، والشبكة بعمود واحد عند أحجام الخط الكبيرة.
-  - المساجد: `CFBundleLocalizations: [ar]`، والعنوان شارع وحي فقط، وأقرب ١٢ علامة على الخريطة، وحذف الفاصل الزائد.
-  - الترحيب: لا يطلب إذن التنبيهات (يطلب عند تفعيلها في الإعدادات).
-  - الإعدادات: `AdaptiveLabeledContentStyle` يكدس العنوان فوق القيمة عند أحجام الخط الكبيرة، فلا تنكسر الكلمات.
-  - CI: لقطات `*-dark.png` (tools، prayer، mosques، settings، onboarding) و`*-xxxl.png` (tools، prayer، settings).
-- بقي من المراجعة: أسماء المساجد ما زالت إنجليزية على محاكي CI (لغة نظامه إنجليزية). لم يُتحقق من جهاز لغته عربية. الرئيسية ما زالت «قيد البناء» (سبب رفض مؤكد في App Store إن بقيت).
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/5 **مدموج** (squash `646fc12`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41507535805
+  - **مهمة `content` في `ci.yml`** (ubuntu، قبل app): تجلب `quran-uthmani` من AlQuran Cloud، و`osamayy/azkar-db`، و`/api/meta` و`/tools/tasbih` من الموقع (قراءة فقط)، والخطين Amiri Quran وAmiri، ثم تبني `content-v1.sqlite` وتفحص جمل `ContentStore.swift` عليه، وتقارنه بتنزيل Tanzil المباشر (`tools/compare_tanzil.py`). تمرر الحزمة artifact إلى مهمة app فتضمن في `app/Content` (مجلد مرجعي في `project.yml`، غير محفوظ في git).
+  - الباني: يفصل البسملة عن الآية ١ في ١١٢ سورة (من نص ١:١ نفسه، ويقبل صيغة الشدة في ٩٥ و٩٧ فقط)، `name_plain` بلا تشكيل، جدول `reciter` (مجلدات EveryAyah)، `meta.tasbih_phrases`.
+  - التطبيق: `ContentLibrary` (يتحقق من sha256 ويسجل الخطوط)، `QuranView` + `MushafReader` + `RecitationPlayer` (بث EveryAyah، لا تنزيل)، `AzkarView` + `AzkarSession` (تقدم يومي)، `TasbihView`، `HomeView`، `LibraryView` (المفضلة).
+- الاختبارات: Python ٨+٢؛ packages: AyatCalc 13، AyatContent 8، AyatTiming 5، AyatDesign 3؛ app: ContentTests على الحزمة الحقيقية + QuranLogicTests + السابقة.
+- اللقطات على `ci-shots` تشمل الآن: quran، reader، azkar، azkar-session، tasbih، library، home-feed (+ داكن).
+
+### قرار ينتظر المالك (نص ديني)
+
+- مقارنة النص بتنزيل Tanzil المباشر: الحروف متطابقة في ٦٢٣١ آية. **٥ فروق إملائية** بين نسخة AlQuran Cloud (المعتمدة في الموقع) وإصدار Tanzil الأحدث: «بعد ما» كلمة أو كلمتان في ٢:١٨١ و٨:٦ و١٣:٣٧، والألف في «يا صاحبي» في ١٢:٣٩ و١٢:٤١. أبقيت نسخة الموقع حتى يقرر المالك؛ القائمة في `KNOWN` داخل `tools/compare_tanzil.py`، وأي فرق جديد يوقف البناء.
 
 ### قبله
 
@@ -40,9 +41,10 @@
    git fetch origin && git checkout -b claude/<اسم> origin/main
    ```
 2. التالي بالترتيب:
-   - **حزمة المحتوى على CI**: أجهزة GitHub Actions تصل إلى الإنترنت، فيمكن تشغيل `tools/build_content_pack.py` في مهمة يدوية (`workflow_dispatch`) تنشر `content.sqlite` كإصدار (Release) خاص، وهذا يفك قيد المصحف والأذكار والختمة. لا يُضمن في التطبيق ما حالته «يحتاج تحققا» في `docs/CONTENT_AND_LICENSES.md` (النص القرآني من Tanzil مسموح مع الإسناد؛ الأذكار مسموحة مع الإسناد).
-   - **الرئيسية** حسب `design/Main.dc.html` بما لا يحتاج محتوى: الصلاة القادمة، التاريخ الهجري، اختصارات الأدوات؛ وآية اليوم بعد حزمة المحتوى.
-   - جدولة التنبيهات الفعلية بعد حزمة المحتوى (المفاتيح `notify.*` في `Prefs`).
+   - الختمة حسب `design/Khatma.dc.html` و`/tools/khatma` (عدد الأيام، تاريخ البدء، أبدأ من صفحة، توزيع الورد على الصلوات) — الصفحات من الحزمة.
+   - بطاقة الآية (صورة) حسب `design/Card.dc.html`: المقاسات الأربعة، حجم الخط، خلفيات مرسومة، حفظ ومشاركة (`ImageRenderer`).
+   - جدولة التنبيهات (`notify.*`): الأذكار بعد الفجر وبعد العصر من مواقيت المدينة، آية اليوم، ورد الختمة.
+   - ثم الاستوديو (محرك الفيديو AVFoundation) — أكبر عمل باق.
 3. لكل تغيير: push ← PR ← انتظر CI:
    ```
    gh api "repos/ayattla/ayattla-ios/actions/runs?branch=<الفرع>&per_page=1" --jq '.workflow_runs[0].id'
