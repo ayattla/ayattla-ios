@@ -42,7 +42,8 @@ final class ContentStoreTests: XCTestCase {
     }
 
     func testReciterFolders() throws {
-        XCTAssertEqual(try store().reciterFolders(), ["r1": "Test_64kbps"])
+        XCTAssertEqual(try store().reciterFolders(), ["basit_murattal": "Test_64kbps"])
+        XCTAssertEqual(try store().reciterQuranComIDs(), ["basit_murattal": 2])
     }
 
     func testCleanMatchesBuilder() {

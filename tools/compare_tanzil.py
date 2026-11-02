@@ -47,8 +47,8 @@ def letters(t):
     return " ".join(MARKS.sub("", t.replace("\u0654", "\u0621")).split())
 
 
-# Spelling differences between the two Tanzil releases, seen on 2026-11-02 and left for the owner
-# to decide (CONTINUE.md): "بعد ما" as one word or two (2:181, 8:6, 13:37) and the alef in
+# Spelling differences between the two Tanzil releases, seen on 2026-11-02. The owner decided
+# (2026-11-03) to keep the site's text (AlQuran Cloud), so these stay as the site has them: "بعد ما" as one word or two (2:181, 8:6, 13:37) and the alef in
 # "يا صاحبي" (12:39, 12:41). Any other difference fails the build.
 KNOWN = {(2, 181), (8, 6), (13, 37), (12, 39), (12, 41)}
 

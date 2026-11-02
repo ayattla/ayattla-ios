@@ -38,6 +38,10 @@ jobs:
           curl -sSf --retry 3 -m 30 https://ayattla.com/tools/tasbih -o src/tasbih.html
           curl -sSf --retry 3 -m 30 https://ayattla.com/tools/prayer-guide -o src/prayer-guide.html
           curl -sSf --retry 3 -m 30 https://ayattla.com/api/duas -o src/duas.json
+          curl -sSf --retry 3 -m 30 https://ayattla.com/api/ruqya -o src/ruqya.json
+          curl -sSf --retry 3 -m 30 https://ayattla.com/tools/asma-ul-husna -o src/asma.html
+          # Quran.com's reciter list, to find the chapter-recitation id of each word-highlight reciter
+          curl -sSf --retry 3 -m 30 "https://api.quran.com/api/v4/resources/chapter_reciters?language=en" -o src/qf-reciters.json
       - name: Fonts (Amiri Quran and Amiri, OFL 1.1)
         run: |
           mkdir -p pack
@@ -51,7 +55,7 @@ jobs:
         run: |
           python3 tools/normalize_azkar.py src/azkar-db/azkar.json --source "osamayy/azkar-db@$AZKAR_REF" --out src/azkar.json
           mkdir -p pack
-          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --reciters src/meta.json --tasbih-html src/tasbih.html --guide-html src/prayer-guide.html --duas src/duas.json --out pack/content-v1.sqlite
+          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --reciters src/meta.json --tasbih-html src/tasbih.html --guide-html src/prayer-guide.html --duas src/duas.json --ruqya src/ruqya.json --asma-html src/asma.html --qf-reciters src/qf-reciters.json --out pack/content-v1.sqlite
           python3 tools/check_content_sql.py app/Packages/AyatContent/Sources/AyatContent/ContentStore.swift pack/content-v1.sqlite
           python3 - <<'PY'
           import sqlite3

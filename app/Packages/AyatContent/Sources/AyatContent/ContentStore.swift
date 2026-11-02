@@ -123,6 +123,13 @@ public final class ContentStore: @unchecked Sendable {
         })
     }
 
+    /// Quran.com chapter-recitation id for reciters that support word highlighting.
+    public func reciterQuranComIDs() throws -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: try rows("SELECT id, qf_id FROM reciter WHERE qf_id IS NOT NULL ORDER BY ord", []) {
+            ($0.text(0) ?? "", $0.int(1))
+        })
+    }
+
     public func azkarCategories() throws -> [ZikrCategory] {
         try rows("SELECT id, title FROM azkar_category ORDER BY id", []) { ZikrCategory(id: $0.int(0), title: $0.text(1) ?? "") }
     }
