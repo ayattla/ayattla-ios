@@ -1,11 +1,12 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main؛ العمل الجاري على claude/peaceful-bell-g613dx)
 
-آخر تحديث: 2026-11-02 06:20 UTC بعد دمج PR #1
+آخر تحديث: 2026-11-02 06:25 UTC بعد دمج PR #2
 
 ## 1. آخر حالة دقيقة
 
 - المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx` (يُدمج فيه main بعد كل دمج PR).
-- آخر PR: https://github.com/ayattla/ayattla-ios/pull/1 **مدموج** (squash `3ee143c`): المواقيت، القبلة، الهجري بالاتجاهين، المناسبات، المدن الـ36، أرقام عربية هندية في كل التطبيق، لقطات CI.
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/2 **مدموج** (squash `4f913b7`): شاشة الأدوات حسب `design/Tools.dc.html` (بحث، الصلاة القادمة مع زر القبلة، شبكتا «اليوم» و«العبادات والحساب»، كل الأدوات ١٤). CI: https://github.com/ayattla/ayattla-ios/actions/runs/41398983069 ناجح.
+- قبله: https://github.com/ayattla/ayattla-ios/pull/1 **مدموج** (squash `3ee143c`): المواقيت، القبلة، الهجري بالاتجاهين، المناسبات، المدن الـ36، أرقام عربية هندية في كل التطبيق، لقطات CI.
 - آخر CI ناجح للـ PR: https://github.com/ayattla/ayattla-ios/actions/runs/41398392011 — packages: AyatCalc 13، AyatContent 5، AyatTiming 5؛ app: 4 اختبارات + 7 لقطات.
 - اللقطات على الفرع `ci-shots` (تُستبدل في كل تشغيل): home، tools، prayer، qibla، zakat، hijri، occasions. أُرسلت للمالك.
 - لا خطأ حالي. عائق البيئة الوحيد: مضيف artifacts محجوب، والبديل الفرع `ci-shots`.
@@ -16,9 +17,8 @@
    ```
    git fetch origin && git checkout claude/peaceful-bell-g613dx && git merge origin/main
    ```
-2. أعد بناء شاشة الأدوات حسب `design/Tools.dc.html`: حقل بحث، بطاقة الصلاة القادمة مع زر القبلة، قسم «اليوم» (الأذكار، المسبحة، الأدعية: «قيد البناء» حتى حزمة المحتوى)، وقسم «العبادات والحساب» شبكة (الهجري، الزكاة، قضاء الصلوات، الصيام، المساجد، الأحاديث)، ورابط «كل الأدوات».
-3. بعدها: حزمة `AyatDesign` (نقل `Brand` و`card()` و`Num`)، ثم المساجد القريبة بـ MapKit `MKLocalSearch` (نصف القطر 1/3/5 كم كما في الموقع)، ثم الإعدادات (`design/Settings.dc.html`) والترحيب (`design/Onboarding.dc.html`).
-4. لكل تغيير: push ← PR ← انتظر CI:
+2. التالي: حزمة `AyatDesign` (نقل `Brand` و`card()` و`Num`)، ثم المساجد القريبة بـ MapKit `MKLocalSearch` (نصف القطر 1/3/5 كم كما في الموقع)، ثم الإعدادات (`design/Settings.dc.html`) والترحيب (`design/Onboarding.dc.html`).
+3. لكل تغيير: push ← PR ← انتظر CI:
    ```
    gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 3
    gh run view <RUN_ID> -R ayattla/ayattla-ios --log-failed | grep -E "error:|failed|XCTAssert" | head -50
