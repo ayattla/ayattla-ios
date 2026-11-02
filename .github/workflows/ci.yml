@@ -63,6 +63,10 @@ jobs:
           xcrun simctl launch "${{ steps.sim.outputs.udid }}" com.ayattla.AyatTutla
           sleep 8
           mkdir -p shots && xcrun simctl io "${{ steps.sim.outputs.udid }}" screenshot shots/home.png
+      - name: Print screenshot as base64 (temporary, for sessions that cannot download artifacts)
+        if: success()
+        run: |
+          echo "SHOT-BEGIN"; base64 -i shots/home.png | fold -w 76; echo "SHOT-END"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
