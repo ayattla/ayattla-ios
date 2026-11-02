@@ -153,6 +153,25 @@ jobs:
             xcrun simctl io "$UDID" screenshot "shots/$s-xxxl.png"
           done
           xcrun simctl ui "$UDID" content_size large
+          # Deep links: open the app on Home and follow a link at launch (ayah, evening azkar).
+          xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen home -link "ayattla://ayah/2/255"; sleep 7
+          xcrun simctl io "$UDID" screenshot "shots/link-ayah.png"
+          xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen home -link "ayattla://azkar/%D8%A3%D8%B0%D9%83%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%A7%D8%A1"; sleep 7
+          xcrun simctl io "$UDID" screenshot "shots/link-azkar.png"
+          xcrun simctl shutdown "$UDID" || true
+          # iPad: two-column layouts.
+          IPAD=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPad')), ''))")
+          if [ -n "$IPAD" ]; then
+            xcrun simctl boot "$IPAD" || true
+            xcrun simctl bootstatus "$IPAD" -b || true
+            xcrun simctl install "$IPAD" "$APP"
+            xcrun simctl privacy "$IPAD" grant location "$BUNDLE" || true
+            for s in home card clip reader tools; do
+              xcrun simctl launch --terminate-running-process "$IPAD" "$BUNDLE" -screen "$s"
+              sleep 7
+              xcrun simctl io "$IPAD" screenshot "shots/ipad-$s.png"
+            done
+          fi
       - name: Publish screenshots to the ci-shots branch
         if: success()
         run: |

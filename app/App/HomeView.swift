@@ -1,4 +1,5 @@
 import SwiftUI
+import AVKit
 import AyatDesign
 import AyatContent
 
@@ -152,13 +153,33 @@ struct HomeView: View {
     }
 
     private var projects: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("آخر المشاريع").font(.headline)
-            Text("ستظهر هنا المقاطع والبطاقات التي تصنعها في الاستوديو.")
-                .font(.footnote).foregroundStyle(Brand.muted)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(Brand.line))
+        let recent = Array(ProjectStore.shared.projects.prefix(6))
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("آخر المشاريع").font(.headline)
+                Spacer()
+                if !recent.isEmpty {
+                    NavigationLink("عرض الكل") { LibraryView(initial: .projects) }.font(.subheadline)
+                }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(recent) { p in
+                        NavigationLink { ProjectDetailView(project: p) } label: { ProjectTile(project: p, width: 104) }
+                            .buttonStyle(.plain)
+                    }
+                    NavigationLink { StudioView() } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: "plus").font(.title3)
+                            Text("مشروع جديد").font(.caption)
+                        }
+                        .foregroundStyle(Brand.primaryInk)
+                        .frame(width: 104, height: 148)
+                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(Brand.line))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 }
@@ -180,8 +201,10 @@ struct LibraryView: View {
     }
 
     @AppStorage(Favorites.key) private var favorites = ""
-    @State private var section = Section.favorites
+    @State private var section: Section
     private let lib = ContentLibrary.shared
+
+    init(initial: Section = .favorites) { _section = State(initialValue: initial) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -192,9 +215,7 @@ struct LibraryView: View {
             .padding(.horizontal, 16).padding(.vertical, 8)
             switch section {
             case .favorites: favoritesList
-            case .projects:
-                ContentUnavailableView("لا مشاريع بعد", systemImage: "play.rectangle",
-                                       description: Text("ما تصنعه في الاستوديو يحفظ هنا على جهازك"))
+            case .projects: ProjectsGrid()
             case .downloads:
                 ContentUnavailableView("لا تنزيلات", systemImage: "arrow.down.circle",
                                        description: Text("حفظ التلاوات للاستماع دون إنترنت يتاح بعد إذن مصدر التلاوات"))
@@ -248,5 +269,119 @@ struct LibraryView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Projects
+
+struct ProjectTile: View {
+    let project: Project
+    var width: CGFloat = 104
+
+    var body: some View {
+        let ratio = CardOptions.Ratio(rawValue: project.ratio) ?? .square
+        let h = min(width * ratio.size.height / ratio.size.width, width * 1.6)
+        ZStack(alignment: .bottomLeading) {
+            if let img = UIImage(contentsOfFile: ProjectStore.shared.thumbnailURL(project).path) {
+                Image(uiImage: img).resizable().scaledToFill()
+            } else {
+                LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .top, endPoint: .bottom)
+            }
+            LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 2) {
+                if project.kind == .clip { Image(systemName: "play.fill").font(.caption2) }
+                Text(project.subtitle).font(.caption2.weight(.medium))
+            }
+            .foregroundStyle(.white)
+            .padding(8)
+        }
+        .frame(width: width, height: h)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(project.title)، \(project.subtitle)")
+    }
+}
+
+struct ProjectsGrid: View {
+    private var store = ProjectStore.shared
+
+    var body: some View {
+        if store.projects.isEmpty {
+            ContentUnavailableView("لا مشاريع بعد", systemImage: "play.rectangle",
+                                   description: Text("ما تصنعه في الاستوديو يحفظ هنا على جهازك"))
+        } else {
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12)], spacing: 12) {
+                    ForEach(store.projects) { p in
+                        NavigationLink { ProjectDetailView(project: p) } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ProjectTile(project: p, width: 104)
+                                Text(p.title).font(.caption).lineLimit(1)
+                                Text(p.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: Num.locale)))
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+struct ProjectDetailView: View {
+    let project: Project
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmDelete = false
+    @State private var saved = false
+
+    var body: some View {
+        let url = ProjectStore.shared.url(project)
+        let ratio = CardOptions.Ratio(rawValue: project.ratio) ?? .square
+        ScrollView {
+            VStack(spacing: 16) {
+                Group {
+                    if project.kind == .clip {
+                        VideoPlayer(player: AVPlayer(url: url))
+                    } else if let img = UIImage(contentsOfFile: url.path) {
+                        Image(uiImage: img).resizable()
+                    }
+                }
+                .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
+                .frame(maxHeight: 560)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                Text("\(project.subtitle) · \(project.createdAt.formatted(Date.FormatStyle(date: .long, time: .shortened, locale: Num.locale)))")
+                    .font(.footnote).foregroundStyle(Brand.muted)
+                HStack(spacing: 10) {
+                    ShareLink(item: url) { Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
+                        .buttonStyle(.borderedProminent)
+                    Button {
+                        if project.kind == .clip { UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil) }
+                        else if let img = UIImage(contentsOfFile: url.path) { UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil) }
+                        saved = true
+                    } label: { Label("حفظ في الصور", systemImage: "square.and.arrow.down").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
+                    .buttonStyle(.bordered)
+                }
+                if let e = project.settings {
+                    NavigationLink {
+                        if project.kind == .clip { ClipMakerView(settings: e) } else { AyahCardView(settings: e) }
+                    } label: { Label("تعديل بنفس الإعدادات", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity, minHeight: Brand.minTap) }
+                    .buttonStyle(.bordered)
+                }
+                Button(role: .destructive) { confirmDelete = true } label: {
+                    Label("حذف المشروع", systemImage: "trash").frame(maxWidth: .infinity, minHeight: Brand.minTap)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
+        }
+        .navigationTitle(project.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("حذف المشروع من مكتبتي؟", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("حذف", role: .destructive) { ProjectStore.shared.delete(project); dismiss() }
+        }
+        .alert("حفظ في الصور", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }
 }

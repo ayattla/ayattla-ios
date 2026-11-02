@@ -84,18 +84,25 @@ struct AyahCardView: View {
         _to = State(initialValue: to ?? from)
     }
 
-    var body: some View {
-        Form {
-            Section {
-                CardCanvas(model: model, photo: photo)
-                    .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
-                    .frame(maxWidth: .infinity, maxHeight: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .accessibilityLabel("معاينة البطاقة")
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+    /// Reopens a saved card with its settings.
+    init(settings e: EditorSettings) {
+        self.init(surah: e.surah, from: e.from, to: e.to, templateID: e.template)
+        _ratio = State(initialValue: CardOptions.Ratio(rawValue: e.ratio) ?? .square)
+        _background = State(initialValue: CardOptions.backgrounds.first { $0.id == e.background } ?? CardOptions.backgrounds[0])
+        _fontScale = State(initialValue: e.fontScale)
+        _name = State(initialValue: e.name)
+    }
 
+    private var settings: EditorSettings {
+        EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue, background: photo == nil ? background.id : "photo",
+                       fontScale: fontScale, template: template.id, name: name, reciter: reciter)
+    }
+
+    var body: some View {
+        EditorLayout(preview: CardCanvas(model: model, photo: photo)
+            .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .accessibilityLabel("معاينة البطاقة")) {
             Section("الآيات") {
                 Picker("السورة", selection: $surah) {
                     ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
@@ -140,15 +147,17 @@ struct AyahCardView: View {
                 Button {
                     if let image = CardCanvas.render(model, photo: photo) {
                         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
                         saved = true
                     }
-                } label: { Label("حفظ في الصور", systemImage: "square.and.arrow.down") }
+                } label: { Label("حفظ في الصور ومكتبتي", systemImage: "square.and.arrow.down") }
                 ShareLink(item: CardImage(model: model, photo: photo),
                           preview: SharePreview(model.reference)) { Label("مشاركة", systemImage: "square.and.arrow.up") }
                 if let folder = (try? lib.store?.reciterFolders())?[reciter] {
                     NavigationLink {
                         ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
-                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo))
+                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo,
+                                                    settings: settings))
                     } label: { Label("حولها إلى فيديو بالتلاوة", systemImage: "film") }
                 }
             }
@@ -160,7 +169,7 @@ struct AyahCardView: View {
         }
         .onChange(of: surah) { _, _ in from = 1; to = 1 }
         .onChange(of: from) { _, f in if to < f || to > f + CardOptions.maxAyat - 1 { to = f } }
-        .alert("حفظت البطاقة في الصور", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
+        .alert("حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }
 
     private var ayahCount: Int { lib.surah(surah)?.ayahCount ?? 1 }
@@ -188,6 +197,8 @@ struct CardCanvas: View {
         let lightBackground: Bool
         /// Mushaf font for Quran text; Amiri for dhikr and hadith.
         var fontName: String = ContentLibrary.mushafFont
+        /// Text only, on a transparent background (overlay for animated video backgrounds).
+        var clearBackground = false
     }
 
     let model: Model
@@ -215,9 +226,11 @@ struct CardCanvas: View {
     var body: some View {
         GeometryReader { g in
             let unit = min(g.size.width, g.size.height) / 360
-            let ink: Color = (model.lightBackground && photo == nil) ? Color(hex: 0x2B2418) : .white
+            let ink: Color = (model.lightBackground && photo == nil && !model.clearBackground) ? Color(hex: 0x2B2418) : .white
             ZStack {
-                if let photo {
+                if model.clearBackground {
+                    Color.clear
+                } else if let photo {
                     Image(uiImage: photo).resizable().scaledToFill()
                         .frame(width: g.size.width, height: g.size.height).clipped()
                     Color.black.opacity(0.45)
