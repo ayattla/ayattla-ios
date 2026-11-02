@@ -193,7 +193,10 @@ def qf_ids(path, site_reciters):
                                       for n in names)
                  and (style is None or (q.get("style") or {}).get("name", "").lower() == style)]
         if not cands:
-            raise ValueError(f"Quran.com reciter not found for {r['id']}")
+            # Quran.com has no chapter recitation (with word timings) for this reciter; the app then
+            # makes clips without word highlighting for it, the same as for reciters without timings.
+            print(f"note: no Quran.com chapter recitation for {r['id']}", file=sys.stderr)
+            continue
         out[r["id"]] = min(c["id"] for c in cands)
     return out
 
