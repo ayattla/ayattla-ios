@@ -16,6 +16,8 @@ final class RecitationPlayer {
     private(set) var isPlaying = false
     private(set) var failed = false
     var repeatEach = 1
+    /// Stop after the last ayah of the surah instead of moving on (kids' Juz Amma, as on the site).
+    var stopsAtSurahEnd = false
     var speed: Float = 1.0 { didSet { if isPlaying { player.rate = speed } } }
 
     @ObservationIgnored private let player = AVPlayer()
@@ -80,6 +82,7 @@ final class RecitationPlayer {
     func next() {
         guard let c = current else { return }
         if c.ayah < ayahCount(c.surah) { play(from: .init(surah: c.surah, ayah: c.ayah + 1)) }
+        else if stopsAtSurahEnd { stop() }
         else if c.surah < 114 { play(from: .init(surah: c.surah + 1, ayah: 1)) }
         else { stop() }
     }

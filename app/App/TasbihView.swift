@@ -6,11 +6,16 @@ import AyatDesign
 /// reset, saved on the device, vibration). Phrases come from the content pack; the user can add
 /// their own.
 struct TasbihView: View {
-    static let targets = [33, 99, 100, 1000]
+    /// As on the site: الهدف ٣٣ / ١٠٠ / ١٠٠٠ / بدون هدف (0).
+    static let targets = [33, 100, 1000, 0]
+    static func targetTitle(_ t: Int) -> String { t == 0 ? "بدون هدف" : "الهدف \(Num.int(t))" }
+    /// "بقي ٣٣" while under the target; nothing once it is reached or with no target.
+    static func remainingText(count: Int, target: Int) -> String? {
+        target > 0 && count < target ? "بقي \(Num.int(target - count))" : nil
+    }
 
     @AppStorage("tasbih.count") private var count = 0
     @AppStorage("tasbih.target") private var target = 33
-    @AppStorage("tasbih.rounds") private var rounds = 0
     @AppStorage("tasbih.day") private var day = ""
     @AppStorage("tasbih.todayTotal") private var todayTotal = 0
     @AppStorage("tasbih.phrase") private var phrase = ""
@@ -35,7 +40,9 @@ struct TasbihView: View {
                     VStack(spacing: 6) {
                         Text(Num.int(count)).font(.system(size: 64, weight: .semibold)).monospacedDigit()
                             .contentTransition(.numericText())
-                        Text("من \(Num.int(target))").font(.subheadline).opacity(0.9)
+                        if let r = Self.remainingText(count: count, target: target) {
+                            Text(r).font(.subheadline).opacity(0.9)
+                        }
                     }
                     .foregroundStyle(.white)
                     .frame(width: 250, height: 250)
@@ -44,21 +51,18 @@ struct TasbihView: View {
                     .overlay(Circle().stroke(Brand.tint, lineWidth: 10))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("تسبيحة، العدد \(Num.int(count)) من \(Num.int(target))")
+                .accessibilityLabel("تسبيحة، العدد \(Num.int(count))\(Self.remainingText(count: count, target: target).map { "، \($0)" } ?? "")")
 
-                HStack(spacing: 24) {
-                    Text("الدورات: \(Num.int(rounds))")
-                    Text("مجموع اليوم: \(Num.int(todayTotalShown))")
-                }
-                .font(.footnote).foregroundStyle(Brand.muted)
+                Text("مجموع تسبيحك المحفوظ: \(Num.int(count))")
+                    .font(.footnote).foregroundStyle(Brand.muted)
 
                 HStack(spacing: 10) {
                     Menu {
                         Picker("الهدف", selection: $target) {
-                            ForEach(Self.targets, id: \.self) { Text(Num.int($0)).tag($0) }
+                            ForEach(Self.targets, id: \.self) { Text(Self.targetTitle($0)).tag($0) }
                         }
                     } label: {
-                        Text("الهدف: \(Num.int(target))").padding(.horizontal, 16).frame(minHeight: Brand.minTap)
+                        Text(Self.targetTitle(target)).padding(.horizontal, 16).frame(minHeight: Brand.minTap)
                             .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
                     }
                     Toggle(isOn: $haptics) { Text("اهتزاز عند الإكمال") }
@@ -77,11 +81,11 @@ struct TasbihView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { confirmReset = true } label: { Image(systemName: "arrow.counterclockwise") }
-                    .accessibilityLabel("إعادة العداد")
+                    .accessibilityLabel("تصفير")
             }
         }
-        .confirmationDialog("إعادة العداد؟", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("إعادة العداد", role: .destructive) { count = 0; rounds = 0 }
+        .confirmationDialog("تصفير العداد؟", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("تصفير", role: .destructive) { count = 0 }
         }
         .alert("عبارة جديدة", isPresented: $adding) {
             TextField("العبارة", text: $newPhrase)
@@ -90,13 +94,13 @@ struct TasbihView: View {
         }
         .onAppear {
             rollDay()
+            if !Self.targets.contains(target) { target = 33 }   // 99 was offered before; the site has no 99
             if phrase.isEmpty, let first = sourcePhrases.first { phrase = first }
         }
     }
 
     private var sourcePhrases: [String] { ContentLibrary.shared.tasbihPhrases }
     private var userPhrases: [String] { userPhrasesRaw.split(separator: "\n").map(String.init) }
-    private var todayTotalShown: Int { day == AzkarProgress.today() ? todayTotal : 0 }
 
     private var phraseChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -153,9 +157,8 @@ struct TasbihView: View {
         rollDay()
         withAnimation(.snappy) { count += 1 }
         todayTotal += 1
-        if count >= target {
-            rounds += 1
-            count = 0
+        // Like the site: the count keeps going past the target; reaching it vibrates once.
+        if target > 0 && count == target {
             if haptics { UINotificationFeedbackGenerator().notificationOccurred(.success) }
         } else if haptics {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()

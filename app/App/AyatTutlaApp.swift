@@ -127,13 +127,14 @@ struct StartView: View {
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio", "qada", "sawm", "clip", "duas", "hadith", "checker", "guide", "radio", "hifz"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio", "qada", "sawm", "clip", "duas", "hadith", "checker", "guide", "radio", "hifz", "kids"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
         case "prayer": PrayerTimesView()
         case "qibla": QiblaView()
         case "zakat": ZakatView()
+        case "kids": KidsJuzAmmaView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "mosques": MosquesView()
