@@ -1,34 +1,41 @@
-# CONTINUE — نقطة الاستئناف (الفرع: main؛ العمل الجاري على claude/peaceful-bell-g613dx)
+# CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-02 06:25 UTC بعد دمج PR #2
+آخر تحديث: 2026-11-02 18:15 UTC بعد دمج PR #3
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
-- 2026-11-02 — حزمة `AyatDesign` والمساجد القريبة والإعدادات والترحيب يملكها PR #3 (الفرع `claude/design-mosques-settings`). لا تكررها في جلسة أخرى.
+- PR #3 (`AyatDesign`، المساجد، الإعدادات، الترحيب) **مدموج** — القفل انتهى.
+- PR #4 «تحسينات تصميم iOS من مراجعة المحاكي» (الفرع `claude/ios-design-polish`) **مفتوح وتملكه جلسة أخرى**؛ يعدل `MosquesView` و`OnboardingView` و`Brand.swift`. لا تعدل هذه الملفات حتى يدمج، ولا تدمجه من جلسة غيرها.
+- انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
 
-- المستودع: `ayattla/ayattla-ios`. فرع العمل: `claude/peaceful-bell-g613dx` (يُدمج فيه main بعد كل دمج PR).
-- آخر PR: https://github.com/ayattla/ayattla-ios/pull/2 **مدموج** (squash `4f913b7`): شاشة الأدوات حسب `design/Tools.dc.html` (بحث، الصلاة القادمة مع زر القبلة، شبكتا «اليوم» و«العبادات والحساب»، كل الأدوات ١٤). CI: https://github.com/ayattla/ayattla-ios/actions/runs/41398983069 ناجح.
-- قبله: https://github.com/ayattla/ayattla-ios/pull/1 **مدموج** (squash `3ee143c`): المواقيت، القبلة، الهجري بالاتجاهين، المناسبات، المدن الـ36، أرقام عربية هندية في كل التطبيق، لقطات CI.
-- آخر CI ناجح للـ PR: https://github.com/ayattla/ayattla-ios/actions/runs/41398392011 — packages: AyatCalc 13، AyatContent 5، AyatTiming 5؛ app: 4 اختبارات + 7 لقطات.
-- اللقطات على الفرع `ci-shots` (تُستبدل في كل تشغيل): home، tools، prayer، qibla، zakat، hijri، occasions. أُرسلت للمالك.
-- لا خطأ حالي. عائق البيئة الوحيد: مضيف artifacts محجوب، والبديل الفرع `ci-shots`.
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/3 **مدموج** (squash `0b27590`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41497219706
+  - حزمة `app/Packages/AyatDesign` (Brand، `card()`، `Color.cardSurface`، Num مع `distance`) + اختباراتها، ومهمة لها في CI.
+  - المساجد القريبة `MosquesView`: نصف القطر ١/٣/٥ كم، «حدد موقعي وابحث»، `MKLocalSearch` بـ«مسجد» و«mosque» مع إزالة التكرار والترتيب، خريطة وقائمة بالمسافة، الضغط يفتح الاتجاهات مشيا. لقطة CI أظهرت ٣٥ مسجدا ضمن ٣ كم في الرياض.
+  - الإعدادات `SettingsView` (من زر الترس في الرئيسية): القارئ (٣٤، ★ ١١ للتظليل) والترجمة (١٢) من `Catalog.swift` المولد من `docs/site_snapshot_2026-11-02.json`، حجم الخط s/m/l، المظهر يطبق على التطبيق كله، التنبيهات الثلاثة تطلب الإذن وتحفظ فقط، المصادر والتراخيص، الخصوصية، الإصدار، حزمة المحتوى.
+  - الترحيب `OnboardingView`: ٣ شاشات ← الموقع ← التنبيهات ← القارئ ← الرئيسية، مع «تخطي». يظهر عند أول تشغيل (`onboarding.done`).
+- الاختبارات: packages AyatCalc 13، AyatContent 5، AyatTiming 5، AyatDesign 3؛ app 4 ملفات (Smoke، Format، Mosques 3، Settings 4).
+- اللقطات على `ci-shots`: home، tools، prayer، qibla، zakat، hijri، occasions، mosques، settings، onboarding (`-screen home` يتجاوز الترحيب).
+- قبله: PR #1 (المواقيت، القبلة، الهجري، المناسبات) وPR #2 (شاشة الأدوات) مدموجان.
 
 ## 2. الخطوة التالية بالضبط
 
-1. ابدأ من main دون فرض الدفع:
+1. ابدأ من main بفرع جديد (الفرع `claude/peaceful-bell-g613dx` قديم):
    ```
-   git fetch origin && git checkout claude/peaceful-bell-g613dx && git merge origin/main
+   git fetch origin && git checkout -b claude/<اسم> origin/main
    ```
-2. التالي: حزمة `AyatDesign` (نقل `Brand` و`card()` و`Num`)، ثم المساجد القريبة بـ MapKit `MKLocalSearch` (نصف القطر 1/3/5 كم كما في الموقع)، ثم الإعدادات (`design/Settings.dc.html`) والترحيب (`design/Onboarding.dc.html`).
+2. التالي بالترتيب:
+   - **حزمة المحتوى على CI**: أجهزة GitHub Actions تصل إلى الإنترنت، فيمكن تشغيل `tools/build_content_pack.py` في مهمة يدوية (`workflow_dispatch`) تنشر `content.sqlite` كإصدار (Release) خاص، وهذا يفك قيد المصحف والأذكار والختمة. لا يُضمن في التطبيق ما حالته «يحتاج تحققا» في `docs/CONTENT_AND_LICENSES.md` (النص القرآني من Tanzil مسموح مع الإسناد؛ الأذكار مسموحة مع الإسناد).
+   - **الرئيسية** حسب `design/Main.dc.html` بما لا يحتاج محتوى: الصلاة القادمة، التاريخ الهجري، اختصارات الأدوات؛ وآية اليوم بعد حزمة المحتوى.
+   - جدولة التنبيهات الفعلية بعد حزمة المحتوى (المفاتيح `notify.*` في `Prefs`).
 3. لكل تغيير: push ← PR ← انتظر CI:
    ```
-   gh run list -R ayattla/ayattla-ios -b claude/peaceful-bell-g613dx -L 3
+   gh api "repos/ayattla/ayattla-ios/actions/runs?branch=<الفرع>&per_page=1" --jq '.workflow_runs[0].id'
    gh run view <RUN_ID> -R ayattla/ayattla-ios --log-failed | grep -E "error:|failed|XCTAssert" | head -50
-   git fetch origin ci-shots && git worktree add -f ci-shots origin/ci-shots
+   git fetch origin +ci-shots:refs/remotes/origin/ci-shots && git worktree add --detach shots origin/ci-shots
    ```
-   ثم دمج squash وتحديث هذا الملف.
+   ثم دمج squash: `gh api -X PUT repos/ayattla/ayattla-ios/pulls/<N>/merge -f merge_method=squash` (GraphQL محجوب، استخدم REST)، وحدّث هذا الملف.
 
 ## قرارات اتخذت دون سؤال المالك
 
@@ -38,6 +45,10 @@
 - قضاء الصلوات والصيام والختمة مؤجلة: الجرد لا يبين كل سلوكها (قضاء: لا زر «قضيت»)، والختمة تحتاج أسماء السور من حزمة المحتوى.
 - PHASE 1 أُغلقت اعتمادا على `docs/WEBSITE_TOOLS_WALKTHROUGH.md` (قرار المالك).
 - تنبيه قبل الأذان لم ينفذ لأن اللوحة لا تحدد المدة؛ والخريطة بديلا عن البوصلة مؤجلة.
+- المساجد: بحث MapKit على الجهاز بدل `/app/v1/mosques` لأنه لا يحتاج خادما؛ استعلامان (عربي وإنجليزي) لأن الخرائط تفهرس الاسمين منفصلين.
+- الإعدادات: الإصدار وحزمة المحتوى في صفين منفصلين بدل «[رقم الإصدار] · محتوى [الإصدار]» في اللوحة، لأن خلط الأرقام بالنص العربي في سطر واحد عكس ترتيبها.
+- الإعدادات: التنبيهات تحفظ الاختيار وتطلب الإذن فقط؛ الجدولة مؤجلة لأن اللوحة لا تحدد المواعيد ونصوصها تعتمد على حزمة المحتوى.
+- الترحيب: اللوحة تعطي نص الشاشة الأولى فقط؛ نصا الشاشتين الثانية والثالثة (المواقيت والقبلة؛ دون إنترنت) كتبتهما من وصف التطبيق، وليس فيهما نص ديني. الشعار مؤقت برمز SF حتى يضاف شعار مجلد brand.
 - لا يُكتب أي نص ديني؛ الشاشات المعتمدة على القرآن والأذكار والتسبيح تنتظر حزمة المحتوى من المصادر المعتمدة.
 
 ## نص المتابعة
