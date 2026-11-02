@@ -5,7 +5,7 @@ import AyatCalc
 /// Every tool of the Tools tab (docs/APP_ARCHITECTURE.md §1). Tools that depend on the content
 /// pack or on behaviour not yet confirmed on the site show a placeholder until they are built.
 enum ToolItem: String, CaseIterable, Identifiable {
-    case azkar, tasbih, duas, prayer, qibla, hijri, occasions, zakat, qada, sawm, mosques, hadith, hadithChecker, prayerGuide
+    case azkar, tasbih, duas, prayer, qibla, hijri, occasions, zakat, qada, sawm, mosques, hadith, hadithChecker, prayerGuide, kids
     var id: String { rawValue }
 
     var title: String {
@@ -24,6 +24,7 @@ enum ToolItem: String, CaseIterable, Identifiable {
         case .hadith: "الأحاديث"
         case .hadithChecker: "التحقق من حديث"
         case .prayerGuide: "صفة الوضوء والصلاة"
+        case .kids: "تحفيظ الأطفال جزء عم"
         }
     }
 
@@ -43,6 +44,7 @@ enum ToolItem: String, CaseIterable, Identifiable {
         case .hadith: "text.book.closed"
         case .hadithChecker: "checkmark.seal"
         case .prayerGuide: "drop"
+        case .kids: "star.circle"
         }
     }
 
@@ -63,6 +65,7 @@ enum ToolItem: String, CaseIterable, Identifiable {
         case .hadith: HadithView()
         case .hadithChecker: HadithCheckerView()
         case .prayerGuide: PrayerGuideView()
+        case .kids: KidsJuzAmmaView()
         case .sawm: SawmView()
         default: PlaceholderScreen(title: title)
         }
@@ -209,49 +212,6 @@ struct NextPrayerCard: View {
             .padding(16)
             .background(Brand.tint, in: RoundedRectangle(cornerRadius: Brand.radiusCard))
             .overlay(RoundedRectangle(cornerRadius: Brand.radiusCard).stroke(Brand.line, lineWidth: 1))
-        }
-    }
-}
-
-struct ZakatView: View {
-    @State private var input = Zakat.Input()
-
-    var body: some View {
-        let r = Zakat.calculate(input)
-        Form {
-            Section {
-                Picker("النصاب على أساس", selection: $input.basis) {
-                    Text("الذهب").tag(Zakat.Basis.gold)
-                    Text("الفضة").tag(Zakat.Basis.silver)
-                }
-                field("سعر غرام الذهب عيار ٢٤", $input.goldPricePerGram24)
-                field("سعر غرام الفضة", $input.silverPricePerGram)
-            }
-            Section("الأموال") {
-                field("النقد والأرصدة البنكية", $input.cash)
-                field("قيمة عروض التجارة", $input.trade)
-                field("ذهب عيار ٢٤ (غرام)", $input.gold24)
-                field("ذهب عيار ٢١ (غرام)", $input.gold21)
-                field("ذهب عيار ١٨ (غرام)", $input.gold18)
-                field("فضة (غرام)", $input.silverGrams)
-                field("ديون لك مرجوة السداد", $input.receivables)
-                field("ديون عليك حالة الآن", $input.debts)
-            }
-            Section("النتيجة") {
-                LabeledContent("صافي المال الزكوي", value: r.total.formatted())
-                LabeledContent("النصاب", value: r.nisab > 0 ? r.nisab.formatted() : "أدخل السعر")
-                LabeledContent("الزكاة الواجبة", value: r.due.formatted())
-                    .font(.headline)
-            }
-        }
-        .navigationTitle("حاسبة الزكاة")
-    }
-
-    private func field(_ title: String, _ value: Binding<Double>) -> some View {
-        LabeledContent(title) {
-            TextField("٠", value: value, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.leading)
         }
     }
 }
