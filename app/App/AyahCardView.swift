@@ -74,6 +74,7 @@ struct AyahCardView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
     @State private var saved = false
+    @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     private let lib = ContentLibrary.shared
 
     init(surah: Int = 2, from: Int = 255, to: Int? = nil) {
@@ -143,9 +144,12 @@ struct AyahCardView: View {
                 } label: { Label("حفظ في الصور", systemImage: "square.and.arrow.down") }
                 ShareLink(item: CardImage(model: model, photo: photo),
                           preview: SharePreview(model.reference)) { Label("مشاركة", systemImage: "square.and.arrow.up") }
-                Button {} label: { Label("حولها إلى فيديو", systemImage: "film") }
-                    .disabled(true)
-                    .accessibilityHint("قريبا")
+                if let folder = (try? lib.store?.reciterFolders())?[reciter] {
+                    NavigationLink {
+                        ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
+                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo))
+                    } label: { Label("حولها إلى فيديو بالتلاوة", systemImage: "film") }
+                }
             }
         }
         .navigationTitle("بطاقة آية")
