@@ -1,5 +1,6 @@
 import SwiftUI
 import Observation
+import AyatDesign
 
 /// Editor settings kept with a project so it can be reopened and changed (docs/APP_ARCHITECTURE.md:
 /// ProjectSettings). Unknown ids fall back to defaults when an editor opens them.
