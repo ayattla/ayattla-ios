@@ -157,6 +157,7 @@ struct ZakatSummary {
         f.locale = Locale(identifier: "en_US")
         f.numberStyle = .decimal
         f.maximumFractionDigits = 2
+        f.roundingMode = .halfUp   // JS toLocaleString rounds half away from zero (2490.625 → .63)
         f.minimumFractionDigits = 0
         return Num.digits(f.string(from: NSNumber(value: x)) ?? "0")
     }
