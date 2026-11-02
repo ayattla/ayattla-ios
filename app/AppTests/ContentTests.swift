@@ -43,6 +43,12 @@ final class ContentTests: XCTestCase {
         }
     }
 
+    func testTasbihPhrasesFromSite() {
+        XCTAssertFalse(lib.tasbihPhrases.isEmpty)
+        let tashkeel = CharacterSet(charactersIn: "\u{064B}"..."\u{0652}")
+        for p in lib.tasbihPhrases { XCTAssertNil(TasbihView.plain(p).rangeOfCharacter(from: tashkeel), p) }
+    }
+
     func testFontsRegistered() {
         _ = lib
         XCTAssertFalse(UIFont.fontNames(forFamilyName: ContentLibrary.mushafFont).isEmpty, "Amiri Quran")

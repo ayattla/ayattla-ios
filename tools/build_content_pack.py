@@ -84,6 +84,18 @@ def split_basmala(surahs):
     return basmala, flags
 
 
+def tasbih_from_site(path):
+    """The tasbih phrases of ayattla.com/tools/tasbih (the page's `const Z=[...]`), as written there."""
+    page = open(path, encoding="utf-8").read()
+    m = re.search(r"const Z=\[(.*?)\];", page, re.S)
+    if not m:
+        raise ValueError("tasbih phrase list not found in the page")
+    phrases = re.findall(r"'([^']+)'", m.group(1))
+    if not phrases:
+        raise ValueError("tasbih phrase list is empty")
+    return phrases
+
+
 def load_surahs(path):
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
@@ -161,9 +173,12 @@ def build(args):
                        (r["id"], r["name"], r["folder"], 1 if r.get("highlight") else 0, i))
             reciters += 1
 
+    tasbih = tasbih_from_site(args.tasbih_html) if getattr(args, "tasbih_html", None) else []
+
     sources = {"quran": qdoc["data"].get("edition", {}).get("identifier", "unknown"),
                "editions": sorted(editions), "azkar": azkar_source}
     meta = {"content_version": str(args.version), "basmala": basmala,
+            "tasbih_phrases": json.dumps(tasbih, ensure_ascii=False),
             "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ayah_count": str(total), "sources_json": json.dumps(sources, ensure_ascii=False)}
     db.executemany("INSERT INTO meta VALUES(?,?)", meta.items())
@@ -178,7 +193,7 @@ def build(args):
     digest = h.hexdigest()
     with open(args.out + ".sha256", "w") as f:
         f.write(f"{digest}  {args.out.rsplit('/', 1)[-1]}\n")
-    return {"ayat": total, "editions": editions, "reciters": reciters, "basmala_surahs": len(basmala_flags), "sha256": digest}
+    return {"ayat": total, "editions": editions, "reciters": reciters, "tasbih": len(tasbih), "basmala_surahs": len(basmala_flags), "sha256": digest}
 
 
 def main(argv=None):
@@ -187,6 +202,7 @@ def main(argv=None):
     p.add_argument("--quran", required=True)
     p.add_argument("--edition", action="append")
     p.add_argument("--azkar")
+    p.add_argument("--tasbih-html", help="saved ayattla.com/tools/tasbih page (phrase list)")
     p.add_argument("--reciters", help="ayattla.com /api/meta JSON (reciter ids, names, EveryAyah folders)")
     p.add_argument("--out", required=True)
     p.add_argument("--allow-partial", action="store_true", help="tests only")

@@ -101,7 +101,7 @@ struct TasbihView: View {
                 ForEach(sourcePhrases + userPhrases, id: \.self) { p in
                     let on = p == phrase
                     Button { phrase = on ? "" : p; count = 0 } label: {
-                        Text(p).lineLimit(1)
+                        Text(Self.plain(p)).lineLimit(1)
                             .font(.footnote.weight(.medium))
                             .foregroundStyle(on ? .white : .primary)
                             .padding(.horizontal, 14).frame(minHeight: 36)
@@ -126,6 +126,19 @@ struct TasbihView: View {
             }
             .padding(.horizontal, 16)
         }
+    }
+
+    /// Chip label without tashkeel, as the site shows it; the full text appears above the counter.
+    static func plain(_ s: String) -> String {
+        var out = ""
+        for u in s.unicodeScalars {
+            switch u.value {
+            case 0x064B...0x0670: continue
+            case 0x0671: out.unicodeScalars.append("\u{0627}")
+            default: out.unicodeScalars.append(u)
+            }
+        }
+        return out
     }
 
     private func rollDay() {
