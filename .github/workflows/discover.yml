@@ -6,31 +6,9 @@ jobs:
   look:
     runs-on: ubuntu-latest
     steps:
-      - name: Read endpoints
+      - name: Prayer guide HTML structure
         run: |
-          curl -sS -m 30 https://ayattla.com/api/duas -o duas.json
-          python3 -c "
-          import json;d=json.load(open('duas.json'))
-          print('DUAS keys', list(d))
-          for k,v in d.items():
-              print(k, type(v).__name__, len(v) if hasattr(v,'__len__') else v)
-              if isinstance(v,list) and v: print('  sample', json.dumps(v[0],ensure_ascii=False)[:400]); print('  keys', list(v[0]) if isinstance(v[0],dict) else '')
-          "
-          curl -sS -m 30 https://ayattla.com/tools/hadith -o h.html
-          python3 -c "
-          import re;s=open('h.html').read()
-          i=s.find('HC');print('HADITH JS', s[max(0,i-1500):i+1500])"
-          curl -sS -m 30 "https://ayattla.com/api/hadith/browse?cat=1" | head -c 1200; echo
-          echo === check
-          curl -sS -m 30 -X POST https://ayattla.com/api/hadith/check -H 'Content-Type: application/json' -d '{"text":"إنما الأعمال بالنيات"}' | head -c 2000; echo
-          echo === ruqya
-          curl -sS -m 30 https://ayattla.com/api/ruqya -o r.json; python3 -c "
-          import json;d=json.load(open('r.json'));print(type(d).__name__, list(d) if isinstance(d,dict) else len(d))
-          print(json.dumps(d,ensure_ascii=False)[:1500])"
-          echo === prayer-guide page text
           curl -sS -m 30 https://ayattla.com/tools/prayer-guide -o g.html
           python3 -c "
-          import re,html;s=open('g.html').read()
-          m=re.search(r'<main.*?</main>',s,re.S); t=m.group(0) if m else s
-          t=re.sub(r'<(script|style).*?</\1>','',t,flags=re.S); t=re.sub(r'<[^>]+>','\n',t); t=html.unescape(t)
-          print('\n'.join(l.strip() for l in t.split('\n') if l.strip())[:3000])"
+          s=open('g.html').read(); i=s.find('<main'); j=s.find('</main>')
+          m=s[i:j]; k=m.find('الوضوء'); print(m[k-600:k+2600])"
