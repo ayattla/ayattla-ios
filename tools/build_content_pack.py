@@ -43,6 +43,8 @@ CREATE TABLE ayah(surah INTEGER NOT NULL, ayah INTEGER NOT NULL, text_uthmani TE
 CREATE VIRTUAL TABLE ayah_fts USING fts5(text_clean, content='ayah', content_rowid='rowid');
 CREATE TABLE translation(edition TEXT NOT NULL, surah INTEGER NOT NULL, ayah INTEGER NOT NULL,
   text TEXT NOT NULL, PRIMARY KEY(edition, surah, ayah));
+CREATE TABLE reciter(id TEXT PRIMARY KEY, name TEXT NOT NULL, folder TEXT NOT NULL,
+  highlight INTEGER NOT NULL DEFAULT 0, ord INTEGER NOT NULL);
 CREATE TABLE azkar_category(id INTEGER PRIMARY KEY, title TEXT NOT NULL);
 CREATE TABLE azkar(id INTEGER PRIMARY KEY, category INTEGER NOT NULL REFERENCES azkar_category(id),
   text TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 1, reference TEXT, note TEXT, audio_id INTEGER);
@@ -148,6 +150,17 @@ def build(args):
                            (it["id"], c["id"], it["text"], int(it.get("count") or 1),
                             it.get("reference"), it.get("note"), it.get("audio_id")))
 
+    reciters = 0
+    if getattr(args, "reciters", None):
+        with open(args.reciters, encoding="utf-8") as f:
+            rs = json.load(f)["reciters"]
+        for i, r in enumerate(rs):
+            if not r.get("folder"):
+                raise ValueError(f"reciter {r.get('id')} has no EveryAyah folder")
+            db.execute("INSERT INTO reciter VALUES(?,?,?,?,?)",
+                       (r["id"], r["name"], r["folder"], 1 if r.get("highlight") else 0, i))
+            reciters += 1
+
     sources = {"quran": qdoc["data"].get("edition", {}).get("identifier", "unknown"),
                "editions": sorted(editions), "azkar": azkar_source}
     meta = {"content_version": str(args.version), "basmala": basmala,
@@ -165,7 +178,7 @@ def build(args):
     digest = h.hexdigest()
     with open(args.out + ".sha256", "w") as f:
         f.write(f"{digest}  {args.out.rsplit('/', 1)[-1]}\n")
-    return {"ayat": total, "editions": editions, "basmala_surahs": len(basmala_flags), "sha256": digest}
+    return {"ayat": total, "editions": editions, "reciters": reciters, "basmala_surahs": len(basmala_flags), "sha256": digest}
 
 
 def main(argv=None):
@@ -174,6 +187,7 @@ def main(argv=None):
     p.add_argument("--quran", required=True)
     p.add_argument("--edition", action="append")
     p.add_argument("--azkar")
+    p.add_argument("--reciters", help="ayattla.com /api/meta JSON (reciter ids, names, EveryAyah folders)")
     p.add_argument("--out", required=True)
     p.add_argument("--allow-partial", action="store_true", help="tests only")
     r = build(p.parse_args(argv))

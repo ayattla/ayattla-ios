@@ -41,6 +41,10 @@ final class ContentStoreTests: XCTestCase {
         XCTAssertEqual(try s.translation(edition: "muyassar", surah: 1, ayah: 1), "ترجمة اختبار 1:1")
     }
 
+    func testReciterFolders() throws {
+        XCTAssertEqual(try store().reciterFolders(), ["r1": "Test_64kbps"])
+    }
+
     func testCleanMatchesBuilder() {
         XCTAssertEqual(ContentStore.clean("أَإِآ  ٱلـ"), "ااا ال")
     }

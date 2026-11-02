@@ -116,6 +116,13 @@ public final class ContentStore: @unchecked Sendable {
                  [.text(edition), .int(surah), .int(ayah)]) { $0.text(0) }.first ?? nil
     }
 
+    /// EveryAyah folder for each reciter id (from the site's reciter list).
+    public func reciterFolders() throws -> [String: String] {
+        Dictionary(uniqueKeysWithValues: try rows("SELECT id, folder FROM reciter ORDER BY ord", []) {
+            ($0.text(0) ?? "", $0.text(1) ?? "")
+        })
+    }
+
     public func azkarCategories() throws -> [ZikrCategory] {
         try rows("SELECT id, title FROM azkar_category ORDER BY id", []) { ZikrCategory(id: $0.int(0), title: $0.text(1) ?? "") }
     }

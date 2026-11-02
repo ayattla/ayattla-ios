@@ -31,16 +31,8 @@ jobs:
           echo "AZKAR_REF=$(git -C src/azkar-db rev-parse HEAD)" >> "$GITHUB_ENV"
           # Second copy of the Quran text straight from Tanzil, only for the byte comparison below
           curl -sSfL --retry 3 "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=false&quranType=uthmani&outType=txt-2&agree=true" -o src/tanzil-uthmani.txt || echo "tanzil download failed"
-      - name: Look at reciter data on the live site (read only, temporary)
-        continue-on-error: true
-        run: |
-          curl -sS -m 30 https://ayattla.com/api/meta -o src/meta.json && python3 - <<'PY'
-          import json
-          d = json.load(open("src/meta.json"))
-          print("keys", list(d) if isinstance(d, dict) else type(d))
-          r = d.get("reciters") if isinstance(d, dict) else None
-          print(json.dumps(r[:4] if isinstance(r, list) else r, ensure_ascii=False)[:1500])
-          PY
+      - name: Reciter list from the live site (read only)
+        run: curl -sSf --retry 3 -m 30 https://ayattla.com/api/meta -o src/meta.json
       - name: Mushaf font (Amiri Quran, OFL 1.1)
         run: |
           mkdir -p pack
@@ -51,7 +43,7 @@ jobs:
         run: |
           python3 tools/normalize_azkar.py src/azkar-db/azkar.json --source "osamayy/azkar-db@$AZKAR_REF" --out src/azkar.json
           mkdir -p pack
-          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --out pack/content-v1.sqlite
+          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --reciters src/meta.json --out pack/content-v1.sqlite
           python3 tools/check_content_sql.py app/Packages/AyatContent/Sources/AyatContent/ContentStore.swift pack/content-v1.sqlite
           python3 - <<'PY'
           import sqlite3
