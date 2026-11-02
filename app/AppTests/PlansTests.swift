@@ -53,15 +53,37 @@ final class PlansTests: XCTestCase {
 
 final class TrackersTests: XCTestCase {
     func testQada() {
-        var s = QadaState(days: 10)
-        XCTAssertEqual(s.totalRemaining, 50)
-        s.makeUp(0); s.makeUp(0); s.undo(0)
-        XCTAssertEqual(s.remaining(0), 9)
-        XCTAssertEqual(s.daysLeft, 10)
-        s.perDay = 3
-        XCTAssertEqual(s.daysLeft, 4)
-        for _ in 0..<20 { s.makeUp(1) }
-        XCTAssertEqual(s.remaining(1), 0)
+        // Same steps as on ayattla.com/tools/qada-salah: 30 days, «قضيت واحدة» on الفجر, «+» on الظهر.
+        var s = QadaState()
+        s.add(days: 30)
+        s.makeUp(0); s.more(1)
+        XCTAssertEqual(s.left, [29, 31, 30, 30, 30])
+        XCTAssertEqual(s.status, "المتبقي: ١٥٠ صلاة — تم قضاء: ١")
+        XCTAssertEqual(s.daysLeft, 31)
+        s.per = 3
+        XCTAssertEqual(s.plan, "بقضاء ٣ مع كل فرض تنتهي خلال نحو ١١ يوما بإذن الله")
+        s.add(days: 5)
+        XCTAssertEqual(s.left, [34, 36, 35, 35, 35])
+        XCTAssertEqual(QadaState.paces.map(\.value), [1, 2, 3, 5])
+    }
+
+    func testQadaMigratesEarlierFormat() throws {
+        let old = #"{"owed":[10,10,10,10,10],"done":[2,0,0,0,1],"perDay":4}"#
+        let s = try JSONDecoder().decode(QadaState.self, from: Data(old.utf8))
+        XCTAssertEqual(s.left, [8, 10, 10, 10, 9])
+        XCTAssertEqual(s.done, 3)
+        XCTAssertEqual(s.per, 3)
+        let again = try JSONDecoder().decode(QadaState.self, from: JSONEncoder().encode(s))
+        XCTAssertEqual(again, s)
+    }
+
+    func testTasbihMatchesSite() {
+        XCTAssertEqual(TasbihView.targets, [33, 100, 1000, 0])
+        XCTAssertEqual(TasbihView.targetTitle(0), "بدون هدف")
+        XCTAssertEqual(TasbihView.targetTitle(33), "الهدف ٣٣")
+        XCTAssertEqual(TasbihView.remainingText(count: 0, target: 33), "بقي ٣٣")
+        XCTAssertNil(TasbihView.remainingText(count: 35, target: 33))
+        XCTAssertNil(TasbihView.remainingText(count: 5, target: 0))
     }
 
     func testSawm() {

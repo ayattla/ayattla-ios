@@ -4,109 +4,149 @@ import AyatCalc
 
 // MARK: - Qada of prayers (/tools/qada-salah)
 
-/// Missed-prayer tracker: owed count per prayer, "قضيت واحدة" after each made-up prayer,
-/// remaining and a daily plan. Saved on the device.
+/// Missed-prayer tracker, matching ayattla.com/tools/qada-salah: a count left per prayer,
+/// «أضف للعداد» adds the missed days to every prayer (again and again), «قضيت واحدة» and «+» per
+/// prayer, the daily pace 1/2/3/5 and the finishing estimate. Saved on the device only.
 struct QadaState: Codable, Equatable {
     static let prayers: [Prayer] = [.fajr, .dhuhr, .asr, .maghrib, .isha]
+    struct Pace: Hashable { let value: Int; let title: String }
+    static let paces: [Pace] = [.init(value: 1, title: "صلاة واحدة"), .init(value: 2, title: "صلاتان"),
+                                .init(value: 3, title: "ثلاث صلوات"), .init(value: 5, title: "خمس صلوات")]
 
-    var owed: [Int] = [0, 0, 0, 0, 0]
-    var done: [Int] = [0, 0, 0, 0, 0]
-    var perDay = 1
+    var left: [Int] = [0, 0, 0, 0, 0]
+    var done = 0
+    var per = 1
 
     init() {}
-    init(days: Int) { owed = Array(repeating: max(days, 0), count: 5) }
 
-    func remaining(_ i: Int) -> Int { max(owed[i] - done[i], 0) }
-    var totalRemaining: Int { (0..<5).map(remaining).reduce(0, +) }
-    var totalOwed: Int { owed.reduce(0, +) }
+    mutating func add(days: Int) { guard days > 0 else { return }; left = left.map { $0 + days } }
+    mutating func makeUp(_ i: Int) { if left[i] > 0 { left[i] -= 1; done += 1 } }
+    mutating func more(_ i: Int) { left[i] += 1 }
 
-    /// Days left if `perDay` extra prayers of each kind are made up every day.
+    var totalRemaining: Int { left.reduce(0, +) }
+    /// Days to finish at `per` made-up prayers with each obligatory prayer (site: ceil(max / per)).
     var daysLeft: Int {
-        let worst = (0..<5).map(remaining).max() ?? 0
-        return worst == 0 ? 0 : (worst + perDay - 1) / perDay
+        let worst = left.max() ?? 0
+        return worst == 0 ? 0 : (worst + per - 1) / per
     }
 
-    mutating func makeUp(_ i: Int) { if remaining(i) > 0 { done[i] += 1 } }
-    mutating func undo(_ i: Int) { if done[i] > 0 { done[i] -= 1 } }
+    var status: String { "المتبقي: \(Num.int(totalRemaining)) صلاة — تم قضاء: \(Num.int(done))" }
+    var plan: String? {
+        daysLeft > 0 ? "بقضاء \(Num.int(per)) مع كل فرض تنتهي خلال نحو \(Num.int(daysLeft)) يوما بإذن الله" : nil
+    }
+
+    private enum Keys: String, CodingKey { case left, done, per, owed, perDay }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        if let l = try c.decodeIfPresent([Int].self, forKey: .left) {
+            left = l
+            done = try c.decodeIfPresent(Int.self, forKey: .done) ?? 0
+            per = try c.decodeIfPresent(Int.self, forKey: .per) ?? 1
+        } else {
+            // Earlier app format: owed and done per prayer, perDay 1…5.
+            let owed = try c.decodeIfPresent([Int].self, forKey: .owed) ?? [0, 0, 0, 0, 0]
+            let d = try c.decodeIfPresent([Int].self, forKey: .done) ?? [0, 0, 0, 0, 0]
+            left = zip(owed, d).map { max($0 - $1, 0) }
+            done = d.reduce(0, +)
+            let p = try c.decodeIfPresent(Int.self, forKey: .perDay) ?? 1
+            per = Self.paces.map(\.value).last { $0 <= p } ?? 1
+        }
+        if left.count != 5 { left = Array((left + [0, 0, 0, 0, 0]).prefix(5)) }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: Keys.self)
+        try c.encode(left, forKey: .left); try c.encode(done, forKey: .done); try c.encode(per, forKey: .per)
+    }
 }
 
 struct QadaView: View {
     @AppStorage("qada.state") private var raw = ""
-    @State private var days = 30
+    @State private var daysText = ""
     @State private var confirmReset = false
 
-    private var state: QadaState? {
-        raw.isEmpty ? nil : try? JSONDecoder().decode(QadaState.self, from: Data(raw.utf8))
+    private var state: QadaState {
+        (try? JSONDecoder().decode(QadaState.self, from: Data(raw.utf8))) ?? QadaState()
     }
 
-    private func save(_ s: QadaState?) {
-        raw = s.flatMap { try? JSONEncoder().encode($0) }.map { String(decoding: $0, as: UTF8.self) } ?? ""
+    private func save(_ s: QadaState) {
+        raw = (try? JSONEncoder().encode(s)).map { String(decoding: $0, as: UTF8.self) } ?? ""
     }
 
     var body: some View {
+        let s = state
         Form {
-            if let s = state {
-                Section {
-                    LabeledContent("المتبقي", value: Num.int(s.totalRemaining))
-                    LabeledContent("قضيت", value: "\(Num.int(s.totalOwed - s.totalRemaining)) من \(Num.int(s.totalOwed))")
-                    ProgressView(value: Double(s.totalOwed - s.totalRemaining), total: Double(max(s.totalOwed, 1)))
-                        .tint(Brand.primary)
+            Section {
+                LabeledContent("عدد الأيام الفائتة تقريبا") {
+                    TextField("مثال: ٣٠", text: $daysText)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: 120)
                 }
-                Section("الصلوات") {
-                    ForEach(0..<5, id: \.self) { i in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(QadaState.prayers[i].name).font(.headline)
-                                Text("متبق \(Num.int(s.remaining(i)))").font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button {
-                                var n = s; n.undo(i); save(n)
-                            } label: { Image(systemName: "minus.circle").frame(width: Brand.minTap, height: Brand.minTap) }
-                            .buttonStyle(.borderless)
-                            .disabled(s.done[i] == 0)
-                            .accessibilityLabel("تراجع عن قضاء \(QadaState.prayers[i].name)")
-                            Button {
-                                var n = s; n.makeUp(i); save(n)
-                            } label: {
-                                Text("قضيت واحدة").font(.subheadline.weight(.semibold))
-                                    .padding(.horizontal, 12).frame(minHeight: 36)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .buttonBorderShape(.capsule)
-                            .disabled(s.remaining(i) == 0)
+                Button("أضف للعداد") {
+                    var n = s; n.add(days: Int(ZakatForm.number(daysText))); save(n); daysText = ""
+                }
+                .font(.headline).frame(maxWidth: .infinity, minHeight: Brand.minTap)
+                .disabled(ZakatForm.number(daysText) < 1)
+            } footer: {
+                Text("يضاف العدد لكل صلاة من الصلوات الخمس، ويمكنك تعديل كل صلاة بالأزرار.")
+            }
+
+            Section {
+                ForEach(0..<5, id: \.self) { i in
+                    HStack(spacing: 10) {
+                        Text(QadaState.prayers[i].name).font(.headline)
+                        Spacer()
+                        Text(Num.int(s.left[i])).font(.title3.weight(.semibold)).monospacedDigit()
+                            .foregroundStyle(Brand.primaryInk)
+                            .frame(minWidth: 44)
+                        Button {
+                            var n = s; n.makeUp(i); save(n)
+                        } label: {
+                            Text("قضيت واحدة").font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 10).frame(minHeight: 36)
                         }
-                        .frame(minHeight: Brand.minTap)
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .disabled(s.left[i] == 0)
+                        Button {
+                            var n = s; n.more(i); save(n)
+                        } label: {
+                            Image(systemName: "plus").frame(width: 36, height: 36)
+                        }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.circle)
+                        .accessibilityLabel("زيادة \(QadaState.prayers[i].name)")
                     }
+                    .frame(minHeight: Brand.minTap)
+                    .accessibilityElement(children: .contain)
                 }
-                Section {
-                    Stepper("مع كل صلاة: \(Num.int(s.perDay)) قضاء يوميا", value: Binding(
-                        get: { s.perDay }, set: { var n = s; n.perDay = $0; save(n) }), in: 1...5)
-                    if s.daysLeft > 0 {
-                        let end = Calendar(identifier: .gregorian).date(byAdding: .day, value: s.daysLeft, to: Date()) ?? Date()
-                        LabeledContent("تنتهي بعد", value: "\(Num.int(s.daysLeft)) يوما")
-                        LabeledContent("نحو", value: end.formatted(Date.FormatStyle(date: .long, time: .omitted, locale: Num.locale)))
-                    } else {
-                        Text("أتممت القضاء").foregroundStyle(Brand.primaryInk)
-                    }
-                } header: { Text("الخطة اليومية") }
-                Section {
-                    Button("بدء من جديد", role: .destructive) { confirmReset = true }
+            } header: {
+                Text(s.status)
+            }
+
+            Section {
+                Picker("كم صلاة تقضي يوميا مع كل فرض؟", selection: Binding(
+                    get: { s.per }, set: { var n = s; n.per = $0; save(n) })) {
+                    ForEach(QadaState.paces, id: \.value) { Text($0.title).tag($0.value) }
                 }
-            } else {
-                Section {
-                    Stepper("الأيام الفائتة تقريبا: \(Num.int(days))", value: $days, in: 1...20_000, step: days < 60 ? 1 : 30)
-                    Button("ابدأ") { save(QadaState(days: days)) }
-                        .font(.headline).frame(maxWidth: .infinity, minHeight: Brand.minTap)
-                } footer: {
-                    Text("يحسب لكل صلاة من الخمس عدد الأيام الفائتة، واضغط «قضيت واحدة» بعد كل صلاة تقضيها. يحفظ على جهازك.")
+                if let plan = s.plan {
+                    Text(plan).foregroundStyle(Brand.primaryInk)
                 }
+            }
+
+            Section {
+                Button("تصفير العداد", role: .destructive) { confirmReset = true }
+                    .disabled(s.totalRemaining == 0 && s.done == 0)
+            } footer: {
+                Text("هذه الأداة تنظم العدد فقط. اسأل أهل العلم عن أحكام القضاء وترتيبه. يحفظ على جهازك فقط.")
             }
         }
         .navigationTitle("قضاء الصلوات")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("حذف العداد والبدء من جديد؟", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("بدء من جديد", role: .destructive) { save(nil) }
+        .confirmationDialog("تصفير العداد؟", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("تصفير العداد", role: .destructive) { save(QadaState()) }
         }
     }
 }
