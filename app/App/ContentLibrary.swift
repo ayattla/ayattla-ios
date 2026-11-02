@@ -13,6 +13,8 @@ final class ContentLibrary: @unchecked Sendable {
     let basmala: String?
     let surahs: [Surah]
     let pageCount: Int
+    /// Tasbih phrases from the pack (meta "tasbih_phrases", a JSON list); empty until the source is added.
+    let tasbihPhrases: [String]
 
     /// Family name of the bundled mushaf font; falls back to the system font if it is missing.
     static let mushafFont = "Amiri Quran"
@@ -43,6 +45,8 @@ final class ContentLibrary: @unchecked Sendable {
         self.basmala = (try? store?.basmala()) ?? nil
         self.surahs = (try? store?.surahs()) ?? []
         self.pageCount = (try? store?.pageCount()) ?? 0
+        let raw = ((try? store?.meta("tasbih_phrases")) ?? nil) ?? "[]"
+        self.tasbihPhrases = (try? JSONDecoder().decode([String].self, from: Data(raw.utf8))) ?? []
     }
 
     var isReady: Bool { store != nil }
@@ -50,7 +54,8 @@ final class ContentLibrary: @unchecked Sendable {
     func surah(_ id: Int) -> Surah? { surahs.indices.contains(id - 1) ? surahs[id - 1] : nil }
 
     private static func registerFonts(_ bundle: Bundle) {
-        guard let url = bundle.url(forResource: "AmiriQuran-Regular", withExtension: "ttf", subdirectory: "Content") else { return }
-        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        for url in bundle.urls(forResourcesWithExtension: "ttf", subdirectory: "Content") ?? [] {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
     }
 }
