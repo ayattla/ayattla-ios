@@ -55,14 +55,9 @@ struct TextCardView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                CardCanvas(model: model, photo: nil)
-                    .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
-                    .frame(maxWidth: .infinity, maxHeight: 420)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+        EditorLayout(preview: CardCanvas(model: model, photo: nil)
+            .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 12))) {
             Section("الشكل") {
                 Picker("المقاس", selection: $ratio) { ForEach(CardOptions.Ratio.allCases) { Text($0.label).tag($0) } }
                     .pickerStyle(.segmented)
@@ -72,8 +67,13 @@ struct TextCardView: View {
             }
             Section {
                 Button {
-                    if let img = CardCanvas.render(model, photo: nil) { UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil); saved = true }
-                } label: { Label("حفظ في الصور", systemImage: "square.and.arrow.down") }
+                    if let img = CardCanvas.render(model, photo: nil) {
+                        UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
+                        try? ProjectStore.shared.addImage(img, kind: title == "بطاقة حديث" ? .hadithCard : .status, title: title,
+                                                          ratio: ratio.rawValue, settings: nil)
+                        saved = true
+                    }
+                } label: { Label("حفظ في الصور ومكتبتي", systemImage: "square.and.arrow.down") }
                 ShareLink(item: CardImage(model: model, photo: nil), preview: SharePreview(title)) {
                     Label("مشاركة", systemImage: "square.and.arrow.up")
                 }
@@ -81,7 +81,7 @@ struct TextCardView: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .alert("حفظت الصورة في الصور", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
+        .alert("حفظت الصورة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }
 }
 

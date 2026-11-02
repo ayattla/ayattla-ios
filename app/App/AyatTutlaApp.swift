@@ -3,6 +3,7 @@ import AyatDesign
 
 @main
 struct AyatTutlaApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.scenePhase) private var phase
 
     var body: some Scene {
@@ -93,7 +94,9 @@ struct StartView: View {
     @AppStorage(Prefs.onboardingDone) private var onboardingDone = false
 
     var body: some View {
-        content.preferredColorScheme(Appearance(rawValue: appearance)?.scheme)
+        content
+            .modifier(RouteSheet())
+            .preferredColorScheme(Appearance(rawValue: appearance)?.scheme)
     }
 
     @ViewBuilder private var content: some View {

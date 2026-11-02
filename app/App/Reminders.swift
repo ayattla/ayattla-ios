@@ -20,6 +20,7 @@ enum Reminders {
         let title: String
         let body: String
         let date: Date
+        var link: String? = nil
     }
 
     /// Pure planning, so it can be tested without the notification center.
@@ -39,23 +40,25 @@ enum Reminders {
                                             tzHours: PrayerTimes.tzHours(zone, at: day), method: city.method,
                                             ramadan: Hijri.isRamadan(day))
                 out.append(.init(id: "\(prefix)azkar.morning.\(key)", title: "أذكار الصباح",
-                                 body: "حان وقت أذكار الصباح", date: at(hours: t.fajr + azkarOffsetMinutes / 60)))
+                                 body: "حان وقت أذكار الصباح", date: at(hours: t.fajr + azkarOffsetMinutes / 60),
+                                 link: Route.azkarLink("أذكار الصباح")))
                 out.append(.init(id: "\(prefix)azkar.evening.\(key)", title: "أذكار المساء",
-                                 body: "حان وقت أذكار المساء", date: at(hours: t.asr + azkarOffsetMinutes / 60)))
+                                 body: "حان وقت أذكار المساء", date: at(hours: t.asr + azkarOffsetMinutes / 60),
+                                 link: Route.azkarLink("أذكار المساء")))
             }
             if dailyAyah {
                 let pick = AyahOfTheDay.pick(for: day.addingTimeInterval(12 * 3600))
                 let ref = AyahOfTheDay.reference(pick)
                 let body = ayahText(pick).map { "\($0)\n\(ref)" } ?? ref
                 out.append(.init(id: "\(prefix)ayah.\(key)", title: "آية اليوم", body: body,
-                                 date: at(hours: Double(ayahHour))))
+                                 date: at(hours: Double(ayahHour)), link: Route.ayahLink(pick.surah, pick.from)))
             }
             if let k = khatma {
                 let d = k.day(on: day.addingTimeInterval(12 * 3600), calendar: cal)
                 if !k.completedDays.contains(d), let r = k.range(day: d) {
                     out.append(.init(id: "\(prefix)khatma.\(key)", title: "ورد الختمة",
                                      body: "ورد اليوم: من صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound))",
-                                     date: at(hours: Double(khatmaHour))))
+                                     date: at(hours: Double(khatmaHour)), link: "\(Route.scheme)://khatma"))
                 }
             }
         }
@@ -85,6 +88,7 @@ enum Reminders {
             content.title = item.title
             content.body = item.body
             content.sound = .default
+            if let link = item.link { content.userInfo = ["link": link] }
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = .current
             let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)

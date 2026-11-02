@@ -17,7 +17,7 @@ enum VideoEngine {
     static let fps: Int32 = 30
 
     /// Renders `segments` into an MP4 at `out`. `progress` goes from 0 to 1.
-    static func render(_ segments: [Segment], size: CGSize, to out: URL,
+    static func render(_ segments: [Segment], size: CGSize, to out: URL, background: MotionBackground? = nil,
                        progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
         guard !segments.isEmpty else { throw Failure.noSegments }
         try? FileManager.default.removeItem(at: out)
@@ -43,7 +43,14 @@ enum VideoEngine {
         // 2. Silent video: each frame appended at its segment's start, held until the next.
         let silent = out.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + "-v.mp4")
         defer { try? FileManager.default.removeItem(at: silent) }
-        try await writeFrames(segments.map(\.frame), at: starts, end: total, size: size, to: silent)
+        if let background {
+            // Animated: every frame is drawn (background at time t, then that segment's text over it).
+            try await writeMotion(segments.map(\.frame), at: starts, end: total, size: size, background: background, to: silent) {
+                progress(0.1 + 0.3 * $0)
+            }
+        } else {
+            try await writeFrames(segments.map(\.frame), at: starts, end: total, size: size, to: silent)
+        }
         progress(0.4)
 
         // 3. Mux video and audio.
@@ -99,6 +106,66 @@ enum VideoEngine {
         // Repeat the last frame one frame before the end so the track lasts the whole audio.
         let last = CMTimeSubtract(end, CMTime(value: 1, timescale: fps))
         if let f = frames.last, last > starts[starts.count - 1] { try await append(f, last) }
+        input.markAsFinished()
+        writer.endSession(atSourceTime: end)
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw Failure.writer(writer.error?.localizedDescription ?? "finish") }
+    }
+
+    private static func makeWriter(url: URL, size: CGSize) throws -> (AVAssetWriter, AVAssetWriterInput, AVAssetWriterInputPixelBufferAdaptor, Int, Int) {
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let w = Int(size.width) / 2 * 2, h = Int(size.height) / 2 * 2
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: w, AVVideoHeightKey: h,
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 8_000_000, AVVideoMaxKeyFrameIntervalKey: Int(fps) * 2],
+        ])
+        input.expectsMediaDataInRealTime = false
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: w, kCVPixelBufferHeightKey as String: h,
+        ])
+        guard writer.canAdd(input) else { throw Failure.writer("input") }
+        writer.add(input)
+        guard writer.startWriting() else { throw Failure.writer(writer.error?.localizedDescription ?? "start") }
+        writer.startSession(atSourceTime: .zero)
+        return (writer, input, adaptor, w, h)
+    }
+
+    private static func writeMotion(_ overlays: [UIImage], at starts: [CMTime], end: CMTime, size: CGSize,
+                                    background: MotionBackground, to url: URL,
+                                    progress: (Double) -> Void) async throws {
+        let (writer, input, adaptor, w, h) = try makeWriter(url: url, size: size)
+        let cgOverlays = overlays.map(\.cgImage)
+        let startSeconds = starts.map(\.seconds)
+        let total = end.seconds
+        let frames = max(1, Int((total * Double(fps)).rounded(.up)))
+        let rect = CGRect(x: 0, y: 0, width: w, height: h)
+        var seg = 0
+        for i in 0..<frames {
+            try Task.checkCancellation()
+            let t = Double(i) / Double(fps)
+            while seg + 1 < startSeconds.count && startSeconds[seg + 1] <= t { seg += 1 }
+            while !input.isReadyForMoreMediaData { try await Task.sleep(nanoseconds: 5_000_000) }
+            var pb: CVPixelBuffer?
+            if let pool = adaptor.pixelBufferPool { CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) }
+            if pb == nil {
+                CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_32BGRA,
+                                    [kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary, &pb)
+            }
+            guard let buffer = pb else { throw Failure.writer("pixel buffer") }
+            CVPixelBufferLockBaseAddress(buffer, [])
+            if let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: w, height: h, bitsPerComponent: 8,
+                                   bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
+                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue) {
+                background.draw(in: ctx, size: rect.size, t: t, total: total)
+                if let o = cgOverlays[seg] { ctx.draw(o, in: rect) }
+            }
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            guard adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(i), timescale: fps)) else {
+                throw Failure.writer(writer.error?.localizedDescription ?? "append")
+            }
+            if i % 15 == 0 { progress(Double(i) / Double(frames)) }
+        }
         input.markAsFinished()
         writer.endSession(atSourceTime: end)
         await writer.finishWriting()
