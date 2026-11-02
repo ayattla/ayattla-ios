@@ -68,12 +68,16 @@ def split_basmala(surahs):
     source itself (ayah 1:1); the remaining ayah text is left exactly as the source has it."""
     basmala = surahs[0]["ayahs"][0]["text"].replace(BOM, "").strip()
     prefix = basmala + " "
+    # In 95 and 97 the source writes the same line with a shadda (U+0651) on the first letter,
+    # carried over from the end of the previous surah. Only that exact variant is accepted.
+    prefixes = (prefix, prefix[0] + "\u0651" + prefix[1:])
     flags = {}
     for s in surahs[1:]:
         first = s["ayahs"][0]
         text = first["text"].replace(BOM, "")
-        if text.startswith(prefix):
-            first["text"] = text[len(prefix):]
+        p = next((p for p in prefixes if text.startswith(p)), None)
+        if p:
+            first["text"] = text[len(p):]
             flags[s["number"]] = 1
     return basmala, flags
 

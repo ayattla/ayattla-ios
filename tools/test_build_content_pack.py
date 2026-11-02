@@ -21,6 +21,8 @@ def fake_edition(ident, text="نص اختبار", opening=False):
         if opening:
             if n == 1:
                 ayahs[0]["text"] = OPENING
+            elif n in (95, 97):   # the source's shadda variant
+                ayahs[0]["text"] = f"{OPENING[0]}{OPENING[1]}\u0651{OPENING[2:]} {ayahs[0]['text']}"
             elif n != 9:
                 ayahs[0]["text"] = f"{OPENING} {ayahs[0]['text']}"
         surahs.append({"number": n, "name": f"سُورَةُ {n}", "englishName": f"S{n}",
@@ -65,6 +67,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(db.execute("select basmala from surah where id in (1,2,9) order by id").fetchall(), [(0,), (1,), (0,)])
         self.assertEqual(db.execute("select text_uthmani from ayah where surah=9 and ayah=1").fetchone()[0], "نَصٌّ أَوَّلُ 9:1")
         self.assertEqual(db.execute("select name_plain from surah where id=5").fetchone()[0], "سورة 5")
+        self.assertEqual(db.execute("select text_uthmani from ayah where surah=97 and ayah=1").fetchone()[0], "نَصٌّ أَوَّلُ 97:1")
 
     def test_search_ignores_tashkeel(self):
         self.run_build()
