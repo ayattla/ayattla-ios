@@ -9,21 +9,17 @@ jobs:
       - name: Read
         run: |
           B=https://ayattla.com
-          echo "=== tajweed"; curl -sS -m 30 $B/api/qf/tajweed/112 | head -c 1500; echo
-          echo "=== words"; curl -sS -m 30 $B/api/qf/words/112 | head -c 1500; echo
-          echo "=== ruqya"; curl -sS -m 30 $B/api/ruqya -o r.json; python3 -c "
-          import json;d=json.load(open('r.json'));print({k:(type(v).__name__, len(v) if hasattr(v,'__len__') else v) for k,v in d.items()})
-          print([ (i.get('s'),i.get('a'),i.get('b')) for i in d['items']])
-          print([k for k in d['items'][0]])"
-          echo "=== asma page"; curl -sS -m 30 $B/tools/asma-ul-husna -o a.html; python3 -c "
-          import re;s=open('a.html').read();i=s.find('<main');j=s.find('</main>');m=s[i:j]
-          k=m.rfind('</style>'); print(len(m)); print(m[k:k+3000])
-          for mm in re.finditer(r'const [A-Z]+=\[', s): print('ARR', s[mm.start():mm.start()+600])"
-          echo "=== qf reciters"; curl -sS -m 30 "https://api.quran.com/api/v4/resources/chapter_reciters?language=ar" | head -c 4000; echo
-          echo "=== qf chapter recitation"; curl -sS -m 30 "https://api.quran.com/api/v4/chapter_recitations/7/112?segments=true" | head -c 1500; echo
-          echo "=== verse timings"; curl -sS -m 30 "https://api.qurancdn.com/api/qdc/audio/reciters/7/audio_files?chapter=112&segments=true" | head -c 1500; echo
-          echo "=== meta highlight"; curl -sS -m 30 $B/api/meta | python3 -c "
-          import json,sys;d=json.load(sys.stdin);print([(r['id'],r['name'],r['folder']) for r in d['reciters'] if r.get('highlight')]);print(list(d['reciters'][0]))"
-          echo "=== home assets"; curl -sS -m 30 $B/ -o h.html; grep -oE '(href|src|content)="[^"]*\.(svg|png|webp|ico|css|webmanifest|woff2)[^"]*"' h.html | sort -u | head -40
-          grep -oE '<svg class="logo[^>]*>.{0,1500}' h.html | head -c 2000; echo
-          for c in $(grep -oE 'href="[^"]*\.css[^"]*"' h.html | sed 's/href="//;s/"$//' | head -3); do echo "=== css $c"; curl -sS -m 30 "$B$c" | head -c 4000; echo; done
+          curl -sS -m 30 $B/ -o h.html
+          echo "=== link tags"; grep -oE '<link[^>]+>' h.html | head -20
+          echo "=== inline style head"; python3 -c "
+          import re;s=open('h.html').read()
+          for m in re.finditer(r'<style[^>]*>(.*?)</style>', s, re.S):
+              css=m.group(1); i=css.find(':root'); print(len(css)); print(css[i:i+3500] if i>=0 else css[:1500]); break"
+          echo "=== tajweed css"; curl -sS -m 30 $B/tools/tajweed -o t.html; grep -oE '\.tj-[a-z_]+\{[^}]*\}' t.html | sort -u | head -40
+          grep -oE '<select[^>]*>.{0,600}' t.html | head -c 800; echo
+          echo "=== words options"; curl -sS -m 30 $B/tools/word-by-word -o w.html; grep -oE '<option[^>]*>[^<]*' w.html | head -30; grep -oE "fetch\([^)]*\)" w.html | head
+          echo "=== logos"; for f in favicon.svg logo-horizontal.svg logo-full.svg; do echo "--- $f"; curl -sS -m 30 $B/tools/$f | head -c 2500; echo; done
+          echo "=== manifest"; curl -sS -m 30 $B/tools/manifest.webmanifest | head -c 1500; echo
+          echo "=== asma fields"; curl -sS -m 30 $B/tools/asma-ul-husna -o a.html; python3 -c "
+          import re,json;s=open('a.html').read();m=re.search(r'const AS=(\[.*?\]);',s,re.S);a=json.loads(m.group(1));print(len(a),a[0],a[-1],set(k for x in a for k in x))
+          i=s.find('const AS');print(s[i+len(m.group(0)):i+len(m.group(0))+1500])"
