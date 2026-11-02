@@ -159,6 +159,7 @@ struct SawmState: Codable, Equatable {
         case qada, tatawwu
         var id: String { rawValue }
         var title: String { self == .qada ? "قضاء" : "تطوع" }
+        var recordTitle: String { self == .qada ? "تسجيل قضاء" : "تسجيل تطوع" }
     }
 
     var required = 0
@@ -167,6 +168,23 @@ struct SawmState: Codable, Equatable {
     var qadaDone: Int { marks.values.filter { $0 == .qada }.count }
     var qadaRemaining: Int { max(required - qadaDone, 0) }
     var tatawwu: Int { marks.values.filter { $0 == .tatawwu }.count }
+
+    /// Voluntary days in the given Gregorian year (the site shows «التطوع هذا العام»).
+    func tatawwu(inYear year: Int) -> Int {
+        marks.filter { $0.value == .tatawwu && $0.key.hasPrefix("\(year)-") }.count
+    }
+
+    /// The site's line: «القضاء: ١ من ٥ — التطوع هذا العام: ٠ يوما».
+    func status(year: Int) -> String {
+        "القضاء: \(Num.int(qadaDone)) من \(Num.int(required)) — التطوع هذا العام: \(Num.int(tatawwu(inYear: year))) يوما"
+    }
+
+    /// «نوفمبر ٢٠٢٦ — جمادى الأولى ١٤٤٨ هـ»: the Hijri month of the month's first day, as on the site.
+    static func monthTitle(_ firstDay: Date, cal: Calendar) -> String {
+        let g = firstDay.formatted(Date.FormatStyle(locale: Num.locale, calendar: cal).month(.wide).year())
+        let h = Hijri.fromGregorian(firstDay)
+        return "\(g) — \(Hijri.months[h.month - 1]) \(Num.int(h.year)) هـ"
+    }
 
     static func key(_ d: Date, _ cal: Calendar) -> String {
         let c = cal.dateComponents([.year, .month, .day], from: d)
@@ -184,9 +202,13 @@ struct SawmView: View {
     @AppStorage("sawm.state") private var raw = ""
     @State private var mode = SawmState.Kind.qada
     @State private var month = Date()
+    @State private var requiredText = ""
     private let cal: Calendar = {
-        var c = Calendar(identifier: .gregorian); c.locale = Num.locale; return c
+        var c = Calendar(identifier: .gregorian); c.locale = Num.locale
+        c.firstWeekday = 1   // the site's calendar starts on Sunday (أحد)
+        return c
     }()
+    static let weekdays = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"]
 
     private var state: SawmState {
         (try? JSONDecoder().decode(SawmState.self, from: Data(raw.utf8))) ?? SawmState()
@@ -200,14 +222,25 @@ struct SawmView: View {
         let s = state
         Form {
             Section {
-                Stepper("أيام القضاء المطلوبة: \(Num.int(s.required))", value: Binding(
-                    get: { s.required }, set: { var n = s; n.required = $0; save(n) }), in: 0...60)
-                LabeledContent("المتبقي من القضاء", value: Num.int(s.qadaRemaining))
-                LabeledContent("أيام التطوع", value: Num.int(s.tatawwu))
+                LabeledContent("عدد أيام القضاء المطلوبة") {
+                    HStack {
+                        TextField(Num.int(s.required), text: $requiredText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: 80)
+                        Button("حفظ") {
+                            var n = s; n.required = max(0, Int(ZakatForm.number(requiredText))); save(n); requiredText = ""
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(requiredText.isEmpty)
+                    }
+                }
+            } header: {
+                Text(s.status(year: cal.component(.year, from: Date())))
             }
             Section {
                 Picker("النوع", selection: $mode) {
-                    ForEach(SawmState.Kind.allCases) { Text($0.title).tag($0) }
+                    ForEach(SawmState.Kind.allCases) { Text($0.recordTitle).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 monthHeader
@@ -225,10 +258,9 @@ struct SawmView: View {
             Button { shift(-1) } label: { Image(systemName: "chevron.backward").frame(width: Brand.minTap, height: Brand.minTap) }
                 .accessibilityLabel("الشهر السابق")
             Spacer()
-            VStack(spacing: 2) {
-                Text(month.formatted(Date.FormatStyle(locale: Num.locale).month(.wide).year())).font(.headline)
-                Text(Num.hijri(month)).font(.caption).foregroundStyle(.secondary)
-            }
+            Text(SawmState.monthTitle(monthDays().first ?? month, cal: cal))
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
             Spacer()
             Button { shift(1) } label: { Image(systemName: "chevron.forward").frame(width: Brand.minTap, height: Brand.minTap) }
                 .accessibilityLabel("الشهر التالي")
@@ -240,6 +272,10 @@ struct SawmView: View {
         let days = monthDays()
         let lead = (cal.component(.weekday, from: days.first ?? month) - cal.firstWeekday + 7) % 7
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+            ForEach(Self.weekdays, id: \.self) { w in
+                Text(w).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
             ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 44) }
             ForEach(days, id: \.self) { d in
                 let mark = s.marks[SawmState.key(d, cal)]

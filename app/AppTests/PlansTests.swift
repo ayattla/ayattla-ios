@@ -77,6 +77,17 @@ final class TrackersTests: XCTestCase {
         XCTAssertEqual(again, s)
     }
 
+    func testSawmStatusAndTitleMatchSite() {
+        var s = SawmState(); s.required = 5
+        s.marks = ["2026-11-3": .qada, "2026-11-7": .tatawwu, "2025-1-1": .tatawwu]
+        XCTAssertEqual(s.status(year: 2026), "القضاء: ١ من ٥ — التطوع هذا العام: ١ يوما")
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Riyadh")!
+        let nov1 = cal.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 12))!
+        XCTAssertTrue(SawmState.monthTitle(nov1, cal: cal).hasSuffix("— جمادى الأولى ١٤٤٨ هـ"),
+                      SawmState.monthTitle(nov1, cal: cal))
+        XCTAssertEqual(SawmView.weekdays.first, "أحد")
+    }
+
     func testTasbihMatchesSite() {
         XCTAssertEqual(TasbihView.targets, [33, 100, 1000, 0])
         XCTAssertEqual(TasbihView.targetTitle(0), "بدون هدف")
