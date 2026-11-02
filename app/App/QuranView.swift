@@ -223,7 +223,7 @@ struct MushafReader: View {
                         canListen: folder != nil,
                         onListen: { selected = nil; player.play(from: p) },
                         onFavorite: { favorites = Favorites.toggled(favorites, p) })
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -378,6 +378,9 @@ struct AyahActions: View {
                         UIPasteboard.general.string = share; dismiss()
                     } label: { Label("نسخ الآية", systemImage: "doc.on.doc") }
                     ShareLink(item: share) { Label("مشاركة", systemImage: "square.and.arrow.up") }
+                    NavigationLink { AyahCardView(surah: position.surah, from: position.ayah) } label: {
+                        Label("اصنع بطاقة", systemImage: "rectangle.portrait")
+                    }
                 }
             }
             .navigationTitle(QuranText.reference(position))

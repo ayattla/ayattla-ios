@@ -3,12 +3,17 @@ import AyatDesign
 
 @main
 struct AyatTutlaApp: App {
+    @Environment(\.scenePhase) private var phase
+
     var body: some Scene {
         WindowGroup {
             StartView()
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Num.locale)
                 .tint(Brand.primary)
+        }
+        .onChange(of: phase) { _, p in
+            if p == .active { Task { await Reminders.reschedule() } }
         }
     }
 }
@@ -68,7 +73,7 @@ struct RootView: View {
         case .home: HomeView()
         case .quran: QuranView()
         case .library: LibraryView()
-        case .studio: PlaceholderScreen(title: t.title)
+        case .studio: StudioView()
         }
     }
 }
@@ -110,7 +115,7 @@ struct StartView: View {
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
@@ -130,6 +135,9 @@ enum DebugScreen {
         case "tasbih": TasbihView()
         case "library": LibraryView()
         case "home-feed": HomeView()
+        case "khatma": KhatmaView()
+        case "card": AyahCardView()
+        case "studio": StudioView()
         default: ToolsView()
         }
     }

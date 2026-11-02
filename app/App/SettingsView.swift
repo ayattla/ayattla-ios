@@ -94,7 +94,7 @@ struct SettingsView: View {
             } header: {
                 Text("التنبيهات")
             } footer: {
-                Text("تبدأ التنبيهات بعد تنزيل حزمة المحتوى، ويحفظ اختيارك من الآن.")
+                Text("أذكار الصباح بعد الفجر بنصف ساعة، والمساء بعد العصر بنصف ساعة، حسب مدينتك في المواقيت. آية اليوم الساعة ٩ صباحا، وورد الختمة الساعة ٨ مساء ما دامت لديك خطة.")
             }
 
             Section("عن التطبيق") {
@@ -108,6 +108,9 @@ struct SettingsView: View {
         .tint(Brand.primary)
         .navigationTitle("الإعدادات")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: notifyAzkar) { _, _ in Task { await Reminders.reschedule() } }
+        .onChange(of: notifyDailyAyah) { _, _ in Task { await Reminders.reschedule() } }
+        .onChange(of: notifyKhatma) { _, _ in Task { await Reminders.reschedule() } }
         .alert("التنبيهات غير مسموحة", isPresented: $notificationsDenied) {
             Button("فتح الإعدادات") { openSystemSettings() }
             Button("إلغاء", role: .cancel) {}
