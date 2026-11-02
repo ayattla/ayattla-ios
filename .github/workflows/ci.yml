@@ -45,10 +45,8 @@ jobs:
           for m in re.finditer(r"<(button|option|li)[^>]*>(.*?)</\1>", body, re.S):
               t = html.unescape(re.sub("<[^>]+>", "", m.group(2))).strip()
               if t: print("EL", m.group(1), t[:80])
-          for m in re.finditer(r"<script[^>]*>(.*?)</script>", s, re.S):
-              js = m.group(1)
-              if "z.replace" in js or "localStorage" in js:
-                  print("JS", js[:4000])
+          i = s.find("z.replace")
+          print("CTX", s[max(0, i - 3000):i + 300])
           PY
       - name: Fonts (Amiri Quran and Amiri, OFL 1.1)
         run: |
