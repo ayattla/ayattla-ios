@@ -14,6 +14,15 @@ for line in open(sys.argv[2], encoding="utf-8-sig"):
     parts = line.rstrip("\n").split("|")
     if len(parts) == 3 and parts[0].isdigit():
         tz[(int(parts[0]), int(parts[1]))] = parts[2]
+basmala = db.execute("SELECT value FROM meta WHERE key='basmala'").fetchone()[0]
+with_b = {sid for (sid,) in db.execute("SELECT id FROM surah WHERE basmala = 1")}
+variants = (basmala + " ", basmala[0] + "\u0651" + basmala[1:] + " ")
+for sid in with_b:   # Tanzil's download also prefixes ayah 1 with the opening line; compare without it
+    t = tz.get((sid, 1), "")
+    for v in variants:
+        if t.startswith(v):
+            tz[(sid, 1)] = t[len(v):]
+            break
 print(f"pack {len(pack)} ayat, tanzil {len(tz)} ayat")
 diff = [k for k in pack if pack[k] != tz.get(k)]
 nfc = [k for k in diff if unicodedata.normalize("NFC", pack[k]) != unicodedata.normalize("NFC", tz.get(k, ""))]
