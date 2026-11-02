@@ -37,7 +37,7 @@ struct StudioView: View {
             case .asmaCard: "sparkles"
             }
         }
-        var isReady: Bool { self == .card || self == .clip }
+        var isReady: Bool { self != .asmaCard }
     }
 
     var body: some View {
@@ -48,7 +48,10 @@ struct StudioView: View {
                         switch c {
                         case .card: AyahCardView()
                         case .clip: ClipMakerView()
-                        default: PlaceholderScreen(title: c.title)
+                        case .status: StatusSourceView()
+                        case .dedication: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
+                        case .hadithCard: HadithView()
+                        case .asmaCard: PlaceholderScreen(title: c.title)
                         }
                     } label: {
                         HStack(spacing: 12) {
@@ -67,5 +70,18 @@ struct StudioView: View {
             }
         }
         .navigationTitle("الاستوديو")
+    }
+}
+
+/// Status: choose what it is made from (ayah, dhikr or hadith), as in the site's status editor.
+struct StatusSourceView: View {
+    var body: some View {
+        List {
+            NavigationLink { AyahCardView(surah: 2, from: 255) } label: { Label("آية", systemImage: "book") }
+            NavigationLink { AzkarView() } label: { Label("ذكر", systemImage: "sun.max") }
+            NavigationLink { HadithView() } label: { Label("حديث صحيح", systemImage: "text.book.closed") }
+        }
+        .navigationTitle("حالة")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

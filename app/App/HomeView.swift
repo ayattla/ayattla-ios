@@ -115,7 +115,8 @@ struct HomeView: View {
             switch title {
             case "بطاقة": AyahCardView()
             case "مقطع": ClipMakerView()
-            default: PlaceholderScreen(title: title)
+            case "حالة": StatusSourceView()
+            default: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
             }
         } label: {
             VStack(spacing: 6) {
@@ -127,7 +128,7 @@ struct HomeView: View {
             .card()
         }
         .buttonStyle(.plain)
-        .accessibilityHint(title == "بطاقة" || title == "مقطع" ? "" : "قريبا")
+        
     }
 
     private var continueReading: some View {
