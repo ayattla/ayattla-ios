@@ -42,7 +42,7 @@ jobs:
           curl -sSf --retry 3 -m 30 https://ayattla.com/tools/asma-ul-husna -o src/asma.html
           # Quran.com's reciter list, to find the chapter-recitation id of each word-highlight reciter
           curl -sSf --retry 3 -m 30 "https://api.quran.com/api/v4/resources/chapter_reciters?language=en" -o src/qf-reciters.json
-      - name: Fonts (Amiri Quran and Amiri, OFL 1.1)
+      - name: Fonts (Amiri Quran, Amiri, IBM Plex Sans Arabic; OFL 1.1)
         run: |
           mkdir -p pack
           curl -sSfL --retry 3 https://github.com/google/fonts/raw/main/ofl/amiriquran/AmiriQuran-Regular.ttf -o pack/AmiriQuran-Regular.ttf
@@ -50,6 +50,11 @@ jobs:
           # Amiri (OFL 1.1) for azkar text, as in design/Azkar.dc.html
           curl -sSfL --retry 3 https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf -o pack/Amiri-Regular.ttf
           curl -sSfL --retry 3 https://github.com/google/fonts/raw/main/ofl/amiri/OFL.txt -o pack/Amiri-OFL.txt
+          # IBM Plex Sans Arabic (OFL 1.1), the site's interface font (--f-ui)
+          for w in Regular Medium SemiBold Bold; do
+            curl -sSfL --retry 3 https://github.com/google/fonts/raw/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-$w.ttf -o pack/IBMPlexSansArabic-$w.ttf
+          done
+          curl -sSfL --retry 3 https://github.com/google/fonts/raw/main/ofl/ibmplexsansarabic/OFL.txt -o pack/IBMPlexSansArabic-OFL.txt
           ls -l pack
       - name: Build pack
         run: |

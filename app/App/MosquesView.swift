@@ -30,6 +30,7 @@ struct MosquesView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 Picker("نصف القطر", selection: $radiusKm) {
                     ForEach(Self.radii, id: \.self) { Text("\(Num.int($0)) كم").tag($0) }
@@ -43,7 +44,7 @@ struct MosquesView: View {
                     locate()
                 } label: {
                     Label("حدد موقعي وابحث", systemImage: "location.fill")
-                        .font(.headline).foregroundStyle(.white)
+                        .font(.ui(.headline)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(Brand.primary, in: Capsule())
                 }
@@ -54,7 +55,10 @@ struct MosquesView: View {
             }
 
             content
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("المساجد القريبة")
         .onAppear {
             if location.status == .authorizedWhenInUse || location.status == .authorizedAlways { locate() }
@@ -81,7 +85,7 @@ struct MosquesView: View {
             switch phase {
             case .idle:
                 Text("اختر نصف القطر ثم اضغط «حدد موقعي وابحث». يتم البحث على جهازك عبر خرائط Apple.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.ui(.footnote)).foregroundStyle(.secondary)
             case .searching:
                 HStack { Spacer(); ProgressView("جار البحث"); Spacer() }.frame(minHeight: 120)
             case .failed:
@@ -130,10 +134,10 @@ struct MosquesView: View {
                     .frame(width: 32, height: 32).background(Brand.tint, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
                     Text(m.name).foregroundStyle(.primary)
-                    if let a = m.address { Text(a).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+                    if let a = m.address { Text(a).font(.ui(.caption)).foregroundStyle(.secondary).lineLimit(1) }
                 }
                 Spacer()
-                Text(Num.distance(meters: m.distance)).font(.subheadline.monospacedDigit())
+                Text(Num.distance(meters: m.distance)).font(.ui(.subheadline).monospacedDigit())
                     .foregroundStyle(Brand.primaryInk)
             }
             .frame(minHeight: Brand.minTap)

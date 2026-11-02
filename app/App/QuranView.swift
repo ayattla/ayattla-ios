@@ -62,13 +62,14 @@ struct QuranView: View {
                                        description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             } else {
                 List {
+Group {
                     if query.isEmpty, lastPage > 0 {
                         Section {
                             NavigationLink { MushafReader(startPage: lastPage) } label: {
                                 Label {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("تابع القراءة").font(.headline)
-                                        Text(pageTitle(lastPage)).font(.subheadline).foregroundStyle(.secondary)
+                                        Text("تابع القراءة").font(.ui(.headline))
+                                        Text(pageTitle(lastPage)).font(.ui(.subheadline)).foregroundStyle(.secondary)
                                     }
                                 } icon: { Image(systemName: "bookmark.fill").foregroundStyle(Brand.primary) }
                                 .frame(minHeight: Brand.minTap)
@@ -97,7 +98,7 @@ struct QuranView: View {
                                 NavigationLink { MushafReader(startPage: a.page ?? 1, focus: .init(surah: a.surah, ayah: a.ayah)) } label: {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(QuranText.reference(.init(surah: a.surah, ayah: a.ayah)))
-                                            .font(.caption).foregroundStyle(Brand.primaryInk)
+                                            .font(.ui(.caption)).foregroundStyle(Brand.primaryInk)
                                         Text(a.textUthmani).font(.custom(ContentLibrary.mushafFont, size: 19, relativeTo: .body))
                                             .lineLimit(2)
                                     }
@@ -106,7 +107,9 @@ struct QuranView: View {
                             }
                         }
                     }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
                 .overlay {
                     if !query.isEmpty && surahResults.isEmpty && ayahResults.isEmpty {
                         ContentUnavailableView.search(text: query)
@@ -114,6 +117,7 @@ struct QuranView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle("القرآن")
         .searchable(text: $query, prompt: "ابحث في السور والآيات")
     }
@@ -145,16 +149,16 @@ struct SurahRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(Num.int(surah.id))
-                .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.primaryInk)
+                .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
                 .frame(width: 36, height: 36)
                 .background(Brand.tint, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text(surah.shortName).font(.headline)
-                Text(QuranText.surahLine(surah)).font(.caption).foregroundStyle(.secondary)
+                Text(surah.shortName).font(.ui(.headline))
+                Text(QuranText.surahLine(surah)).font(.ui(.caption)).foregroundStyle(.secondary)
             }
             Spacer()
             if let p = surah.pageStart {
-                Text("ص \(Num.int(p))").font(.caption).foregroundStyle(.secondary)
+                Text("ص \(Num.int(p))").font(.ui(.caption)).foregroundStyle(.secondary)
             }
         }
         .frame(minHeight: Brand.minTap)
@@ -213,13 +217,14 @@ struct MushafReader: View {
             }
         }
         .background(Color(light: 0xFBF9F2, dark: 0x121512).ignoresSafeArea())
+        .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 0) {
-                    Text(title).font(.headline)
-                    Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+                    Text(title).font(.ui(.headline))
+                    Text(subtitle).font(.ui(.caption2)).foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -293,7 +298,7 @@ struct LayerChips: View {
                     let on = selection == l
                     Button { selection = l } label: {
                         Text(l.title)
-                            .font(.footnote.weight(.medium))
+                            .font(.ui(.footnote, .medium))
                             .foregroundStyle(on ? .white : .primary)
                             .padding(.horizontal, 14).frame(minHeight: 36)
                             .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
@@ -323,9 +328,12 @@ struct MushafPage: View {
                     case .header(let s):
                         Text(s.namePlain)
                             .font(.custom(ContentLibrary.mushafFont, size: 20 * scale, relativeTo: .title3))
-                            .foregroundStyle(Brand.g0)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: 0xD9CFAE), lineWidth: 1))
+                            .foregroundStyle(Brand.primaryInk)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Brand.goldSoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Brand.accent.opacity(0.7), lineWidth: 1))
+                            .overlay(alignment: .leading) { StarOrnament().frame(width: 14, height: 14).padding(.leading, 12) }
+                            .overlay(alignment: .trailing) { StarOrnament().frame(width: 14, height: 14).padding(.trailing, 12) }
                             .accessibilityAddTraits(.isHeader)
                     case .basmala(let text):
                         Text(text).font(.custom(ContentLibrary.mushafFont, size: 22 * scale, relativeTo: .title3))
@@ -343,7 +351,7 @@ struct MushafPage: View {
             .background(Color(light: 0xFFFDF7, dark: 0x1A1D1A), in: RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(light: 0xE8E2D0, dark: 0x2E3B32), lineWidth: 1))
             .padding(.horizontal, 16).padding(.bottom, 12)
-            Text(Num.int(number)).font(.caption).foregroundStyle(.secondary).padding(.bottom, 8)
+            Text(Num.int(number)).font(.ui(.caption)).foregroundStyle(.secondary).padding(.bottom, 8)
         }
     }
 
@@ -391,6 +399,7 @@ struct AyahActions: View {
         let share = "﴿\(text)﴾ \(QuranText.reference(position))"
         NavigationStack {
             List {
+Group {
                 Section {
                     Text(text).font(.custom(ContentLibrary.mushafFont, size: 21, relativeTo: .body))
                         .lineSpacing(8).padding(.vertical, 6)
@@ -412,7 +421,10 @@ struct AyahActions: View {
                         Label("اصنع بطاقة", systemImage: "rectangle.portrait")
                     }
                 }
-            }
+            
+}.listRowBackground(Brand.surface)
+}
+            .brandScreen()
             .navigationTitle(QuranText.reference(position))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("تم") { dismiss() } } }
@@ -436,7 +448,7 @@ struct PlayerBar: View {
                     Text(QuranText.reference(c))
                 }
             }
-            .font(.caption).foregroundStyle(Brand.muted)
+            .font(.ui(.caption)).foregroundStyle(Brand.muted)
             HStack {
                 Menu {
                     Picker("تكرار كل آية", selection: $player.repeatEach) {
@@ -452,7 +464,7 @@ struct PlayerBar: View {
                     .accessibilityLabel("الآية السابقة")
                 Button { player.toggle(startAt: start()) } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title3).foregroundStyle(.white)
+                        .font(.ui(.title3)).foregroundStyle(.white)
                         .frame(width: 52, height: 52).background(Brand.primary, in: Circle())
                 }
                 .accessibilityLabel(player.isPlaying ? "إيقاف مؤقت" : "تشغيل")
@@ -464,7 +476,7 @@ struct PlayerBar: View {
                     player.speed = RecitationPlayer.speeds[(i + 1) % RecitationPlayer.speeds.count]
                 } label: {
                     Text("\(Num.decimal(Double(player.speed), digits: player.speed == 1.25 || player.speed == 0.75 ? 2 : 1))×")
-                        .font(.caption.weight(.medium)).padding(.horizontal, 10).frame(minHeight: 36)
+                        .font(.ui(.caption, .medium)).padding(.horizontal, 10).frame(minHeight: 36)
                         .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
                 }
                 .accessibilityLabel("السرعة")

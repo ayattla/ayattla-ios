@@ -41,6 +41,7 @@ struct AzkarView: View {
                                        description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             } else {
                 List {
+Group {
                     if query.isEmpty {
                         Section("اليومية") {
                             ForEach(pinnedCategories) { c in link(c, symbol: Self.symbol(c.title)) }
@@ -49,10 +50,13 @@ struct AzkarView: View {
                     Section(query.isEmpty ? "كل الأبواب (\(Num.int(categories.count)))" : "النتائج") {
                         ForEach(filtered) { c in link(c, symbol: nil) }
                     }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
                 .overlay { if !query.isEmpty && filtered.isEmpty { ContentUnavailableView.search(text: query) } }
             }
         }
+        .brandScreen()
         .navigationTitle("الأذكار")
         .searchable(text: $query, prompt: "ابحث في الأبواب")
     }
@@ -115,13 +119,14 @@ struct AzkarSession: View {
             }
         }
         .padding(.bottom, 12)
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
+        .brandScreen()
         .navigationTitle(category.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Text("\(Num.int(min(index + 1, items.count))) / \(Num.int(items.count))")
-                    .font(.footnote).foregroundStyle(Brand.muted)
+                    .font(.ui(.footnote)).foregroundStyle(Brand.muted)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -143,16 +148,16 @@ struct AzkarSession: View {
         Button(action: tap) {
             VStack(spacing: 6) {
                 if remaining == 0 {
-                    Image(systemName: "checkmark").font(.system(size: 44, weight: .semibold))
-                    Text("تم").font(.footnote).opacity(0.9)
+                    Image(systemName: "checkmark").font(.ui(size: 44, .semibold))
+                    Text("تم").font(.ui(.footnote)).opacity(0.9)
                 } else {
-                    Text(Num.int(remaining)).font(.system(size: 52, weight: .semibold)).monospacedDigit()
-                    Text("متبق — اضغط للعد").font(.footnote).opacity(0.9)
+                    Text(Num.int(remaining)).font(.ui(size: 52, .semibold)).monospacedDigit()
+                    Text("متبق — اضغط للعد").font(.ui(.footnote)).opacity(0.9)
                 }
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 130)
-            .background(LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+            .background(Brand.gradient,
                         in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -173,7 +178,7 @@ struct AzkarSession: View {
             }
             .disabled(index >= items.count - 1)
         }
-        .font(.subheadline.weight(.medium))
+        .font(.ui(.subheadline, .medium))
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
         .tint(.primary)
@@ -229,11 +234,11 @@ struct ZikrCard: View {
                 if !meta.isEmpty {
                     Divider().overlay(Brand.line)
                     Text(meta.joined(separator: " · "))
-                        .font(.caption).foregroundStyle(Brand.muted)
+                        .font(.ui(.caption)).foregroundStyle(Brand.muted)
                         .multilineTextAlignment(.center)
                 }
                 if zikr.count > 1 {
-                    Text("العدد: \(Num.int(zikr.count))").font(.caption.weight(.medium)).foregroundStyle(Brand.primaryInk)
+                    Text("العدد: \(Num.int(zikr.count))").font(.ui(.caption, .medium)).foregroundStyle(Brand.primaryInk)
                 }
             }
             .padding(.horizontal, 20).padding(.vertical, 22)

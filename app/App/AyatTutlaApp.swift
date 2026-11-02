@@ -6,12 +6,18 @@ struct AyatTutlaApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.scenePhase) private var phase
 
+    init() {
+        _ = ContentLibrary.shared      // registers the bundled fonts before the first frame
+        BrandAppearance.apply()
+    }
+
     var body: some Scene {
         WindowGroup {
             StartView()
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Num.locale)
-                .tint(Brand.primary)
+                .font(.ui(.body))
+                .tint(Brand.primaryInk)
         }
         .onChange(of: phase) { _, p in
             if p == .active {
@@ -56,6 +62,7 @@ struct RootView: View {
                 List(Tab.allCases, selection: Binding(get: { tab }, set: { tab = $0 ?? .home })) { t in
                     Label(t.title, systemImage: t.symbol).tag(t)
                 }
+                .brandScreen()
                 .navigationTitle("آيات تتلى")
             } detail: {
                 NavigationStack { screen(tab) }
@@ -86,6 +93,7 @@ struct PlaceholderScreen: View {
     let title: String
     var body: some View {
         ContentUnavailableView(title, systemImage: "hammer", description: Text("قيد البناء"))
+            .brandScreen()
             .navigationTitle(title)
     }
 }

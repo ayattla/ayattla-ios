@@ -79,6 +79,7 @@ struct TextCardView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .alert("حفظت الصورة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
@@ -98,11 +99,11 @@ struct HadithRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let match {
-                Text("التطابق \(Num.int(match))٪").font(.caption.weight(.semibold)).foregroundStyle(Brand.primaryInk)
+                Text("التطابق \(Num.int(match))٪").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
             }
             Text(text).font(.custom("Amiri", size: 18, relativeTo: .body)).lineSpacing(6).textSelection(.enabled)
             Text([source, grade.isEmpty ? nil : "الحكم: \(grade)", category].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.caption).foregroundStyle(Brand.muted)
+                .font(.ui(.caption)).foregroundStyle(Brand.muted)
             HStack(spacing: 14) {
                 if let u = URL(string: url), !url.isEmpty {
                     Link(destination: u) { Label("الشرح في الموسوعة", systemImage: "arrow.up.left.square") }
@@ -113,7 +114,7 @@ struct HadithRow: View {
                 ShareLink(item: "\(text)\n\n\(source)") { Label("مشاركة", systemImage: "square.and.arrow.up") }
             }
             .labelStyle(.iconOnly)
-            .font(.title3)
+            .font(.ui(.title3))
             .buttonStyle(.borderless)
         }
         .padding(.vertical, 6)
@@ -134,6 +135,7 @@ struct HadithView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -156,7 +158,9 @@ struct HadithView: View {
             } footer: {
                 Text("من موسوعة الأحاديث النبوية (hadeethenc.com)، بالتخريج والحكم ورابط الشرح.")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
         .overlay {
             if failed && items.isEmpty {
                 ContentUnavailableView {
@@ -168,6 +172,7 @@ struct HadithView: View {
                 ContentUnavailableView.search(text: query)
             }
         }
+        .brandScreen()
         .navigationTitle("الأحاديث")
         .searchable(text: $query, prompt: "ابحث في الأحاديث")
         .onSubmit(of: .search) { Task { await load(more: false) } }
@@ -181,7 +186,7 @@ struct HadithView: View {
             cat = value
             Task { await load(more: false) }
         } label: {
-            Text(title).font(.footnote.weight(.medium)).foregroundStyle(on ? .white : .primary)
+            Text(title).font(.ui(.footnote, .medium)).foregroundStyle(on ? .white : .primary)
                 .padding(.horizontal, 12).frame(minHeight: 36)
                 .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
                 .overlay(Capsule().stroke(on ? .clear : Brand.line, lineWidth: 1))
@@ -215,13 +220,14 @@ struct HadithCheckerView: View {
 
     var body: some View {
         Form {
+Group {
             Section {
                 TextField("الصق نص الحديث أو جزءا منه", text: $text, axis: .vertical)
                     .lineLimit(3...8)
                 Button {
                     Task { await check() }
                 } label: {
-                    if loading { ProgressView() } else { Text("تحقق").font(.headline) }
+                    if loading { ProgressView() } else { Text("تحقق").font(.ui(.headline)) }
                 }
                 .frame(maxWidth: .infinity, minHeight: Brand.minTap)
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).count < 5 || loading)
@@ -238,7 +244,10 @@ struct HadithCheckerView: View {
                     }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("التحقق من حديث")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -259,7 +268,8 @@ struct PrayerGuideView: View {
         Group {
             if let g = guide {
                 List {
-                    Section { Text(g.lead).font(.subheadline).foregroundStyle(.secondary) }
+Group {
+                    Section { Text(g.lead).font(.ui(.subheadline)).foregroundStyle(.secondary) }
                     ForEach(g.sections, id: \.title) { s in
                         Section(s.title) {
                             ForEach(s.items, id: \.self) { h in
@@ -267,11 +277,14 @@ struct PrayerGuideView: View {
                             }
                         }
                     }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
             } else {
                 ContentUnavailableView("غير متاح", systemImage: "drop", description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             }
         }
+        .brandScreen()
         .navigationTitle("صفة الوضوء والصلاة")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -288,6 +301,7 @@ struct DuasView: View {
         Group {
             if let d = data {
                 List {
+Group {
                     Picker("القسم", selection: $section) {
                         Text("من القرآن").tag(0)
                         Text("حسب الحاجة").tag(1)
@@ -301,12 +315,15 @@ struct DuasView: View {
                             NavigationLink { NeedView(need: n) } label: { Text(n.need).frame(minHeight: Brand.minTap) }
                         }
                     }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
             } else {
                 ContentUnavailableView("الأدعية غير متاحة", systemImage: "hands.sparkles",
                                        description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             }
         }
+        .brandScreen()
         .navigationTitle("الأدعية")
     }
 
@@ -318,7 +335,7 @@ struct DuasView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(text).font(.custom(ContentLibrary.mushafFont, size: 20, relativeTo: .body)).lineSpacing(8)
             HStack {
-                Text(ref).font(.caption).foregroundStyle(Brand.primaryInk)
+                Text(ref).font(.ui(.caption)).foregroundStyle(Brand.primaryInk)
                 Spacer()
                 NavigationLink { AyahCardView(surah: q.s, from: q.a, to: q.b) } label: { Image(systemName: "rectangle.portrait") }
                     .buttonStyle(.borderless).accessibilityLabel("اصنع بطاقة")
@@ -334,6 +351,7 @@ struct NeedView: View {
     let need: DuasData.Need
     var body: some View {
         List {
+Group {
             ForEach(need.chapters, id: \.name) { c in
                 Section(c.name) {
                     ForEach(c.items, id: \.self) { it in
@@ -353,7 +371,10 @@ struct NeedView: View {
                     }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle(need.need)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -387,10 +408,11 @@ struct RadioView: View {
 
     var body: some View {
         List(filtered) { r in
+Group {
             Button { player.toggle(r) } label: {
                 HStack {
                     Image(systemName: player.playing == r ? "pause.circle.fill" : "play.circle")
-                        .font(.title2).foregroundStyle(Brand.primary)
+                        .font(.ui(.title2)).foregroundStyle(Brand.primary)
                     Text(r.name).foregroundStyle(.primary)
                     Spacer()
                     if player.playing == r { Image(systemName: "waveform").foregroundStyle(Brand.primaryInk) }
@@ -398,7 +420,9 @@ struct RadioView: View {
                 .frame(minHeight: Brand.minTap)
             }
             .accessibilityLabel(player.playing == r ? "إيقاف \(r.name)" : "تشغيل \(r.name)")
-        }
+        
+}.listRowBackground(Brand.surface)
+}
         .overlay {
             if failed && radios.isEmpty {
                 ContentUnavailableView("تعذر تحميل الإذاعات", systemImage: "antenna.radiowaves.left.and.right.slash",
@@ -407,6 +431,7 @@ struct RadioView: View {
                 ProgressView()
             }
         }
+        .brandScreen()
         .navigationTitle("الإذاعات")
         .searchable(text: $query, prompt: "ابحث في الإذاعات")
         .task {
@@ -447,6 +472,7 @@ struct HifzTestView: View {
 
     var body: some View {
         Form {
+Group {
             Section("الآيات") {
                 Picker("السورة", selection: $surah) {
                     ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
@@ -456,7 +482,7 @@ struct HifzTestView: View {
                 Picker("نسبة الإخفاء", selection: $level) { ForEach(Level.allCases) { Text($0.title).tag($0) } }
                     .pickerStyle(.segmented)
                 Button(started ? "اختبار جديد" : "ابدأ الاختبار") { start() }
-                    .font(.headline).frame(maxWidth: .infinity, minHeight: Brand.minTap)
+                    .font(.ui(.headline)).frame(maxWidth: .infinity, minHeight: Brand.minTap)
             }
             if started {
                 Section {
@@ -468,7 +494,10 @@ struct HifzTestView: View {
                     Text("اضغط على الكلمة المخفية لكشفها. المخفي الآن: \(Num.int(hidden.count))")
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("اختبار الحفظ")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: surah) { _, s in from = 1; to = min(lib.surah(s)?.ayahCount ?? 1, 7); started = false }

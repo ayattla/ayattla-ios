@@ -47,7 +47,7 @@ struct KidsJuzAmmaView: View {
                             if n.count > KidsProgress.nameLimit { progress.name = String(n.prefix(KidsProgress.nameLimit)) }
                         }
                     Text("حفظ: \(Num.int(progress.done.count)) من \(Num.int(KidsProgress.surahs.count)) سورة")
-                        .font(.headline).foregroundStyle(Brand.primaryInk)
+                        .font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
                     ProgressView(value: Double(progress.done.count), total: Double(KidsProgress.surahs.count))
                         .tint(Brand.accent)
                     badges
@@ -55,7 +55,7 @@ struct KidsJuzAmmaView: View {
                 .padding(16)
                 .card()
 
-                Text("اختر سورة لتبدأ الاستماع والتكرار.").font(.subheadline).foregroundStyle(.secondary)
+                Text("اختر سورة لتبدأ الاستماع والتكرار.").font(.ui(.subheadline)).foregroundStyle(.secondary)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 10)], spacing: 10) {
                     ForEach(KidsProgress.surahs, id: \.self) { n in
@@ -71,17 +71,18 @@ struct KidsJuzAmmaView: View {
                 ShareLink(item: KidsCertificate(name: progress.name, count: progress.done.count),
                           preview: SharePreview("شهادة تقدير")) {
                     Label("تحميل الشهادة", systemImage: "rosette")
-                        .font(.headline).foregroundStyle(.white)
+                        .font(.ui(.headline)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 52)
                         .background(Brand.primary, in: Capsule())
                 }
 
-                Text("النص: مصحف التنزيل. الصوت: EveryAyah.").font(.footnote).foregroundStyle(.secondary)
+                Text("النص: مصحف التنزيل. الصوت: EveryAyah.").font(.ui(.footnote)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
             }
             .padding(16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
+        .brandScreen()
         .navigationTitle("تحفيظ الأطفال جزء عم")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { if !loaded { progress = KidsProgress.decode(stored); loaded = true } }
@@ -108,8 +109,8 @@ struct KidsJuzAmmaView: View {
     private func tile(_ n: Int) -> some View {
         let done = progress.done.contains(n)
         return VStack(spacing: 4) {
-            Text(lib.surah(n)?.shortName ?? Num.int(n)).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
-            Text(Num.int(n)).font(.caption).foregroundStyle(.secondary)
+            Text(lib.surah(n)?.shortName ?? Num.int(n)).font(.ui(.headline)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(Num.int(n)).font(.ui(.caption)).foregroundStyle(.secondary)
             Image(systemName: done ? "star.fill" : "star")
                 .foregroundStyle(done ? Color(hex: 0xC9A227) : Brand.muted)
         }
@@ -137,6 +138,7 @@ struct KidsSurahView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 Picker("القارئ", selection: $reciter) {
                     ForEach(Catalog.reciters) { Text($0.name).tag($0.id) }
@@ -152,7 +154,7 @@ struct KidsSurahView: View {
                 } label: {
                     Label(player.isPlaying ? "إيقاف" : "استمع وكرر",
                           systemImage: player.isPlaying ? "stop.fill" : "play.fill")
-                        .font(.headline).foregroundStyle(.white)
+                        .font(.ui(.headline)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(Brand.primary, in: Capsule())
                 }
@@ -160,7 +162,7 @@ struct KidsSurahView: View {
                 .disabled(folder == nil || ayat.isEmpty)
                 .listRowBackground(Color.clear)
                 if player.failed {
-                    Text("تعذر تشغيل التلاوة. تحقق من الاتصال بالإنترنت.").font(.footnote).foregroundStyle(.secondary)
+                    Text("تعذر تشغيل التلاوة. تحقق من الاتصال بالإنترنت.").font(.ui(.footnote)).foregroundStyle(.secondary)
                 }
             }
 
@@ -191,8 +193,8 @@ struct KidsSurahView: View {
                     if done { progress.done.remove(surah) } else { progress.done.insert(surah) }
                 } label: {
                     Text(done ? "إلغاء الحفظ" : "حفظتها ★")
-                        .font(.headline)
-                        .foregroundStyle(done ? Brand.primaryInk : .white)
+                        .font(.ui(.headline))
+                        .foregroundStyle(done ? Brand.primaryInk : Brand.primary)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(done ? Brand.tint : Brand.accent, in: Capsule())
                 }
@@ -200,7 +202,10 @@ struct KidsSurahView: View {
                 .sensoryFeedback(.success, trigger: done) { _, now in now }
                 .listRowBackground(Color.clear)
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task {

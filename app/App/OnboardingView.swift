@@ -38,7 +38,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             HStack {
                 Button("تخطي") { done = true }
-                    .font(.subheadline).foregroundStyle(Brand.primaryInk)
+                    .font(.ui(.subheadline)).foregroundStyle(Brand.primaryInk)
                     .frame(minHeight: Brand.minTap)
                 Spacer()
             }
@@ -46,23 +46,29 @@ struct OnboardingView: View {
 
             Spacer(minLength: 24)
 
-            Image(systemName: page.symbol)
-                .font(.system(size: 56, weight: .light))
-                .foregroundStyle(.white)
-                .frame(width: 132, height: 132)
-                .background(LinearGradient(colors: [Brand.g0, Brand.accent], startPoint: .top, endPoint: .bottom),
-                            in: RoundedRectangle(cornerRadius: 36, style: .continuous))
-                .accessibilityHidden(true)
+            Group {
+                if step == .clips {
+                    // The site's full logo (brand assets from ayattla.com).
+                    Image("LogoFull").resizable().scaledToFit().frame(width: 150, height: 150)
+                } else {
+                    Image(systemName: page.symbol)
+                        .font(.ui(size: 52, .light))
+                        .foregroundStyle(Brand.onDeepAccent)
+                        .frame(width: 132, height: 132)
+                        .emeraldPanel(radius: 36)
+                }
+            }
+            .accessibilityHidden(true)
 
             Text(page.title)
-                .font(.title.weight(.semibold))
-                .foregroundStyle(scheme == .dark ? Brand.accent : Brand.g0)
+                .font(.ui(.title, .semibold))
+                .foregroundStyle(Brand.primaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.top, 44)
                 .accessibilityAddTraits(.isHeader)
 
             Text(page.body)
-                .font(.body)
+                .font(.ui(.body))
                 .lineSpacing(6)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -95,17 +101,17 @@ struct OnboardingView: View {
 
             VStack(spacing: 10) {
                 Button(primaryTitle) { primary() }
-                    .font(.headline).foregroundStyle(.white)
+                    .font(.ui(.headline)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background(Brand.primary, in: Capsule())
                     .buttonStyle(.plain)
                 if step == .location {
                     Button("ليس الآن") { advance() }
-                        .font(.subheadline).foregroundStyle(Brand.primaryInk)
+                        .font(.ui(.subheadline)).foregroundStyle(Brand.primaryInk)
                         .frame(minHeight: Brand.minTap)
                 } else {
                     Text("مجاني بالكامل · بلا حساب · يعمل دون إنترنت")
-                        .font(.caption).foregroundStyle(Brand.muted)
+                        .font(.ui(.caption)).foregroundStyle(Brand.muted)
                         .frame(minHeight: Brand.minTap)
                 }
             }
@@ -114,7 +120,7 @@ struct OnboardingView: View {
         .padding(.horizontal, 28)
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LinearGradient(stops: [.init(color: scheme == .dark ? Brand.g0.opacity(0.35) : Brand.tint, location: 0), .init(color: Color(.systemBackground), location: 0.55)],
+        .background(LinearGradient(stops: [.init(color: Brand.goldSoft, location: 0), .init(color: Brand.background, location: 0.55)],
                                    startPoint: .top, endPoint: .bottom).ignoresSafeArea())
         .animation(.easeInOut(duration: 0.25), value: step)
         .gesture(DragGesture(minimumDistance: 30).onEnded { g in

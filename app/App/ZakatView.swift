@@ -14,6 +14,7 @@ struct ZakatView: View {
         let r = Zakat.calculate(form.input)
         let summary = ZakatSummary(form: form, result: r)
         Form {
+Group {
             Section {
                 Picker("العملة", selection: $form.currency) {
                     ForEach(ZakatForm.currencies, id: \.self) { Text($0).tag($0) }
@@ -37,10 +38,10 @@ struct ZakatView: View {
             }
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("الزكاة الواجبة").font(.subheadline).foregroundStyle(.secondary)
-                    Text(summary.due).font(.largeTitle.weight(.semibold)).foregroundStyle(Brand.primaryInk)
+                    Text("الزكاة الواجبة").font(.ui(.subheadline)).foregroundStyle(.secondary)
+                    Text(summary.due).font(.ui(.largeTitle, .semibold)).foregroundStyle(Brand.primaryInk)
                         .minimumScaleFactor(0.6).lineLimit(1)
-                    Text(summary.status).font(.subheadline)
+                    Text(summary.status).font(.ui(.subheadline))
                         .foregroundStyle(summary.reached ? Brand.primaryInk : .secondary)
                 }
                 .padding(.vertical, 6)
@@ -53,7 +54,10 @@ struct ZakatView: View {
             } footer: {
                 Text("الزكاة ربع العشر (٢٫٥٪) إذا بلغ المال النصاب وحال عليه حول هجري. في زكاة الحلي المستعملة خلاف بين العلماء، والحالات الخاصة يسأل عنها أهل العلم.")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("حاسبة الزكاة")
         .onAppear {
             if !loaded { form = ZakatForm.decode(stored); loaded = true }

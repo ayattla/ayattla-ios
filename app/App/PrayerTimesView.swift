@@ -34,7 +34,8 @@ struct PrayerTimesView: View {
                     .padding(16)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
+        .brandScreen()
         .navigationTitle("مواقيت الصلاة")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -77,22 +78,22 @@ struct PrayerTimesView: View {
     @ViewBuilder private func content(_ d: Day) -> some View {
         VStack(spacing: 16) {
             VStack(spacing: 6) {
-                Text("\(d.place.name) · \(Num.hijri(d.now))").font(.footnote).opacity(0.9)
-                Text("الصلاة القادمة").font(.subheadline)
+                Text("\(d.place.name) · \(Num.hijri(d.now))").font(.ui(.footnote)).opacity(0.9)
+                Text("الصلاة القادمة").font(.ui(.subheadline))
                 Text("\(d.next.prayer.name) \(nextTime(d))")
-                    .font(.system(size: 34, weight: .semibold))
+                    .font(.ui(size: 34, .semibold))
                     .minimumScaleFactor(0.6)
-                Text("بعد \(Num.duration(minutes: d.next.minutesUntil))").font(.subheadline).opacity(0.9)
+                Text("بعد \(Num.duration(minutes: d.next.minutesUntil))").font(.ui(.subheadline)).opacity(0.9)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(22)
-            .background(LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+            .background(Brand.gradient,
                         in: RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
 
             if d.next.isTomorrow {
-                Text("مواقيت الغد").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                Text("مواقيت الغد").font(.ui(.subheadline, .semibold)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityAddTraits(.isHeader)
             }
@@ -125,7 +126,7 @@ struct PrayerTimesView: View {
             .frame(minHeight: 58)
             .card()
 
-            Text("تحسب على الجهاز دون إنترنت").font(.footnote).foregroundStyle(.secondary)
+            Text("تحسب على الجهاز دون إنترنت").font(.ui(.footnote)).foregroundStyle(.secondary)
         }
     }
 
@@ -142,12 +143,13 @@ struct PrayerTimesView: View {
     private var settings: some View {
         NavigationStack {
             Form {
+Group {
                 Section {
                     Toggle("استخدم موقعي", isOn: $useLocation)
                         .onChange(of: useLocation) { _, on in if on { location.requestLocation() } }
                     if useLocation && (location.failed || location.denied) {
                         Text("تعذر تحديد الموقع، فتستخدم المدينة المختارة. يمكنك السماح بالموقع من إعدادات الجهاز.")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.ui(.footnote)).foregroundStyle(.secondary)
                     }
                 }
                 Section("المدينة") {
@@ -158,7 +160,10 @@ struct PrayerTimesView: View {
                     .labelsHidden()
                     .disabled(useLocation && location.coordinate != nil)
                 }
-            }
+            
+}.listRowBackground(Brand.surface)
+}
+            .brandScreen()
             .navigationTitle("إعدادات المواقيت")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("تم") { showSettings = false } } }

@@ -21,9 +21,9 @@ struct QiblaView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Text("\(name) · \(Num.int(Int(km.rounded()))) كم إلى مكة")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.ui(.subheadline)).foregroundStyle(.secondary)
                 Text("\(Num.decimal(bearing))°")
-                    .font(.system(size: 44, weight: .semibold))
+                    .font(.ui(size: 44, .semibold))
                     .foregroundStyle(Brand.primaryInk)
                     .accessibilityLabel("زاوية القبلة \(Num.decimal(bearing)) درجة من الشمال")
                 QiblaCompass(dialRotation: -(heading ?? 0), bearing: bearing)
@@ -31,19 +31,20 @@ struct QiblaView: View {
                     .animation(.easeOut(duration: 0.2), value: heading)
                 if aligned {
                     Text("أنت باتجاه القبلة")
-                        .font(.headline).foregroundStyle(.white)
+                        .font(.ui(.headline)).foregroundStyle(.white)
                         .padding(.horizontal, 20).frame(minHeight: Brand.minTap)
                         .background(Brand.primary, in: Capsule())
                 }
                 Text(heading == nil
                      ? "البوصلة غير متاحة على هذا الجهاز. الزاوية مقيسة من الشمال باتجاه عقارب الساعة."
                      : "أبعد الهاتف عن المعادن والمغناطيس، وضعه مستويا.")
-                    .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .font(.ui(.footnote)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(16)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
+        .brandScreen()
         .navigationTitle("اتجاه القبلة")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { location.requestLocation(); location.startHeading() }
@@ -68,7 +69,7 @@ struct QiblaCompass: View {
             let side = min(g.size.width, g.size.height)
             let r = side / 2
             ZStack {
-                Circle().fill(Color(.secondarySystemGroupedBackground))
+                Circle().fill(Brand.surface)
                 Circle().stroke(Brand.line, lineWidth: 2)
                 Circle().inset(by: r * 0.2).stroke(Brand.tint, lineWidth: 14)
                 ForEach(Self.cardinals, id: \.0) { label, deg in
@@ -91,7 +92,7 @@ struct QiblaCompass: View {
                     .offset(y: -r * 0.77)
                 }
                 .rotationEffect(.degrees(bearing))
-                Circle().fill(Color(.secondarySystemGroupedBackground)).frame(width: 16, height: 16)
+                Circle().fill(Brand.surface).frame(width: 16, height: 16)
                     .overlay(Circle().stroke(Brand.primary, lineWidth: 3))
             }
             .frame(width: side, height: side)

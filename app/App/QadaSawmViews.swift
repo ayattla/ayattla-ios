@@ -77,6 +77,7 @@ struct QadaView: View {
     var body: some View {
         let s = state
         Form {
+Group {
             Section {
                 LabeledContent("عدد الأيام الفائتة تقريبا") {
                     TextField("مثال: ٣٠", text: $daysText)
@@ -87,7 +88,7 @@ struct QadaView: View {
                 Button("أضف للعداد") {
                     var n = s; n.add(days: Int(ZakatForm.number(daysText))); save(n); daysText = ""
                 }
-                .font(.headline).frame(maxWidth: .infinity, minHeight: Brand.minTap)
+                .font(.ui(.headline)).frame(maxWidth: .infinity, minHeight: Brand.minTap)
                 .disabled(ZakatForm.number(daysText) < 1)
             } footer: {
                 Text("يضاف العدد لكل صلاة من الصلوات الخمس، ويمكنك تعديل كل صلاة بالأزرار.")
@@ -96,17 +97,17 @@ struct QadaView: View {
             Section {
                 ForEach(0..<5, id: \.self) { i in
                     HStack(spacing: 8) {
-                        Text(QadaState.prayers[i].name).font(.headline)
+                        Text(QadaState.prayers[i].name).font(.ui(.headline))
                             .lineLimit(1).fixedSize()
                         Spacer(minLength: 4)
-                        Text(Num.int(s.left[i])).font(.title3.weight(.semibold)).monospacedDigit()
+                        Text(Num.int(s.left[i])).font(.ui(.title3, .semibold)).monospacedDigit()
                             .foregroundStyle(Brand.primaryInk)
                             .lineLimit(1).fixedSize()
                             .frame(minWidth: 28)
                         Button {
                             var n = s; n.makeUp(i); save(n)
                         } label: {
-                            Text("قضيت واحدة").font(.subheadline.weight(.semibold))
+                            Text("قضيت واحدة").font(.ui(.subheadline, .semibold))
                                 .lineLimit(1).fixedSize()
                                 .padding(.horizontal, 6).frame(minHeight: 36)
                         }
@@ -145,7 +146,10 @@ struct QadaView: View {
             } footer: {
                 Text("هذه الأداة تنظم العدد فقط. اسأل أهل العلم عن أحكام القضاء وترتيبه. يحفظ على جهازك فقط.")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("قضاء الصلوات")
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("تصفير العداد؟", isPresented: $confirmReset, titleVisibility: .visible) {
@@ -224,6 +228,7 @@ struct SawmView: View {
     var body: some View {
         let s = state
         Form {
+Group {
             Section {
                 LabeledContent("عدد أيام القضاء المطلوبة") {
                     HStack {
@@ -251,7 +256,10 @@ struct SawmView: View {
             } footer: {
                 Text("اختر قضاء أو تطوع ثم اضغط اليوم في التقويم. الضغط مرة ثانية يلغي العلامة.")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("متتبع الصيام")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -262,7 +270,7 @@ struct SawmView: View {
                 .accessibilityLabel("الشهر السابق")
             Spacer()
             Text(SawmState.monthTitle(monthDays().first ?? month, cal: cal))
-                .font(.subheadline.weight(.semibold))
+                .font(.ui(.subheadline, .semibold))
                 .multilineTextAlignment(.center)
             Spacer()
             Button { shift(1) } label: { Image(systemName: "chevron.forward").frame(width: Brand.minTap, height: Brand.minTap) }
@@ -276,7 +284,7 @@ struct SawmView: View {
         let lead = (cal.component(.weekday, from: days.first ?? month) - cal.firstWeekday + 7) % 7
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
             ForEach(Self.weekdays, id: \.self) { w in
-                Text(w).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                Text(w).font(.ui(.caption2, .semibold)).foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
             ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 44) }
@@ -287,8 +295,8 @@ struct SawmView: View {
                     var n = s; n.tap(d, mode: mode, cal: cal); save(n)
                 } label: {
                     VStack(spacing: 0) {
-                        Text(Num.int(cal.component(.day, from: d))).font(.subheadline.weight(.medium))
-                        Text(Num.int(h.day)).font(.system(size: 9)).opacity(0.7)
+                        Text(Num.int(cal.component(.day, from: d))).font(.ui(.subheadline, .medium))
+                        Text(Num.int(h.day)).font(.ui(size: 9)).opacity(0.7)
                     }
                     .foregroundStyle(mark == nil ? Color.primary : Color.white)
                     .frame(maxWidth: .infinity, minHeight: 44)

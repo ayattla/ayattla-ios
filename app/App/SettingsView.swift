@@ -69,6 +69,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+Group {
             Section("القراءة والاستماع") {
                 NavigationLink {
                     ReciterPicker(selection: $reciter)
@@ -103,9 +104,12 @@ struct SettingsView: View {
                 LabeledContent("الإصدار", value: Self.versionText())
                 LabeledContent("حزمة المحتوى", value: Self.contentText(nil))
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
         .labeledContentStyle(AdaptiveLabeledContentStyle())
         .tint(Brand.primary)
+        .brandScreen()
         .navigationTitle("الإعدادات")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: notifyAzkar) { _, _ in Task { await Reminders.reschedule() } }
@@ -186,6 +190,7 @@ struct ReciterPicker: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 ForEach(results) { r in
                     Button {
@@ -195,7 +200,7 @@ struct ReciterPicker: View {
                         HStack {
                             Text(r.name).foregroundStyle(.primary)
                             if r.wordHighlight {
-                                Image(systemName: "star.fill").font(.caption2).foregroundStyle(Brand.accent)
+                                Image(systemName: "star.fill").font(.ui(.caption2)).foregroundStyle(Brand.accent)
                                     .accessibilityLabel("يدعم تظليل الكلمات")
                             }
                             Spacer()
@@ -210,7 +215,10 @@ struct ReciterPicker: View {
             } footer: {
                 Text("★ يدعم تظليل الكلمات في صانع المقاطع")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("القارئ المفضل")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "ابحث عن قارئ")
@@ -240,11 +248,12 @@ struct LicensesView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 ForEach(rows, id: \.0) { r in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(r.0).font(.headline)
-                        Text(r.1).font(.subheadline).foregroundStyle(.secondary)
+                        Text(r.0).font(.ui(.headline))
+                        Text(r.1).font(.ui(.subheadline)).foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                     .accessibilityElement(children: .combine)
@@ -252,7 +261,10 @@ struct LicensesView: View {
             } footer: {
                 Text("لا يدخل أي محتوى في التطبيق قبل التحقق من رخصته، ويذكر مصدره دائما.")
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("مصادر المحتوى والتراخيص")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -268,13 +280,17 @@ struct PrivacyView: View {
 
     var body: some View {
         List(points, id: \.1) { p in
+Group {
             Label {
                 Text(p.1).fixedSize(horizontal: false, vertical: true)
             } icon: {
                 Image(systemName: p.0).foregroundStyle(Brand.primary)
             }
             .padding(.vertical, 6)
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("الخصوصية")
         .navigationBarTitleDisplayMode(.inline)
     }
