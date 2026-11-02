@@ -1,14 +1,27 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-02 18:15 UTC بعد دمج PR #3
+آخر تحديث: 2026-11-02 18:30 UTC بعد دمج PR #4
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
 - PR #3 (`AyatDesign`، المساجد، الإعدادات، الترحيب) **مدموج** — القفل انتهى.
-- PR #4 «تحسينات تصميم iOS من مراجعة المحاكي» (الفرع `claude/ios-design-polish`) **مفتوح وتملكه جلسة أخرى**؛ يعدل `MosquesView` و`OnboardingView` و`Brand.swift`. لا تعدل هذه الملفات حتى يدمج، ولا تدمجه من جلسة غيرها.
+- PR #4 «تحسينات تصميم iOS من مراجعة المحاكي» **مدموج** (squash `be82665`) — القفل انتهى، وكل الملفات حرة.
 - انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
+
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/4 **مدموج** (squash `be82665`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41499580661
+  - مراجعة تصميم iOS من لقطات المحاكي (مهارة Mobile App Design iOS / ios-review): https://github.com/ayattla/ayattla-ios/pull/3#issuecomment-6584511415
+  - `Brand`: ‏`tint` و`line` و`muted` و`primaryInk` تتبدل مع الوضع الداكن (`Color(light:dark:)`).
+  - المواقيت: بعد العشاء يعرض الجدول «مواقيت الغد» ويظلل الفجر.
+  - الأدوات: البلاطات غير الجاهزة بنص مقروء و«قريبا»، والشبكة بعمود واحد عند أحجام الخط الكبيرة.
+  - المساجد: `CFBundleLocalizations: [ar]`، والعنوان شارع وحي فقط، وأقرب ١٢ علامة على الخريطة، وحذف الفاصل الزائد.
+  - الترحيب: لا يطلب إذن التنبيهات (يطلب عند تفعيلها في الإعدادات).
+  - الإعدادات: `AdaptiveLabeledContentStyle` يكدس العنوان فوق القيمة عند أحجام الخط الكبيرة، فلا تنكسر الكلمات.
+  - CI: لقطات `*-dark.png` (tools، prayer، mosques، settings، onboarding) و`*-xxxl.png` (tools، prayer، settings).
+- بقي من المراجعة: أسماء المساجد ما زالت إنجليزية على محاكي CI (لغة نظامه إنجليزية). لم يُتحقق من جهاز لغته عربية. الرئيسية ما زالت «قيد البناء» (سبب رفض مؤكد في App Store إن بقيت).
+
+### قبله
 
 - آخر PR: https://github.com/ayattla/ayattla-ios/pull/3 **مدموج** (squash `0b27590`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41497219706
   - حزمة `app/Packages/AyatDesign` (Brand، `card()`، `Color.cardSurface`، Num مع `distance`) + اختباراتها، ومهمة لها في CI.
