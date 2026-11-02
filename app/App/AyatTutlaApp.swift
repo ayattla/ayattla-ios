@@ -6,7 +6,7 @@ struct AyatTutlaApp: App {
         WindowGroup {
             StartView()
                 .environment(\.layoutDirection, .rightToLeft)
-                .environment(\.locale, Locale(identifier: "ar"))
+                .environment(\.locale, Num.locale)
                 .tint(Brand.primary)
         }
     }
