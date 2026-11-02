@@ -1,23 +1,24 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-02 19:25 UTC بعد دمج PR #5
+آخر تحديث: 2026-11-02 19:45 UTC بعد دمج PR #6
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
 - PR #3 (`AyatDesign`، المساجد، الإعدادات، الترحيب) **مدموج** — القفل انتهى.
 - PR #4 «تحسينات تصميم iOS من مراجعة المحاكي» **مدموج** (squash `be82665`) — القفل انتهى، وكل الملفات حرة.
 - PR #5 (حزمة المحتوى، المصحف، الأذكار، المسبحة، الرئيسية، مكتبتي) **مدموج** — القفل انتهى.
-- 2026-11-02 19:25 UTC — الختمة وبطاقة الآية وجدولة التنبيهات تملكها جلسة الفرع `claude/khatma-card-notify`. لا تكررها.
+- PR #6 (الختمة، البطاقة، الاستوديو، التنبيهات، قضاء الصلوات، الصيام) **مدموج** — لا قفل حاليا، كل الملفات حرة.
 - انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
 
-- آخر PR: https://github.com/ayattla/ayattla-ios/pull/5 **مدموج** (squash `646fc12`). CI ناجح: https://github.com/ayattla/ayattla-ios/actions/runs/41507535805
-  - **مهمة `content` في `ci.yml`** (ubuntu، قبل app): تجلب `quran-uthmani` من AlQuran Cloud، و`osamayy/azkar-db`، و`/api/meta` و`/tools/tasbih` من الموقع (قراءة فقط)، والخطين Amiri Quran وAmiri، ثم تبني `content-v1.sqlite` وتفحص جمل `ContentStore.swift` عليه، وتقارنه بتنزيل Tanzil المباشر (`tools/compare_tanzil.py`). تمرر الحزمة artifact إلى مهمة app فتضمن في `app/Content` (مجلد مرجعي في `project.yml`، غير محفوظ في git).
-  - الباني: يفصل البسملة عن الآية ١ في ١١٢ سورة (من نص ١:١ نفسه، ويقبل صيغة الشدة في ٩٥ و٩٧ فقط)، `name_plain` بلا تشكيل، جدول `reciter` (مجلدات EveryAyah)، `meta.tasbih_phrases`.
-  - التطبيق: `ContentLibrary` (يتحقق من sha256 ويسجل الخطوط)، `QuranView` + `MushafReader` + `RecitationPlayer` (بث EveryAyah، لا تنزيل)، `AzkarView` + `AzkarSession` (تقدم يومي)، `TasbihView`، `HomeView`، `LibraryView` (المفضلة).
-- الاختبارات: Python ٨+٢؛ packages: AyatCalc 13، AyatContent 8، AyatTiming 5، AyatDesign 3؛ app: ContentTests على الحزمة الحقيقية + QuranLogicTests + السابقة.
-- اللقطات على `ci-shots` تشمل الآن: quran، reader، azkar، azkar-session، tasbih، library، home-feed (+ داكن).
+- آخر PR: https://github.com/ayattla/ayattla-ios/pull/6 **مدموج** (squash `c301316`). CI ناجح (الثلاث مهام).
+  - `KhatmaPlan` (AyatCalc) + `KhatmaView` (في مكتبتي ← الخطط).
+  - `AyahCardView` + `CardCanvas.render` (ImageRenderer، ١٠٨٠ على الضلع القصير)، `StudioView` (البطاقة فقط تعمل).
+  - `Reminders` (تجدول ٧ أيام: أذكار بعد الفجر/العصر +٣٠ د، آية اليوم ٩:٠٠، ورد الختمة ٢٠:٠٠).
+  - `QadaView` و`SawmView` (حسب خطوات الموقع في `WEBSITE_FEATURES_AUDIT.md`).
+- قبله PR #5: حزمة المحتوى المفحوصة على CI، المصحف والتلاوة، الأذكار، المسبحة، الرئيسية، مكتبتي (التفاصيل في سجل PR #5).
+- الأدوات الجاهزة الآن في تبويب الأدوات: الأذكار، المسبحة، المواقيت، القبلة، الهجري، المناسبات، الزكاة، قضاء الصلوات، الصيام، المساجد. الباقية «قريبا»: الأدعية، الأحاديث، التحقق من حديث، صفة الوضوء والصلاة.
 
 ### قرار ينتظر المالك (نص ديني)
 
@@ -41,10 +42,11 @@
    git fetch origin && git checkout -b claude/<اسم> origin/main
    ```
 2. التالي بالترتيب:
-   - الختمة حسب `design/Khatma.dc.html` و`/tools/khatma` (عدد الأيام، تاريخ البدء، أبدأ من صفحة، توزيع الورد على الصلوات) — الصفحات من الحزمة.
-   - بطاقة الآية (صورة) حسب `design/Card.dc.html`: المقاسات الأربعة، حجم الخط، خلفيات مرسومة، حفظ ومشاركة (`ImageRenderer`).
-   - جدولة التنبيهات (`notify.*`): الأذكار بعد الفجر وبعد العصر من مواقيت المدينة، آية اليوم، ورد الختمة.
-   - ثم الاستوديو (محرك الفيديو AVFoundation) — أكبر عمل باق.
+   - **محرك الفيديو (الاستوديو)** — أكبر عمل باق، حسب `docs/TECHNICAL_AUDIT.md` §4 و`docs/APP_ARCHITECTURE.md` (RenderRequest): AVFoundation + Core Animation، نص من الحزمة، صوت EveryAyah (بث ثم تصدير على الجهاز)، تظليل الكلمات يحتاج توقيتات Quran.com (إذن). ابدأ بمقطع بلا تظليل: آيات + تلاوة + خلفية مرسومة ← MP4 ١٠٨٠. ثم «حولها إلى فيديو» في البطاقة، ثم الحالة والإهداء.
+   - الأدعية والأحاديث والتحقق من حديث: الموقع يخدمها من `/api/duas` و`/api/hadith/*`؛ إما مهمة CI تجلبها إلى الحزمة (بعد تأكيد شروط HadeethEnc) أو قراءة مباشرة من واجهة الموقع.
+   - صفة الوضوء والصلاة، الإذاعات (`/api/radios`، بث)، الأسماء الحسنى (تحقق الرخصة)، اختبار الحفظ (من الحزمة).
+   - شاشات iPad بعمودين للمحررات، ولقطات iPad في CI.
+   - النشر: يحتاج حساب Apple Developer وتوقيعا (مهمة CI بـ fastlane وأسرار GitHub) — قرار مالي على المالك.
 3. لكل تغيير: push ← PR ← انتظر CI:
    ```
    gh api "repos/ayattla/ayattla-ios/actions/runs?branch=<الفرع>&per_page=1" --jq '.workflow_runs[0].id'
