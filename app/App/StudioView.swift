@@ -37,7 +37,7 @@ struct StudioView: View {
             case .asmaCard: "sparkles"
             }
         }
-        var isReady: Bool { self == .card }
+        var isReady: Bool { self == .card || self == .clip }
     }
 
     var body: some View {
@@ -45,7 +45,11 @@ struct StudioView: View {
             Section("مشروع جديد") {
                 ForEach(Creator.allCases) { c in
                     NavigationLink {
-                        if c.isReady { AyahCardView() } else { PlaceholderScreen(title: c.title) }
+                        switch c {
+                        case .card: AyahCardView()
+                        case .clip: ClipMakerView()
+                        default: PlaceholderScreen(title: c.title)
+                        }
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: c.symbol).font(.title3).foregroundStyle(Brand.primary)

@@ -112,7 +112,11 @@ struct HomeView: View {
     /// Only the card editor is built; the other tiles open the placeholder until the video engine lands.
     private func createTile(_ title: String, _ symbol: String) -> some View {
         NavigationLink {
-            if title == "بطاقة" { AyahCardView() } else { PlaceholderScreen(title: title) }
+            switch title {
+            case "بطاقة": AyahCardView()
+            case "مقطع": ClipMakerView()
+            default: PlaceholderScreen(title: title)
+            }
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: symbol).font(.title3).foregroundStyle(Brand.primary)
@@ -123,7 +127,7 @@ struct HomeView: View {
             .card()
         }
         .buttonStyle(.plain)
-        .accessibilityHint(title == "بطاقة" ? "" : "قريبا")
+        .accessibilityHint(title == "بطاقة" || title == "مقطع" ? "" : "قريبا")
     }
 
     private var continueReading: some View {

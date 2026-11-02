@@ -74,6 +74,7 @@ struct AyahCardView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
     @State private var saved = false
+    @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     private let lib = ContentLibrary.shared
 
     init(surah: Int = 2, from: Int = 255, to: Int? = nil) {
@@ -143,9 +144,12 @@ struct AyahCardView: View {
                 } label: { Label("حفظ في الصور", systemImage: "square.and.arrow.down") }
                 ShareLink(item: CardImage(model: model, photo: photo),
                           preview: SharePreview(model.reference)) { Label("مشاركة", systemImage: "square.and.arrow.up") }
-                Button {} label: { Label("حولها إلى فيديو", systemImage: "film") }
-                    .disabled(true)
-                    .accessibilityHint("قريبا")
+                if let folder = (try? lib.store?.reciterFolders())?[reciter] {
+                    NavigationLink {
+                        ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
+                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo))
+                    } label: { Label("حولها إلى فيديو بالتلاوة", systemImage: "film") }
+                }
             }
         }
         .navigationTitle("بطاقة آية")
@@ -196,6 +200,15 @@ struct CardCanvas: View {
         return r.uiImage
     }
 
+    /// Taller frames have room for larger text; long passages still shrink to fit.
+    private var baseSize: CGFloat {
+        switch model.ratio {
+        case .story: 30
+        case .portrait: 26
+        default: 22
+        }
+    }
+
     var body: some View {
         GeometryReader { g in
             let unit = min(g.size.width, g.size.height) / 360
@@ -218,8 +231,8 @@ struct CardCanvas: View {
                     }
                     Spacer(minLength: 0)
                     Text(model.text)
-                        .font(.custom(ContentLibrary.mushafFont, size: 22 * unit * model.fontScale))
-                        .lineSpacing(8 * unit * model.fontScale)
+                        .font(.custom(ContentLibrary.mushafFont, size: baseSize * unit * model.fontScale))
+                        .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.4)
                     Text(model.reference).font(.system(size: 12 * unit, weight: .medium)).opacity(0.85)
