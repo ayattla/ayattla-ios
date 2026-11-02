@@ -1,4 +1,5 @@
 import SwiftUI
+import AyatDesign
 import AyatCalc
 
 /// Every tool of the Tools tab (docs/APP_ARCHITECTURE.md §1). Tools that depend on the content

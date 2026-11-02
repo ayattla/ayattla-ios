@@ -15,6 +15,7 @@ packages:
   AyatCalc: {path: Packages/AyatCalc}
   AyatContent: {path: Packages/AyatContent}
   AyatTiming: {path: Packages/AyatTiming}
+  AyatDesign: {path: Packages/AyatDesign}
 targets:
   AyatTutla:
     type: application
@@ -24,6 +25,7 @@ targets:
       - package: AyatCalc
       - package: AyatContent
       - package: AyatTiming
+      - package: AyatDesign
     info:
       path: App/Info.plist
       properties:

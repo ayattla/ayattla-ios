@@ -1,4 +1,5 @@
 import SwiftUI
+import AyatDesign
 import AyatCalc
 
 /// Hijri ⇄ Gregorian on Umm al-Qura, like ayattla.com/tools/hijri.

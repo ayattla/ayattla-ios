@@ -1,4 +1,5 @@
 import SwiftUI
+import AyatDesign
 import AyatCalc
 
 /// Qibla direction, per design/Qibla.dc.html. Uses the device location, or the city chosen

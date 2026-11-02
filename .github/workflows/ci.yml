@@ -28,6 +28,9 @@ jobs:
       - name: Test AyatTiming
         working-directory: app/Packages/AyatTiming
         run: swift test
+      - name: Test AyatDesign
+        working-directory: app/Packages/AyatDesign
+        run: swift test
 
   app:
     name: App build, tests and screenshots (simulator)
