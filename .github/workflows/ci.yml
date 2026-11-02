@@ -11,6 +11,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  content:
+    name: Content pack (approved sources, verified)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tool tests
+        run: |
+          python3 tools/test_build_content_pack.py
+          python3 tools/test_normalize_azkar.py
+      - name: Fetch sources
+        run: |
+          mkdir -p src
+          # Quran: Tanzil Uthmani text served by AlQuran Cloud (docs/CONTENT_AND_LICENSES.md)
+          curl -sSf --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o src/quran-uthmani.json
+          # Azkar: chapters of Hisn al-Muslim from osamayy/azkar-db
+          git clone -q --depth 1 https://github.com/osamayy/azkar-db src/azkar-db
+          echo "AZKAR_REF=$(git -C src/azkar-db rev-parse HEAD)" >> "$GITHUB_ENV"
+          # Second copy of the Quran text straight from Tanzil, only for the byte comparison below
+          curl -sSfL --retry 3 "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=true&quranType=uthmani&outType=txt-2&agree=true" -o src/tanzil-uthmani.txt || echo "tanzil download failed"
+      - name: Build pack
+        run: |
+          python3 tools/normalize_azkar.py src/azkar-db/azkar.json --source "osamayy/azkar-db@$AZKAR_REF" --out src/azkar.json
+          mkdir -p pack
+          python3 tools/build_content_pack.py --version 1 --quran src/quran-uthmani.json --azkar src/azkar.json --out pack/content-v1.sqlite
+          python3 tools/check_content_sql.py app/Packages/AyatContent/Sources/AyatContent/ContentStore.swift pack/content-v1.sqlite
+          python3 - <<'PY'
+          import sqlite3
+          db = sqlite3.connect("pack/content-v1.sqlite")
+          q = lambda s: db.execute(s).fetchall()
+          print("surahs", q("select count(*) from surah"), "ayat", q("select count(*) from ayah"),
+                "pages", q("select max(page) from ayah"), "basmala", q("select sum(basmala) from surah"))
+          print("azkar", q("select c.id, c.title, count(z.id) from azkar_category c join azkar z on z.category=c.id group by c.id"))
+          PY
+          ls -l pack
+      - name: Compare with Tanzil
+        continue-on-error: true
+        run: test -s src/tanzil-uthmani.txt && python3 tools/compare_tanzil.py pack/content-v1.sqlite src/tanzil-uthmani.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: content-pack
+          path: pack/
+          retention-days: 7
+
   packages:
     name: Swift packages (swift test)
     runs-on: macos-15
@@ -36,11 +80,15 @@ jobs:
     name: App build, tests and screenshots (simulator)
     runs-on: macos-15
     timeout-minutes: 45
-    needs: packages
+    needs: [packages, content]
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: content-pack
+          path: app/Content
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project

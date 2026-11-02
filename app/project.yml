@@ -22,7 +22,12 @@ targets:
   AyatTutla:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - App
+      # content-v1.sqlite from the CI content job (not in git); copied as the "Content" folder
+      - path: Content
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: AyatCalc
       - package: AyatContent

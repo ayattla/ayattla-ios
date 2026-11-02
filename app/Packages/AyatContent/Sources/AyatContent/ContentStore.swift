@@ -12,6 +12,15 @@ public struct Surah: Equatable, Sendable, Identifiable {
     public let ayahCount: Int
     public let revelation: String?
     public let pageStart: Int?
+    /// Name for the UI: no tashkeel (e.g. "سورة الفاتحة").
+    public let namePlain: String
+    /// The basmala is shown before ayah 1 (every surah except Al-Fatiha and At-Tawbah).
+    public let hasBasmala: Bool
+
+    /// Name without the leading "سورة " for lists and titles.
+    public var shortName: String {
+        namePlain.hasPrefix("سورة ") ? String(namePlain.dropFirst(5)) : namePlain
+    }
 }
 
 /// One ayah exactly as stored in the pack. `textUthmani` is shown; `textClean` is for search only.
@@ -67,10 +76,18 @@ public final class ContentStore: @unchecked Sendable {
         guard n == Self.expectedAyat else { throw ContentError.incomplete(n) }
     }
 
+    /// The basmala line exactly as the source has it (from ayah 1:1).
+    public func basmala() throws -> String? { try meta("basmala") }
+
+    /// Number of mushaf pages in the pack (604 for the Madani mushaf).
+    public func pageCount() throws -> Int {
+        try rows("SELECT max(page) FROM ayah", []) { $0.int(0) }.first ?? 0
+    }
+
     public func surahs() throws -> [Surah] {
-        try rows("SELECT id, name_ar, name_en, ayah_count, revelation, page_start FROM surah ORDER BY id", []) {
+        try rows("SELECT id, name_ar, name_en, ayah_count, revelation, page_start, name_plain, basmala FROM surah ORDER BY id", []) {
             Surah(id: $0.int(0), nameAr: $0.text(1) ?? "", nameEn: $0.text(2), ayahCount: $0.int(3),
-                  revelation: $0.text(4), pageStart: $0.intOrNil(5))
+                  revelation: $0.text(4), pageStart: $0.intOrNil(5), namePlain: $0.text(6) ?? "", hasBasmala: $0.int(7) == 1)
         }
     }
 

@@ -16,6 +16,14 @@ final class ContentStoreTests: XCTestCase {
         XCTAssertEqual(a[0].textUthmani, "نَصٌّ أَوَّلُ 1:1", "text must come back byte for byte")
     }
 
+    func testSurahNamesForUI() throws {
+        let first = try XCTUnwrap(try store().surahs().first)
+        XCTAssertEqual(first.namePlain, "سورة 1")
+        XCTAssertEqual(first.shortName, "1")
+        XCTAssertFalse(first.hasBasmala)
+        XCTAssertEqual(try store().pageCount(), 114)
+    }
+
     func testSearchIgnoresTashkeel() throws {
         XCTAssertEqual(try store().search("نص", limit: 500).count, 228)
         XCTAssertEqual(try store().search("نَصّ", limit: 500).count, 228)

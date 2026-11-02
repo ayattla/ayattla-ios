@@ -27,13 +27,16 @@ from datetime import datetime, timezone
 
 EXPECTED_SURAHS = 114
 EXPECTED_AYAT = 6236
+EXPECTED_BASMALA = 112      # every surah except Al-Fatiha (where it is ayah 1) and At-Tawbah
+BOM = "\ufeff"
 TASHKEEL = re.compile("[ؐ-ًؚ-ٰٟۖ-ۭـ]")
 ALEF = re.compile("[آأإٱ]")
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE surah(id INTEGER PRIMARY KEY, name_ar TEXT NOT NULL, name_en TEXT,
-  ayah_count INTEGER NOT NULL, revelation TEXT, page_start INTEGER);
+  ayah_count INTEGER NOT NULL, revelation TEXT, page_start INTEGER,
+  name_plain TEXT NOT NULL, basmala INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE ayah(surah INTEGER NOT NULL, ayah INTEGER NOT NULL, text_uthmani TEXT NOT NULL,
   text_clean TEXT NOT NULL, page INTEGER, juz INTEGER, hizb_quarter INTEGER,
   PRIMARY KEY(surah, ayah));
@@ -53,6 +56,28 @@ def clean(text):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def plain(text):
+    """UI form of a surah name: tashkeel removed, alef wasla shown as plain alef (UI rule: no tashkeel)."""
+    t = TASHKEEL.sub("", text).replace("ٱ", "ا")
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def split_basmala(surahs):
+    """AlQuran Cloud puts the basmala at the start of ayah 1 of every surah after Al-Fatiha.
+    It is not part of that ayah, so it is moved to surah.basmala. The prefix is taken from the
+    source itself (ayah 1:1); the remaining ayah text is left exactly as the source has it."""
+    basmala = surahs[0]["ayahs"][0]["text"].replace(BOM, "").strip()
+    prefix = basmala + " "
+    flags = {}
+    for s in surahs[1:]:
+        first = s["ayahs"][0]
+        text = first["text"].replace(BOM, "")
+        if text.startswith(prefix):
+            first["text"] = text[len(prefix):]
+            flags[s["number"]] = 1
+    return basmala, flags
+
+
 def load_surahs(path):
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
@@ -64,17 +89,22 @@ def load_surahs(path):
 
 def build(args):
     qdoc, surahs = load_surahs(args.quran)
+    basmala, basmala_flags = split_basmala(surahs)
+    if len(basmala_flags) != EXPECTED_BASMALA and not args.allow_partial:
+        raise ValueError(f"basmala found in {len(basmala_flags)} surahs, expected {EXPECTED_BASMALA}")
     db = sqlite3.connect(args.out)
     db.executescript(SCHEMA)
     total = 0
     for s in surahs:
         ayahs = s["ayahs"]
-        db.execute("INSERT INTO surah VALUES(?,?,?,?,?,?)",
+        db.execute("INSERT INTO surah VALUES(?,?,?,?,?,?,?,?)",
                    (s["number"], s["name"], s.get("englishName"), len(ayahs),
-                    s.get("revelationType"), ayahs[0].get("page")))
+                    s.get("revelationType"), ayahs[0].get("page"), plain(s["name"]),
+                    basmala_flags.get(s["number"], 0)))
         for a in ayahs:
+            text = a["text"].replace(BOM, "")
             db.execute("INSERT INTO ayah VALUES(?,?,?,?,?,?,?)",
-                       (s["number"], a["numberInSurah"], a["text"], clean(a["text"]),
+                       (s["number"], a["numberInSurah"], text, clean(text),
                         a.get("page"), a.get("juz"), a.get("hizbQuarter")))
             total += 1
     if total != EXPECTED_AYAT and not args.allow_partial:
@@ -109,7 +139,7 @@ def build(args):
 
     sources = {"quran": qdoc["data"].get("edition", {}).get("identifier", "unknown"),
                "editions": sorted(editions), "azkar": azkar_source}
-    meta = {"content_version": str(args.version),
+    meta = {"content_version": str(args.version), "basmala": basmala,
             "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ayah_count": str(total), "sources_json": json.dumps(sources, ensure_ascii=False)}
     db.executemany("INSERT INTO meta VALUES(?,?)", meta.items())
@@ -124,7 +154,7 @@ def build(args):
     digest = h.hexdigest()
     with open(args.out + ".sha256", "w") as f:
         f.write(f"{digest}  {args.out.rsplit('/', 1)[-1]}\n")
-    return {"ayat": total, "editions": editions, "sha256": digest}
+    return {"ayat": total, "editions": editions, "basmala_surahs": len(basmala_flags), "sha256": digest}
 
 
 def main(argv=None):
