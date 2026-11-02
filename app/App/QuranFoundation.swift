@@ -127,18 +127,20 @@ enum Tajweed {
     }
 
     /// Parses the site's tajweed HTML (`<span class="tj-rule">…</span>`, `tj-end` for the ayah number)
-    /// into colored text. Text inside the tags is kept exactly.
+    /// into colored text. Text inside the tags is kept exactly. Works on UTF-16 (NSString), because a
+    /// tag's ">" followed by a combining mark is one Character and would not match as text.
+    static let tag = try! NSRegularExpression(pattern: "<span class=\"tj-([a-z_]+)\">(.*?)</span>", options: [.dotMatchesLineSeparators])
+
     static func attributed(_ html: String) -> AttributedString {
+        let ns = html as NSString
         var out = AttributedString()
-        var rest = Substring(html)
-        while let open = rest.range(of: "<span class=\"tj-") {
-            out += AttributedString(unescape(String(rest[..<open.lowerBound])))
-            rest = rest[open.upperBound...]
-            guard let q = rest.firstIndex(of: "\""), let gt = rest.firstIndex(of: ">") else { break }
-            let rule = String(rest[..<q])
-            rest = rest[rest.index(after: gt)...]
-            guard let close = rest.range(of: "</span>") else { break }
-            let inner = unescape(String(rest[..<close.lowerBound]))
+        var pos = 0
+        for m in tag.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+            if m.range.location > pos {
+                out += AttributedString(unescape(ns.substring(with: NSRange(location: pos, length: m.range.location - pos))))
+            }
+            let rule = ns.substring(with: m.range(at: 1))
+            let inner = unescape(ns.substring(with: m.range(at: 2)))
             if rule == "end" {
                 out += AttributedString("\u{06DD}" + inner)
             } else {
@@ -146,9 +148,9 @@ enum Tajweed {
                 if let c = color(rule) { part.foregroundColor = c }
                 out += part
             }
-            rest = rest[close.upperBound...]
+            pos = m.range.location + m.range.length
         }
-        out += AttributedString(unescape(String(rest)))
+        if pos < ns.length { out += AttributedString(unescape(ns.substring(from: pos))) }
         return out
     }
 
