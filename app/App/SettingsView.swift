@@ -65,6 +65,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.notifyDailyAyah) private var notifyDailyAyah = false
     @AppStorage(Prefs.notifyKhatma) private var notifyKhatma = false
     @State private var notificationsDenied = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Form {
@@ -78,9 +79,7 @@ struct SettingsView: View {
                     ForEach(Catalog.translations) { Text($0.name).tag($0.id) }
                 }
                 .pickerStyle(.navigationLink)
-                Picker("حجم خط المصحف", selection: $fontScale) {
-                    ForEach(FontScale.allCases) { Text($0.title).tag($0.rawValue) }
-                }
+                fontScalePicker
             }
 
             Section("المظهر") {
@@ -105,6 +104,7 @@ struct SettingsView: View {
                 LabeledContent("حزمة المحتوى", value: Self.contentText(nil))
             }
         }
+        .labeledContentStyle(AdaptiveLabeledContentStyle())
         .tint(Brand.primary)
         .navigationTitle("الإعدادات")
         .navigationBarTitleDisplayMode(.inline)
@@ -274,5 +274,45 @@ struct PrivacyView: View {
         }
         .navigationTitle("الخصوصية")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+extension SettingsView {
+    /// A menu squeezes the title at accessibility text sizes; a navigation picker gives it the full row.
+    @ViewBuilder fileprivate var fontScalePicker: some View {
+        let picker = Picker("حجم خط المصحف", selection: $fontScale) {
+            ForEach(FontScale.allCases) { Text($0.title).tag($0.rawValue) }
+        }
+        if typeSize.isAccessibilitySize { picker.pickerStyle(.navigationLink) } else { picker }
+    }
+}
+
+/// Label and value side by side, stacked (label above value) at accessibility text sizes
+/// so words are never broken across lines.
+struct AdaptiveLabeledContentStyle: LabeledContentStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        AdaptiveLabeledRow(label: configuration.label, content: configuration.content)
+    }
+}
+
+private struct AdaptiveLabeledRow<L: View, C: View>: View {
+    let label: L
+    let content: C
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 4) {
+                label
+                content.foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack {
+                label
+                Spacer(minLength: 12)
+                content.foregroundStyle(.secondary).multilineTextAlignment(.trailing)
+            }
+        }
     }
 }
