@@ -96,6 +96,15 @@ struct StartView: View {
     var body: some View {
         content
             .modifier(RouteSheet())
+            #if DEBUG
+            // CI: `-link <url>` follows a deep link at launch (simctl openurl shows a system prompt).
+            .task {
+                if let s = UserDefaults.standard.string(forKey: "link"), let url = URL(string: s) {
+                    try? await Task.sleep(nanoseconds: 800_000_000)
+                    Router.shared.open(url)
+                }
+            }
+            #endif
             .preferredColorScheme(Appearance(rawValue: appearance)?.scheme)
     }
 
