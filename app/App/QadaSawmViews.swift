@@ -95,18 +95,20 @@ struct QadaView: View {
 
             Section {
                 ForEach(0..<5, id: \.self) { i in
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Text(QadaState.prayers[i].name).font(.headline)
-                        Spacer()
+                            .lineLimit(1).fixedSize()
+                        Spacer(minLength: 4)
                         Text(Num.int(s.left[i])).font(.title3.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(Brand.primaryInk)
-                            .frame(minWidth: 44)
+                            .lineLimit(1).fixedSize()
+                            .frame(minWidth: 28)
                         Button {
                             var n = s; n.makeUp(i); save(n)
                         } label: {
                             Text("قضيت واحدة").font(.subheadline.weight(.semibold))
                                 .lineLimit(1).fixedSize()
-                                .padding(.horizontal, 10).frame(minHeight: 36)
+                                .padding(.horizontal, 6).frame(minHeight: 36)
                         }
                         .buttonStyle(.borderedProminent)
                         .buttonBorderShape(.capsule)
@@ -114,7 +116,7 @@ struct QadaView: View {
                         Button {
                             var n = s; n.more(i); save(n)
                         } label: {
-                            Image(systemName: "plus").frame(width: 36, height: 36)
+                            Image(systemName: "plus").frame(width: 30, height: 36)
                         }
                         .buttonStyle(.bordered)
                         .buttonBorderShape(.circle)
