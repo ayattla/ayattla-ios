@@ -105,6 +105,7 @@ struct QadaView: View {
                             var n = s; n.makeUp(i); save(n)
                         } label: {
                             Text("قضيت واحدة").font(.subheadline.weight(.semibold))
+                                .lineLimit(1).fixedSize()
                                 .padding(.horizontal, 10).frame(minHeight: 36)
                         }
                         .buttonStyle(.borderedProminent)
