@@ -1,4 +1,5 @@
 import SwiftUI
+import AyatDesign
 import AyatCalc
 
 /// Prayer times, per design/Prayer.dc.html. Computed on the device with the site's formulas.
@@ -156,14 +157,5 @@ struct PrayerTimesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("تم") { showSettings = false } } }
         }
-    }
-}
-
-extension View {
-    /// Card per design/System.dc.html: radius 16, 1px #E3EBE5 border, no shadow.
-    func card() -> some View {
-        background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Brand.radiusCard))
-            .clipShape(RoundedRectangle(cornerRadius: Brand.radiusCard))
-            .overlay(RoundedRectangle(cornerRadius: Brand.radiusCard).stroke(Brand.line, lineWidth: 1))
     }
 }

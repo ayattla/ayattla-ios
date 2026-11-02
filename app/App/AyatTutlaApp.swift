@@ -1,4 +1,5 @@
 import SwiftUI
+import AyatDesign
 
 @main
 struct AyatTutlaApp: App {
@@ -64,8 +65,22 @@ struct RootView: View {
     @ViewBuilder private func screen(_ t: Tab) -> some View {
         switch t {
         case .tools: ToolsView()
+        case .home: HomeView()
         default: PlaceholderScreen(title: t.title)
         }
+    }
+}
+
+/// Home is still a placeholder; it already carries the settings button from design/Main.dc.html.
+struct HomeView: View {
+    var body: some View {
+        PlaceholderScreen(title: Tab.home.title)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("الإعدادات")
+                }
+            }
     }
 }
 
@@ -77,24 +92,36 @@ struct PlaceholderScreen: View {
     }
 }
 
+/// Applies the appearance preference and shows onboarding on first launch.
 /// Debug builds accept `-screen <name>` (used by CI to screenshot each screen).
 struct StartView: View {
+    @AppStorage(Prefs.appearance) private var appearance = Appearance.system.rawValue
+    @AppStorage(Prefs.onboardingDone) private var onboardingDone = false
+
     var body: some View {
+        content.preferredColorScheme(Appearance(rawValue: appearance)?.scheme)
+    }
+
+    @ViewBuilder private var content: some View {
         #if DEBUG
-        if let s = UserDefaults.standard.string(forKey: "screen"), s != "home" {
-            NavigationStack { DebugScreen.view(s) }
+        if let s = UserDefaults.standard.string(forKey: "screen") {
+            if s == "home" { RootView() } else { NavigationStack { DebugScreen.view(s) } }
         } else {
-            RootView()
+            normal
         }
         #else
-        RootView()
+        normal
         #endif
+    }
+
+    @ViewBuilder private var normal: some View {
+        if onboardingDone { RootView() } else { OnboardingView() }
     }
 }
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
@@ -103,6 +130,9 @@ enum DebugScreen {
         case "zakat": ZakatView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
+        case "mosques": MosquesView()
+        case "settings": SettingsView()
+        case "onboarding": OnboardingView()
         default: ToolsView()
         }
     }
