@@ -200,6 +200,15 @@ struct CardCanvas: View {
         return r.uiImage
     }
 
+    /// Taller frames have room for larger text; long passages still shrink to fit.
+    private var baseSize: CGFloat {
+        switch model.ratio {
+        case .story: 30
+        case .portrait: 26
+        default: 22
+        }
+    }
+
     var body: some View {
         GeometryReader { g in
             let unit = min(g.size.width, g.size.height) / 360
@@ -222,8 +231,8 @@ struct CardCanvas: View {
                     }
                     Spacer(minLength: 0)
                     Text(model.text)
-                        .font(.custom(ContentLibrary.mushafFont, size: 22 * unit * model.fontScale))
-                        .lineSpacing(8 * unit * model.fontScale)
+                        .font(.custom(ContentLibrary.mushafFont, size: baseSize * unit * model.fontScale))
+                        .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.4)
                     Text(model.reference).font(.system(size: 12 * unit, weight: .medium)).opacity(0.85)
