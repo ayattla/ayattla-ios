@@ -11,4 +11,4 @@ jobs:
           curl -sS -m 30 https://ayattla.com/tools/prayer-guide -o g.html
           python3 -c "
           s=open('g.html').read(); i=s.find('<main'); j=s.find('</main>')
-          m=s[i:j]; k=m.find('الوضوء'); print(len(m),k); print(m[max(0,k-300):k+2600])"
+          m=s[i:j]; k=m.rfind('</style>'); print(m[k:k+2500])"
