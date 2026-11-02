@@ -94,14 +94,15 @@ struct StartView: View {
 
 #if DEBUG
 enum DebugScreen {
-    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri"]
+    static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions"]
 
     @ViewBuilder static func view(_ name: String) -> some View {
         switch name {
         case "prayer": PrayerTimesView()
         case "qibla": QiblaView()
         case "zakat": ZakatView()
-        case "hijri": HijriTodayView()
+        case "hijri": HijriView()
+        case "occasions": OccasionsView()
         default: ToolsView()
         }
     }

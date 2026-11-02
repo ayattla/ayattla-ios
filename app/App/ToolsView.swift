@@ -9,21 +9,11 @@ struct ToolsView: View {
                 NavigationLink("مواقيت الصلاة") { PrayerTimesView() }
                 NavigationLink("اتجاه القبلة") { QiblaView() }
                 NavigationLink("حاسبة الزكاة") { ZakatView() }
-                NavigationLink("التاريخ الهجري") { HijriTodayView() }
+                NavigationLink("التاريخ الهجري") { HijriView() }
+                NavigationLink("المناسبات") { OccasionsView() }
             }
         }
         .navigationTitle("الأدوات")
-    }
-}
-
-struct HijriTodayView: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(Num.hijri(Date()))
-                .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(Brand.primaryInk)
-        }
-        .navigationTitle("التاريخ الهجري")
     }
 }
 
