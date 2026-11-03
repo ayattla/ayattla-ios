@@ -101,9 +101,10 @@ struct ClipMakerView: View {
             } header: { Text("الآيات") } footer: { Text("حتى \(Num.int(Self.maxAyat)) آية في المقطع، كما في الموقع.") }
 
             Section {
-                // Full name under the label: a menu value is cut in the middle on small iPhones.
-                Picker(selection: $reciter) {
-                    ForEach(Catalog.reciters) { Text($0.wordHighlight ? "\($0.name) ★" : $0.name).tag($0.id) }
+                // Full name under the label (a menu value is cut in the middle on small iPhones);
+                // the list opens on its own screen with ★ for word highlighting, as on the site.
+                NavigationLink {
+                    ReciterChoice(selection: $reciter)
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("القارئ")
@@ -112,7 +113,6 @@ struct ClipMakerView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .pickerStyle(.navigationLink)
                 if qfID != nil {
                     Toggle("تظليل الكلمة", isOn: $highlight)
                     if highlight {
@@ -457,6 +457,37 @@ struct ClipExportView: View {
         return UIGraphicsImageRenderer(size: small, format: f).image { _ in
             bg.draw(in: CGRect(origin: .zero, size: small))
             first.draw(in: CGRect(origin: .zero, size: small))
+        }
+    }
+}
+
+/// Reciter list for the editors: word-highlight reciters (★) first, then the rest.
+struct ReciterChoice: View {
+    @Binding var selection: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        List {
+            Section("يدعمون تظليل الكلمة ★") { rows(Catalog.reciters.filter(\.wordHighlight)) }
+            Section("كل القراء") { rows(Catalog.reciters.filter { !$0.wordHighlight }) }
+        }
+        .brandScreen()
+        .navigationTitle("القارئ")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func rows(_ list: [Catalog.Reciter]) -> some View {
+        ForEach(list) { r in
+            Button { selection = r.id; dismiss() } label: {
+                HStack {
+                    Text(r.name).foregroundStyle(Brand.ink)
+                    Spacer()
+                    if r.id == selection { Image(systemName: "checkmark").foregroundStyle(Brand.primaryInk) }
+                }
+                .frame(minHeight: Brand.minTap)
+            }
+            .listRowBackground(Brand.surface)
+            .accessibilityAddTraits(r.id == selection ? .isSelected : [])
         }
     }
 }
