@@ -158,8 +158,3 @@ struct StatusSourceView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-        .brandScreen()
-        .navigationTitle("حالة")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
