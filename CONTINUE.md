@@ -19,6 +19,8 @@
 
 ## 1. آخر حالة دقيقة
 
+- **المعاينة الحية (Appetize):** https://appetize.io/app/nu7km2szcfikki3nzqzxhzqdpi — تحدث تلقائيا بعد كل بناء ناجح على main (خطوة «Live preview on Appetize» في `ci.yml`، المفتاح العام في `app/appetize-public-key.txt`، والرمز السري `APPETIZE_API_TOKEN` في أسرار المستودع فقط).
+
 - **PR #19 مدموج (المرحلة الثانية من التصميم الفاخر):** سحب النص على المعاينة (`TextDrag`، `textOffset` في `CardCanvas.Model`، ويحفظ في `EditorSettings.textX/textY`)، «أنماط جاهزة» (`StylePreset`)، شاشة الحالة الجديدة مع «حالات جاهزة» ٩:١٦، ملخص مكتبتي، بطاقة التطبيق في الإعدادات، وتقسيم `HadithDuasViews.swift` و`QuranView.swift` إلى ملفات.
 - **قرارات اتخذت دون سؤال (مسجلة):**
   - الحد الأدنى صار **iOS 18.2**: على محاكيات 17.0 و17.4 و18.1 نصوص خلايا List وForm معكوسة كالمرآة، وجُربت إصلاحات كثيرة بلا أثر (التفاصيل في `docs/APP_ARCHITECTURE.md`). يعاد النظر بعد تجربة جهاز حقيقي.
