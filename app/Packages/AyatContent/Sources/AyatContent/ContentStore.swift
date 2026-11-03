@@ -24,6 +24,14 @@ public struct Surah: Equatable, Sendable, Identifiable {
 }
 
 /// One ayah exactly as stored in the pack. `textUthmani` is shown; `textClean` is for search only.
+public struct JuzStart: Equatable, Sendable, Identifiable {
+    public let juz: Int
+    public let page: Int
+    public let surah: Int
+    public let ayah: Int
+    public var id: Int { juz }
+}
+
 public struct Ayah: Equatable, Sendable, Identifiable {
     public let surah: Int
     public let ayah: Int
@@ -82,6 +90,16 @@ public final class ContentStore: @unchecked Sendable {
     /// Number of mushaf pages in the pack (604 for the Madani mushaf).
     public func pageCount() throws -> Int {
         try rows("SELECT max(page) FROM ayah", []) { $0.int(0) }.first ?? 0
+    }
+
+    /// Where each juz starts (its first ayah and page), from the pack's juz column.
+    public func juzStarts() throws -> [JuzStart] {
+        try rows("""
+            SELECT a.juz, a.page, a.surah, a.ayah FROM ayah a
+            JOIN (SELECT juz, min(surah * 1000 + ayah) k FROM ayah WHERE juz IS NOT NULL GROUP BY juz) m
+              ON a.juz = m.juz AND a.surah * 1000 + a.ayah = m.k
+            ORDER BY a.juz
+            """, []) { JuzStart(juz: $0.int(0), page: $0.intOrNil(1) ?? 1, surah: $0.int(2), ayah: $0.int(3)) }
     }
 
     public func surahs() throws -> [Surah] {
