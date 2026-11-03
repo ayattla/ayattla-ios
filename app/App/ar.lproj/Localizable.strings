@@ -1,0 +1,2 @@
+/* Arabic is the app's only language: this folder makes iOS run it right to left natively. */
+"app.name" = "آيات تتلى";

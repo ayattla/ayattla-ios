@@ -55,8 +55,7 @@ targets:
         NSPhotoLibraryAddUsageDescription: لحفظ المقاطع والبطاقات في الصور
         NSPhotoLibraryUsageDescription: لاختيار صورة خلفية من جهازك
         NSCameraUsageDescription: لالتقاط صورة خلفية
-        # Declared, not only registered at run time: on iOS 17 fonts registered with CTFontManager lose
-        # Arabic shaping inside List and Form cells (letters drawn unjoined and reversed).
+        # Declared so they load before the first frame (also registered at run time for the pack folder).
         UIAppFonts:
           - Content/AmiriQuran-Regular.ttf
           - Content/Amiri-Regular.ttf
