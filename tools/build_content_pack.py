@@ -19,6 +19,8 @@ Usage:
 """
 import argparse
 import hashlib
+import html
+import os
 import json
 import re
 import sqlite3
@@ -225,6 +227,38 @@ def asma_from_site(path):
     return names
 
 
+def topics_from_site(index_path, pages_dir, db):
+    """/ayat/ (topic list, in the site's order) and /ayat/<slug> (one page per topic): title,
+    description and the ayah references of each card (`data-fav="s:a:b"`). Only references are
+    kept; the text comes from this pack and the tafsir from Quran.com at run time."""
+    index = open(index_path, encoding="utf-8").read()
+    nav = re.search(r'<nav class="tools"[^>]*>(.*?)</nav>', index, re.S)
+    if not nav:
+        raise ValueError(f"topics list not found in {index_path} ({len(index)} bytes)")
+    slugs = re.findall(r'href="/ayat/([a-z0-9_-]+)"', nav.group(1))
+    topics = []
+    for slug in slugs:
+        page = open(os.path.join(pages_dir, slug + ".html"), encoding="utf-8").read()
+        head = re.search(r'<section class="page-head">.*?<h1>(.*?)</h1>\s*<p>(.*?)</p>', page, re.S)
+        if not head:
+            raise ValueError(f"topic {slug}: heading not found")
+        strip = lambda t: html.unescape(re.sub(r"<[^>]+>", "", t)).strip()
+        refs = []
+        for a, b, c in re.findall(r'data-fav="(\d+):(\d+):(\d+)"', page):
+            q = {"s": int(a), "a": int(b), "b": int(c)}
+            n = db.execute("SELECT count(*) FROM ayah WHERE surah=? AND ayah BETWEEN ? AND ?", (q["s"], q["a"], q["b"])).fetchone()[0]
+            if n != q["b"] - q["a"] + 1:
+                raise ValueError(f"topic {slug}: reference {q} not in the pack")
+            if q not in refs:
+                refs.append(q)
+        if not refs:
+            raise ValueError(f"topic {slug}: no ayat found")
+        topics.append({"slug": slug, "title": strip(head.group(1)), "desc": strip(head.group(2)), "items": refs})
+    if not topics:
+        raise ValueError("no topics found")
+    return topics
+
+
 def load_surahs(path):
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
@@ -306,6 +340,7 @@ def build(args):
             reciters += 1
     ruqya = ruqya_from_site(args.ruqya, db) if getattr(args, "ruqya", None) else None
     asma = asma_from_site(args.asma_html) if getattr(args, "asma_html", None) else None
+    topics = topics_from_site(args.topics_html, args.topics_dir, db) if getattr(args, "topics_html", None) else None
 
     tasbih = tasbih_from_site(args.tasbih_html) if getattr(args, "tasbih_html", None) else []
     guide = guide_from_site(args.guide_html) if getattr(args, "guide_html", None) else None
@@ -325,6 +360,7 @@ def build(args):
             "duas": json.dumps(duas, ensure_ascii=False) if duas else "",
             "ruqya": json.dumps(ruqya, ensure_ascii=False) if ruqya else "",
             "asma": json.dumps(asma, ensure_ascii=False) if asma else "",
+            "topics": json.dumps(topics, ensure_ascii=False) if topics else "",
             "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ayah_count": str(total), "sources_json": json.dumps(sources, ensure_ascii=False)}
     db.executemany("INSERT INTO meta VALUES(?,?)", meta.items())
@@ -341,6 +377,7 @@ def build(args):
         f.write(f"{digest}  {args.out.rsplit('/', 1)[-1]}\n")
     return {"ayat": total, "editions": editions, "reciters": reciters, "qf_ids": qf_map, "tasbih": len(tasbih),
             "ruqya": len(ruqya["items"]) if ruqya else 0, "asma": len(asma) if asma else 0,
+            "topics": (len(topics), sum(len(t["items"]) for t in topics)) if topics else None,
             "guide_items": sum(len(x["items"]) for x in guide["sections"]) if guide else 0,
             "duas": (len(duas["quran"]), len(duas["needs"])) if duas else None, "basmala_surahs": len(basmala_flags), "sha256": digest}
 
@@ -354,6 +391,8 @@ def main(argv=None):
     p.add_argument("--qf-reciters", help="api.quran.com /api/v4/resources/chapter_reciters JSON")
     p.add_argument("--ruqya", help="saved ayattla.com/api/ruqya JSON")
     p.add_argument("--asma-html", help="saved ayattla.com/tools/asma-ul-husna page")
+    p.add_argument("--topics-html", help="saved ayattla.com/ayat/ page (topic list)")
+    p.add_argument("--topics-dir", help="folder of saved ayattla.com/ayat/<slug> pages as <slug>.html")
     p.add_argument("--guide-html", help="saved ayattla.com/tools/prayer-guide page")
     p.add_argument("--duas", help="saved ayattla.com/api/duas JSON")
     p.add_argument("--tasbih-html", help="saved ayattla.com/tools/tasbih page (phrase list)")

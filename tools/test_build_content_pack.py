@@ -66,6 +66,13 @@ class BuildTest(unittest.TestCase):
         self.asma = os.path.join(self.tmp, "asma.html")
         open(self.asma, "w", encoding="utf-8").write(
             "<script>const AS=" + json.dumps([{"n": i, "name": f"اسم {i}"} for i in range(1, 100)], ensure_ascii=False) + ";</script>")
+        self.topics = os.path.join(self.tmp, "ayat.html")
+        open(self.topics, "w", encoding="utf-8").write(
+            '<nav class="tools" aria-label="x"><a href="/ayat/sabr"><b>t</b></a></nav><a href="/ayat/other">not a topic</a>')
+        os.makedirs(os.path.join(self.tmp, "ayat"))
+        open(os.path.join(self.tmp, "ayat", "sabr.html"), "w", encoding="utf-8").write(
+            '<section class="page-head"><nav>x</nav><h1>آيات عن الصبر</h1><p>وصف &amp; تفسير</p></section>'
+            '<button data-fav="2:1:2">حفظ</button><button data-fav="1:2:2">حفظ</button><button data-fav="2:1:2">حفظ</button>')
         self.out = os.path.join(self.tmp, "content-v1.sqlite")
 
     def run_build(self, *extra):
@@ -73,7 +80,8 @@ class BuildTest(unittest.TestCase):
                                                 azkar=self.z, out=self.out, allow_partial=True,
                                                 reciters=self.r, tasbih_html=self.h,
                                                 guide_html=self.g, duas=self.d, qf_reciters=self.qf,
-                                                ruqya=self.rq, asma_html=self.asma))
+                                                ruqya=self.rq, asma_html=self.asma,
+                                                topics_html=self.topics, topics_dir=os.path.join(self.tmp, "ayat")))
 
     def test_counts_and_text_kept_exactly(self):
         r = self.run_build(f"muyassar={self.t}")
@@ -128,6 +136,19 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(json.loads(db.execute("select value from meta where key='ruqya'").fetchone()[0])["items"],
                          [{"s": 1, "a": 1, "b": 2}])
         self.assertEqual(json.loads(db.execute("select value from meta where key='asma'").fetchone()[0])[98]["name"], "اسم 99")
+
+    def test_topics(self):
+        r = self.run_build()
+        db = sqlite3.connect(self.out)
+        self.assertEqual(r["topics"], (1, 2))
+        t = json.loads(db.execute("select value from meta where key='topics'").fetchone()[0])
+        self.assertEqual(t, [{"slug": "sabr", "title": "آيات عن الصبر", "desc": "وصف & تفسير",
+                              "items": [{"s": 2, "a": 1, "b": 2}, {"s": 1, "a": 2, "b": 2}]}])
+
+    def test_topic_reference_outside_pack_fails(self):
+        open(os.path.join(self.tmp, "ayat", "sabr.html"), "a", encoding="utf-8").write('<i data-fav="2:5:9"></i>')
+        with self.assertRaises(ValueError):
+            self.run_build()
 
     def test_search_ignores_tashkeel(self):
         self.run_build()

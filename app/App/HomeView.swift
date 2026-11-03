@@ -479,6 +479,7 @@ struct HomeToolGroup: Identifiable {
             .init(title: "المصحف", symbol: "book") { AnyView(QuranView()) },
             .init(title: "التجويد", symbol: "paintpalette") { AnyView(TajweedView()) },
             .init(title: "معاني الكلمات", symbol: "character.book.closed") { AnyView(WordByWordView()) },
+            .init(title: "آيات بالموضوع", symbol: "leaf") { AnyView(TopicsView()) },
             .init(title: "اختبار الحفظ", symbol: "eye.slash") { AnyView(HifzTestView()) },
             .init(title: "الختمة", symbol: "calendar") { AnyView(KhatmaView()) },
             .init(title: "الإذاعات", symbol: "antenna.radiowaves.left.and.right") { AnyView(RadioView()) },
