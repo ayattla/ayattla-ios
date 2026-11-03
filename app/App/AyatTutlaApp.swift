@@ -13,9 +13,10 @@ struct AyatTutlaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Right to left comes from the Arabic localization (ar.lproj). Forcing it through the
-            // environment as well mirrors List and Form cells on iOS 17.
+            // Right to left in both SwiftUI (here) and UIKit (BrandAppearance): when the two disagree,
+            // iOS 17 mirrors the text inside List and Form cells.
             StartView()
+                .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Num.locale)
                 .font(.ui(.body))
                 .tint(Brand.primaryInk)

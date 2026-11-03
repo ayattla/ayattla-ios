@@ -155,6 +155,7 @@ jobs:
           BUNDLE=com.ayattla.AyatTutla
           xcrun simctl boot "$UDID" || true
           APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          ls -d "$APP"/*.lproj || echo "no lproj in app"
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
           xcrun simctl location "$UDID" set 24.7136,46.6753 || true
