@@ -3,7 +3,7 @@
 name: AyatTutla
 options:
   bundleIdPrefix: com.ayattla
-  deploymentTarget: {iOS: "18.0"}
+  deploymentTarget: {iOS: "18.2"}
   developmentLanguage: ar
 settings:
   base:

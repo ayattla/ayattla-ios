@@ -17,6 +17,7 @@ struct AyatTutlaApp: App {
             // iOS 17 mirrors the text inside List and Form cells.
             StartView()
                 .environment(\.layoutDirection, .rightToLeft)
+                .environment(\.locale, Num.locale)
                 .font(.ui(.body))
                 .tint(Brand.primaryInk)
         }
