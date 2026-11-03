@@ -160,6 +160,7 @@ struct AyahCardView: View {
                                                     settings: settings))
                     } label: { Label("حولها إلى فيديو بالتلاوة", systemImage: "film") }
                 }
+                AnimatedTextButton(model: model, photo: photo, title: model.reference)
             }
         }
         .brandScreen()

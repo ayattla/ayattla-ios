@@ -77,6 +77,7 @@ struct TextCardView: View {
                 ShareLink(item: CardImage(model: model, photo: nil), preview: SharePreview(title)) {
                     Label("مشاركة", systemImage: "square.and.arrow.up")
                 }
+                AnimatedTextButton(model: model, photo: nil, title: title)
             }
         }
         .brandScreen()
