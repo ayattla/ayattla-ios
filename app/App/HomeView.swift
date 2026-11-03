@@ -288,33 +288,7 @@ Group {
         return "اليوم \(Num.int(d)) من \(Num.int(p.days)) · ورد اليوم: صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound))"
     }
 
-    @ViewBuilder private var favoritesList: some View {
-        let items = Favorites.list(favorites)
-        if items.isEmpty {
-            ContentUnavailableView("لا آيات في المفضلة", systemImage: "heart",
-                                   description: Text("اضغط على أي آية في المصحف ثم «أضف للمفضلة»"))
-        } else {
-            List {
-Group {
-                ForEach(items) { p in
-                    let a = (try? lib.store?.ayat(surah: p.surah, from: p.ayah, to: p.ayah))?.first
-                    NavigationLink { MushafReader(startPage: a?.page ?? 1, focus: p) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(QuranText.reference(p)).font(.ui(.caption)).foregroundStyle(Brand.primaryInk)
-                            Text(a?.textUthmani ?? "").font(.custom(ContentLibrary.mushafFont, size: 19, relativeTo: .body))
-                                .lineLimit(3)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-                .onDelete { idx in
-                    for i in idx { favorites = Favorites.toggled(favorites, items[i]) }
-                }
-            
-}.listRowBackground(Brand.surface)
-}
-        }
-    }
+    private var favoritesList: some View { SavedAyatList() }
 }
 
 // MARK: - Projects

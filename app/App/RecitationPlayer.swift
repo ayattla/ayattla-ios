@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import Observation
+import AyatDesign
 
 /// Ayah-by-ayah recitation from EveryAyah, as on the site's listen tool (repeat each ayah 1/3/5,
 /// speed). Plays a downloaded copy when there is one (RecitationDownloads). Goes through
@@ -9,7 +10,15 @@ import Observation
 final class RecitationPlayer {
     struct Position: Equatable, Hashable { var surah: Int; var ayah: Int }
 
-    static let repeats = [1, 3, 5]
+    /// Times each ayah plays; 0 repeats it until the listener moves on (as the site's "∞").
+    static let repeats = [1, 3, 5, 10, 0]
+    static func repeatTitle(_ n: Int) -> String {
+        switch n {
+        case 0: "بلا حد"
+        case 1: "مرة واحدة"
+        default: "\(Num.int(n)) مرات"
+        }
+    }
     static let speeds: [Float] = [0.75, 1.0, 1.25, 1.5]
 
     private(set) var current: Position?
@@ -121,7 +130,7 @@ final class RecitationPlayer {
 
     private func finishedAyah() {
         playedThisAyah += 1
-        if playedThisAyah < repeatEach {
+        if repeatEach == 0 || playedThisAyah < repeatEach {
             player.seek(to: .zero)
             player.playImmediately(atRate: speed)
         } else {

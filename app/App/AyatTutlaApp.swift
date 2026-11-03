@@ -198,6 +198,7 @@ enum DebugScreen {
         case "downloads": DownloadsView().navigationTitle("التنزيلات")
         case "azkar-hub": AzkarHadithView()
         case "topics": TopicsView()
+        case "juz": JuzListView()
         case "topic": if let t = ContentLibrary.shared.topics.first { TopicView(topic: t) } else { TopicsView() }
         case "now-playing": NowPlayingSheet()
         default: ToolsView()

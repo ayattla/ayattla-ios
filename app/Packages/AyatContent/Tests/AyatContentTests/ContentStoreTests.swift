@@ -22,6 +22,7 @@ final class ContentStoreTests: XCTestCase {
         XCTAssertEqual(first.shortName, "1")
         XCTAssertFalse(first.hasBasmala)
         XCTAssertEqual(try store().pageCount(), 114)
+        XCTAssertEqual(try store().juzStarts(), [JuzStart(juz: 1, page: 1, surah: 1, ayah: 1)])
     }
 
     func testSearchIgnoresTashkeel() throws {

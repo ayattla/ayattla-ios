@@ -78,6 +78,7 @@ Group {
                     }
                     if query.isEmpty {
                         Section {
+                            NavigationLink { JuzListView() } label: { Label("الأجزاء الثلاثون", systemImage: "list.number") }
                             NavigationLink { TopicsView() } label: { Label("آيات بالموضوع", systemImage: "leaf") }
                             NavigationLink { RadioView() } label: { Label("الإذاعات", systemImage: "antenna.radiowaves.left.and.right") }
                             NavigationLink { HifzTestView() } label: { Label("اختبار الحفظ", systemImage: "eye.slash") }
@@ -180,6 +181,8 @@ struct MushafReader: View {
     @AppStorage(Favorites.key) private var favorites = ""
     @State private var page = 1
     @State private var layer = QuranLayer.mushaf
+    /// Blurs the page while listening, to recite from memory (site: «إخفاء الآيات»).
+    @State private var hideText = false
     @State private var selected: RecitationPlayer.Position?
     /// Reuses the recitation already playing (from the mini player) so its controls show here.
     @State private var player = (AudioCenter.shared.active as? RecitationPlayer) ?? RecitationPlayer()
@@ -200,6 +203,19 @@ struct MushafReader: View {
                         if layer == .mushaf {
                             MushafPage(number: n, scale: FontScale(rawValue: fontScale)?.factor ?? 1,
                                        highlighted: player.current ?? focus)
+                                .blur(radius: hideText ? 9 : 0)
+                                .overlay {
+                                    if hideText {
+                                        Button { hideText = false } label: {
+                                            Label("الآيات مخفية لاختبار الحفظ، اضغط للإظهار", systemImage: "eye")
+                                                .font(.ui(.footnote, .medium)).foregroundStyle(Brand.primaryInk)
+                                                .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
+                                                .background(Brand.surface, in: Capsule())
+                                                .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
                         } else {
                             LayerPage(number: n, layer: layer, scale: FontScale(rawValue: fontScale)?.factor ?? 1)
                         }
@@ -229,6 +245,11 @@ struct MushafReader: View {
                     Text(subtitle).font(.ui(.caption2)).foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .combine)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { hideText.toggle() } label: { Image(systemName: hideText ? "eye" : "eye.slash") }
+                    .accessibilityLabel(hideText ? "أظهر الآيات" : "أخف الآيات لاختبار الحفظ")
+                    .disabled(layer != .mushaf)
             }
         }
         .onAppear {
@@ -458,10 +479,10 @@ struct PlayerBar: View {
             HStack {
                 Menu {
                     Picker("تكرار كل آية", selection: $player.repeatEach) {
-                        ForEach(RecitationPlayer.repeats, id: \.self) { Text("\(Num.int($0)) مرة").tag($0) }
+                        ForEach(RecitationPlayer.repeats, id: \.self) { Text(RecitationPlayer.repeatTitle($0)).tag($0) }
                     }
                 } label: {
-                    Image(systemName: player.repeatEach > 1 ? "repeat.1" : "repeat")
+                    Image(systemName: player.repeatEach == 0 ? "infinity" : player.repeatEach > 1 ? "repeat.1" : "repeat")
                         .frame(width: Brand.minTap, height: Brand.minTap)
                 }
                 .accessibilityLabel("تكرار كل آية")
@@ -492,5 +513,37 @@ struct PlayerBar: View {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .card()
         .padding(.horizontal, 16).padding(.bottom, 8)
+    }
+}
+
+/// The thirty ajza', each opening the mushaf at its first page (pack's juz column).
+struct JuzListView: View {
+    private let lib = ContentLibrary.shared
+    private var starts: [JuzStart] { (try? lib.store?.juzStarts()) ?? [] }
+
+    var body: some View {
+        List(starts) { j in
+            Group {
+                NavigationLink {
+                    MushafReader(startPage: j.page, focus: .init(surah: j.surah, ayah: j.ayah))
+                } label: {
+                    HStack(spacing: 12) {
+                        Text(Num.int(j.juz)).font(.ui(.headline)).foregroundStyle(Brand.primary)
+                            .frame(width: 40, height: 40).background(Brand.goldSoft, in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("الجزء \(Num.int(j.juz))").font(.ui(.headline))
+                            Text("\(lib.surah(j.surah)?.shortName ?? "") · الآية \(Num.int(j.ayah)) · صفحة \(Num.int(j.page))")
+                                .font(.ui(.caption)).foregroundStyle(Brand.muted)
+                        }
+                    }
+                    .frame(minHeight: Brand.minTap)
+                }
+            }
+            .listRowBackground(Brand.surface)
+        }
+        .overlay { if starts.isEmpty { EmptyState("الأجزاء غير متاحة", symbol: "list.number") } }
+        .brandScreen()
+        .navigationTitle("الأجزاء")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
