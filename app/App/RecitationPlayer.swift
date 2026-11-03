@@ -2,9 +2,9 @@ import Foundation
 import AVFoundation
 import Observation
 
-/// Ayah-by-ayah recitation streamed from EveryAyah, as on the site's listen tool
-/// (repeat each ayah 1/3/5, speed). Nothing is downloaded or stored: offline audio needs
-/// EveryAyah's permission (docs/CONTENT_AND_LICENSES.md).
+/// Ayah-by-ayah recitation from EveryAyah, as on the site's listen tool (repeat each ayah 1/3/5,
+/// speed). Plays a downloaded copy when there is one (RecitationDownloads). Goes through
+/// AudioCenter, so it keeps playing in the background and from the mini player.
 @Observable
 final class RecitationPlayer {
     struct Position: Equatable, Hashable { var surah: Int; var ayah: Int }
@@ -48,31 +48,45 @@ final class RecitationPlayer {
 
     func play(from p: Position) {
         guard let folder, let url = Self.url(folder: folder, surah: p.surah, ayah: p.ayah) else { failed = true; return }
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        AudioCenter.shared.claim(self)
         failed = false
         current = p
         playedThisAyah = 0
         // A downloaded copy (Library → التنزيلات) plays without internet.
         let item = AVPlayerItem(url: RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah) ?? url)
         statusObserver = item.observe(\.status) { [weak self] item, _ in
-            if item.status == .failed { DispatchQueue.main.async { self?.failed = true; self?.isPlaying = false } }
+            if item.status == .failed {
+                DispatchQueue.main.async { self?.failed = true; self?.isPlaying = false; AudioCenter.shared.changed() }
+            }
         }
         player.replaceCurrentItem(with: item)
         player.playImmediately(atRate: speed)
         isPlaying = true
+        AudioCenter.shared.changed()
     }
 
     func toggle(startAt p: Position) {
         if isPlaying {
-            player.pause()
-            isPlaying = false
+            pause()
         } else if current != nil, player.currentItem != nil, !failed {
-            player.playImmediately(atRate: speed)
-            isPlaying = true
+            resume()
         } else {
             play(from: p)
         }
+    }
+
+    func pause() {
+        player.pause()
+        isPlaying = false
+        AudioCenter.shared.changed()
+    }
+
+    func resume() {
+        guard current != nil, player.currentItem != nil else { return }
+        AudioCenter.shared.claim(self)
+        player.playImmediately(atRate: speed)
+        isPlaying = true
+        AudioCenter.shared.changed()
     }
 
     func stop() {
@@ -80,6 +94,14 @@ final class RecitationPlayer {
         player.replaceCurrentItem(with: nil)
         isPlaying = false
         current = nil
+        AudioCenter.shared.release(self)
+    }
+
+    /// Reciter name for the lock screen, from the folder (content pack reciter table).
+    var reciterName: String {
+        guard let folder else { return "" }
+        let id = ((try? ContentLibrary.shared.store?.reciterFolders()) ?? [:]).first { $0.value == folder }?.key
+        return id.flatMap { Catalog.reciter($0)?.name } ?? ""
     }
 
     func next() {
@@ -105,5 +127,23 @@ final class RecitationPlayer {
         } else {
             next()
         }
+    }
+}
+
+extension RecitationPlayer: AudioSource {
+    var audioIsPlaying: Bool { isPlaying }
+    var audioTitle: String { current.map(QuranText.reference) ?? "تلاوة" }
+    var audioSubtitle: String { reciterName }
+    var audioIsLive: Bool { false }
+    func audioPause() { pause() }
+    func audioResume() { resume() }
+    func audioNext() { next() }
+    func audioPrevious() { previous() }
+    func audioStop() {
+        // Called when another source takes over: stop without releasing twice.
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        isPlaying = false
+        current = nil
     }
 }

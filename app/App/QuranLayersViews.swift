@@ -265,7 +265,6 @@ Group {
         .brandScreen()
         .navigationTitle("الرقية الشرعية")
         .navigationBarTitleDisplayMode(.inline)
-        .onDisappear { player.stop() }
     }
 
     private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }

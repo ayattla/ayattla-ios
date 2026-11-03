@@ -28,16 +28,29 @@ struct AyatTutlaApp: App {
     }
 }
 
+/// The five sections of the bottom bar (master prompt §4): home, Quran, content making, azkar and
+/// hadith, and more (every tool and «مكتبتي»). Labels stay short so none is cut on small iPhones.
 enum Tab: String, CaseIterable, Identifiable {
-    case home, quran, studio, library, tools
+    case home, quran, studio, azkar, more
     var id: String { rawValue }
+    /// Bar label.
     var title: String {
         switch self {
         case .home: "الرئيسية"
         case .quran: "القرآن"
-        case .studio: "الاستوديو"
-        case .library: "مكتبتي"
-        case .tools: "الأدوات"
+        case .studio: "اصنع"
+        case .azkar: "الأذكار"
+        case .more: "المزيد"
+        }
+    }
+    /// Full name, used in the iPad sidebar.
+    var longTitle: String {
+        switch self {
+        case .home: "الرئيسية"
+        case .quran: "القرآن الكريم"
+        case .studio: "صناعة المحتوى"
+        case .azkar: "الأذكار والحديث"
+        case .more: "المزيد والأدوات"
         }
     }
     var symbol: String {
@@ -45,46 +58,53 @@ enum Tab: String, CaseIterable, Identifiable {
         case .home: "house"
         case .quran: "book"
         case .studio: "play.rectangle"
-        case .library: "books.vertical"
-        case .tools: "square.grid.2x2"
+        case .azkar: "sun.max"
+        case .more: "square.grid.2x2"
         }
     }
 }
 
-/// iPhone: TabView. iPad: NavigationSplitView with the same sections (see docs/APP_ARCHITECTURE.md).
+/// iPhone: the fixed bottom bar (TabView, each section keeps its own navigation state).
+/// iPad: a sidebar with the same sections. The mini player sits above the bar on both.
 struct RootView: View {
     @Environment(\.horizontalSizeClass) private var size
     @State private var tab: Tab = .home
+    @State private var audio = AudioCenter.shared
 
     var body: some View {
-        if size == .regular {
-            NavigationSplitView {
-                List(Tab.allCases, selection: Binding(get: { tab }, set: { tab = $0 ?? .home })) { t in
-                    Label(t.title, systemImage: t.symbol).tag(t)
+        Group {
+            if size == .regular {
+                NavigationSplitView {
+                    List(Tab.allCases, selection: Binding(get: { tab }, set: { tab = $0 ?? .home })) { t in
+                        Label(t.longTitle, systemImage: t.symbol).tag(t)
+                    }
+                    .brandScreen()
+                    .navigationTitle("آيات تتلى")
+                } detail: {
+                    NavigationStack { screen(tab) }
+                        .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
                 }
-                .brandScreen()
-                .navigationTitle("آيات تتلى")
-            } detail: {
-                NavigationStack { screen(tab) }
-            }
-        } else {
-            TabView(selection: $tab) {
-                ForEach(Tab.allCases) { t in
-                    NavigationStack { screen(t) }
-                        .tabItem { Label(t.title, systemImage: t.symbol) }
-                        .tag(t)
+            } else {
+                TabView(selection: $tab) {
+                    ForEach(Tab.allCases) { t in
+                        NavigationStack { screen(t) }
+                            .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
+                            .tabItem { Label(t.title, systemImage: t.symbol) }
+                            .tag(t)
+                    }
                 }
             }
         }
+        .sheet(isPresented: $audio.nowPlayingSheet) { NowPlayingSheet() }
     }
 
     @ViewBuilder private func screen(_ t: Tab) -> some View {
         switch t {
-        case .tools: ToolsView()
         case .home: HomeView()
         case .quran: QuranView()
-        case .library: LibraryView()
         case .studio: StudioView()
+        case .azkar: AzkarHadithView()
+        case .more: ToolsView()
         }
     }
 }
@@ -176,6 +196,8 @@ enum DebugScreen {
         case "ruqya": RuqyaView()
         case "asma": AsmaView()
         case "downloads": DownloadsView().navigationTitle("التنزيلات")
+        case "azkar-hub": AzkarHadithView()
+        case "now-playing": NowPlayingSheet()
         default: ToolsView()
         }
     }

@@ -26,7 +26,7 @@ enum AyahOfTheDay {
     }
 }
 
-/// Home, per design/Main.dc.html.
+/// Home: the site's home page in its order (design/Main.dc.html, docs/SITE_AUDIT.md §2).
 struct HomeView: View {
     @AppStorage("quran.lastPage") private var lastPage = 0
     @AppStorage(Favorites.key) private var favorites = ""
@@ -35,13 +35,20 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                // Site order (docs/SITE_AUDIT.md §2), with the app's daily cards after the products.
                 header
                 if lib.isReady { ayahCard }
-                createRow
+                HomeProducts()
+                HomeSources()
                 NextPrayerCard()
                 if lib.isReady { continueReading }
-                toolGroups
                 projects
+                HomeSteps()
+                HomeFeatures()
+                toolGroups
+                HomeStats()
+                HomeFAQ()
+                HomeClosing()
                 footer
             }
             .padding(16)
@@ -163,40 +170,6 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
-    }
-
-    private var createRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("اصنع").font(.ui(.headline))
-            HStack(spacing: 10) {
-                createTile("مقطع", "play.rectangle")
-                createTile("بطاقة", "rectangle.portrait")
-                createTile("حالة", "text.bubble")
-                createTile("إهداء", "gift")
-            }
-        }
-    }
-
-    /// Only the card editor is built; the other tiles open the placeholder until the video engine lands.
-    private func createTile(_ title: String, _ symbol: String) -> some View {
-        NavigationLink {
-            switch title {
-            case "بطاقة": AyahCardView()
-            case "مقطع": ClipMakerView()
-            case "حالة": StatusSourceView()
-            default: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
-            }
-        } label: {
-            VStack(spacing: 8) {
-                Image(systemName: symbol).font(.ui(.title3)).foregroundStyle(Brand.goldInk)
-                    .frame(width: 44, height: 44).background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                Text(title).font(.ui(.footnote, .medium)).foregroundStyle(Brand.ink)
-            }
-            .frame(maxWidth: .infinity).padding(.vertical, 14)
-            .card()
-        }
-        .buttonStyle(.plain)
-        
     }
 
     private var continueReading: some View {

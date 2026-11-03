@@ -86,6 +86,11 @@ struct ToolsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         NextPrayerCard()
+                        HStack(spacing: 10) {
+                            NavigationLink { LibraryView() } label: { ToolCard("مكتبتي", subtitle: "المشاريع والمفضلة والتنزيلات", symbol: "books.vertical") }
+                            NavigationLink { SettingsView() } label: { ToolCard("الإعدادات", subtitle: "القارئ والخط والتنبيهات", symbol: "gearshape") }
+                        }
+                        .buttonStyle(.plain)
                         section("اليوم", ToolItem.today)
                         section("العبادات والحساب", ToolItem.worship)
                         NavigationLink {
@@ -110,7 +115,7 @@ Group {
             }
         }
         .brandScreen()
-        .navigationTitle("الأدوات")
+        .navigationTitle("المزيد")
         .searchable(text: $query, prompt: "ابحث عن أداة")
     }
 
