@@ -23,15 +23,16 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: Brand.Space.xl) {
                 // Site order (docs/SITE_AUDIT.md §2), with the app's daily cards after the products.
                 header
                 if lib.isReady { ayahCard }
                 HomeProducts()
+                PresetStrip()
                 HomeSources()
                 NextPrayerCard()
                 if lib.isReady { continueReading }
-                projects
+                RecentProjectsStrip()
                 HomeSteps()
                 HomeFeatures()
                 toolGroups
@@ -40,11 +41,10 @@ struct HomeView: View {
                 HomeClosing()
                 footer
             }
-            .padding(16)
-            .frame(maxWidth: 760)
+            .padding(Brand.Space.l)
+            .frame(maxWidth: Brand.readableWidth)
             .frame(maxWidth: .infinity)
         }
-        .background(Brand.background)
         .brandScreen()
         .navigationTitle("آيات تتلى")
         .navigationBarTitleDisplayMode(.inline)
@@ -263,7 +263,6 @@ Group {
 }
             }
         }
-        .background(Brand.background)
         .brandScreen()
         .navigationTitle("مكتبتي")
     }

@@ -126,13 +126,12 @@ struct ClipMakerView: View {
                 Text(qfID != nil ? "تظليل الكلمات بتوقيتات Quran.com وتلاوة السورة منه، كما في الموقع." : "★ القراء الذين يدعمون تظليل الكلمات.")
             }
             Section("الشكل") {
-                Picker("المقاس", selection: $ratio) { ForEach(CardOptions.Ratio.allCases) { Text($0.label).tag($0) } }
-                    .pickerStyle(.segmented)
+                RatioPicker(ratio: $ratio)
                 Picker("حجم الخط", selection: $fontScale) {
                     ForEach(CardOptions.fontScales, id: \.1) { Text($0.0).tag($0.1) }
                 }
                 .pickerStyle(.segmented)
-                Picker("القالب", selection: $template) { ForEach(CardOptions.templates) { Text($0.name).tag($0) } }
+                TemplatePicker(template: $template)
                 if !template.id.isEmpty { TextField("الاسم أو سطر الإهداء (اختياري)", text: $name) }
             }
             Section("الخلفية") {

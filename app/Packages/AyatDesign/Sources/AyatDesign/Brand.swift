@@ -94,25 +94,21 @@ public extension Font {
 }
 
 public extension View {
-    /// Card per the site: --c-surface, 1px --c-line border, radius 20, soft shadow (--sh-1).
+    /// Card per the site: --c-surface, 1px --c-line border, radius 20, soft layered shadow (v2 raised).
     func card() -> some View {
-        background(Brand.surface, in: RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous))
-            .clipShape(RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous).stroke(Brand.line, lineWidth: 1))
-            .shadow(color: Color(hex: 0x102D27).opacity(0.07), radius: 8, y: 4)
+        clipShape(RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous))
+            .surface(.raised)
     }
 
-    /// The site's emerald panel with the gold frame line (--frame), for hero cards.
+    /// The site's emerald panel with the gold frame line (--frame), for hero cards. Now drawn by
+    /// the v2 hero surface (gradient, star lattice, light and frame).
     func emeraldPanel(radius: CGFloat = 24) -> some View {
-        background(Brand.gradient, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: radius - 6, style: .continuous)
-                .strokeBorder(Brand.accent.opacity(0.45), lineWidth: 1).padding(6))
-            .foregroundStyle(Brand.onPrimary)
+        heroSurface(radius: radius)
     }
 
-    /// Screen background: ivory (dark: deep emerald) behind lists, forms and scroll views.
+    /// Screen background: ivory (dark: deep emerald) behind lists, forms and scroll views, with
+    /// the faint star lattice under the navigation bar (v2), so every screen shares the backdrop.
     func brandScreen() -> some View {
-        scrollContentBackground(.hidden)
-            .background(Brand.background.ignoresSafeArea())
+        patternedScreen()
     }
 }

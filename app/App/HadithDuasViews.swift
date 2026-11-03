@@ -59,11 +59,12 @@ struct TextCardView: View {
             .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12))) {
             Section("الشكل") {
-                Picker("المقاس", selection: $ratio) { ForEach(CardOptions.Ratio.allCases) { Text($0.label).tag($0) } }
-                    .pickerStyle(.segmented)
+                RatioPicker(ratio: $ratio)
                 Picker("حجم الخط", selection: $fontScale) { ForEach(CardOptions.fontScales, id: \.1) { Text($0.0).tag($0.1) } }
                     .pickerStyle(.segmented)
-                Picker("الخلفية", selection: $background) { ForEach(CardOptions.backgrounds) { Text($0.name).tag($0) } }
+            }
+            Section("الخلفية") {
+                BackgroundSwatches(selected: background) { background = $0 }
             }
             Section {
                 Button {

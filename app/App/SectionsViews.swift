@@ -9,7 +9,9 @@ struct AzkarHadithView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: Brand.Space.xl) {
+                HeroHeader(eyebrow: "حصن المسلم والسنة", title: "الأذكار والحديث",
+                           subtitle: "أذكارك اليومية بعداد يحفظ تقدمك، وأدعية من القرآن والسنة، وأحاديث صحيحة وحسنة بمصادرها")
                 dailyAzkar
                 group("الأذكار والأدعية", subtitle: "من حصن المسلم ومن القرآن والسنة، مع المصدر") {
                     link("الأذكار", "أذكار الصباح والمساء والنوم مع العداد", "sun.max") { AzkarView() }
@@ -26,8 +28,8 @@ struct AzkarHadithView: View {
                     link("تحفيظ الأطفال جزء عم", "استماع وتكرار ونجوم وشهادة باسم الطفل", "star.circle") { KidsJuzAmmaView() }
                 }
             }
-            .padding(16)
-            .frame(maxWidth: 760)
+            .padding(Brand.Space.l)
+            .frame(maxWidth: Brand.readableWidth)
             .frame(maxWidth: .infinity)
         }
         .brandScreen()

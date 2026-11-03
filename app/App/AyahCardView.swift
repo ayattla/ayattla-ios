@@ -111,12 +111,11 @@ struct AyahCardView: View {
                 Stepper("إلى آية \(Num.int(to))", value: $to, in: from...min(ayahCount, from + CardOptions.maxAyat - 1))
             }
             Section("القالب") {
-                Picker("القالب", selection: $template) { ForEach(CardOptions.templates) { Text($0.name).tag($0) } }
+                TemplatePicker(template: $template)
                 if !template.id.isEmpty { TextField("الاسم (اختياري)", text: $name) }
             }
             Section("المقاس") {
-                Picker("المقاس", selection: $ratio) { ForEach(CardOptions.Ratio.allCases) { Text($0.label).tag($0) } }
-                    .pickerStyle(.segmented)
+                RatioPicker(ratio: $ratio)
             }
             Section("حجم الخط") {
                 Picker("حجم الخط", selection: $fontScale) {
@@ -125,22 +124,7 @@ struct AyahCardView: View {
                 .pickerStyle(.segmented)
             }
             Section("الخلفية") {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(CardOptions.backgrounds) { b in
-                            let on = photo == nil && background == b
-                            Button { background = b; photo = nil; photoItem = nil } label: {
-                                RoundedRectangle(cornerRadius: 10).fill(b.gradient)
-                                    .frame(width: 56, height: 56)
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Brand.primary : .clear, lineWidth: 3))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(b.name)
-                            .accessibilityAddTraits(on ? .isSelected : [])
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
+                BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil }
                 PhotosPicker(selection: $photoItem, matching: .images) { Label("صورة من الجهاز", systemImage: "photo") }
             }
             Section {
