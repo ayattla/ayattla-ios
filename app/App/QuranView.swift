@@ -78,6 +78,7 @@ Group {
                     }
                     if query.isEmpty {
                         Section {
+                            NavigationLink { TopicsView() } label: { Label("آيات بالموضوع", systemImage: "leaf") }
                             NavigationLink { RadioView() } label: { Label("الإذاعات", systemImage: "antenna.radiowaves.left.and.right") }
                             NavigationLink { HifzTestView() } label: { Label("اختبار الحفظ", systemImage: "eye.slash") }
                             NavigationLink { DuasView() } label: { Label("الأدعية", systemImage: "hands.sparkles") }
