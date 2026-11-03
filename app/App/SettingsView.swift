@@ -70,6 +70,18 @@ struct SettingsView: View {
     var body: some View {
         Form {
 Group {
+            Section {
+                HStack(spacing: Brand.Space.m) {
+                    Image("LogoFull").resizable().scaledToFit().frame(width: 54, height: 54)
+                        .padding(6).background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("آيات تتلى").font(.ui(.headline))
+                        Text("مجاني بالكامل · بلا حساب · يعمل دون إنترنت").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
             Section("القراءة والاستماع") {
                 NavigationLink {
                     ReciterPicker(selection: $reciter)

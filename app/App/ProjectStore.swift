@@ -14,6 +14,9 @@ struct EditorSettings: Codable, Equatable, Hashable {
     var template: String
     var name: String
     var reciter: String?
+    /// Dragged text position (fraction of the canvas); nil in projects saved before it existed.
+    var textX: Double? = nil
+    var textY: Double? = nil
 }
 
 struct Project: Codable, Identifiable, Equatable, Hashable {

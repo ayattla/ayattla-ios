@@ -237,11 +237,13 @@ struct LibraryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            summary
+                .padding(.horizontal, Brand.Space.l).padding(.top, Brand.Space.s)
             Picker("أقسام المكتبة", selection: $section) {
                 ForEach(Section.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 16).padding(.vertical, 8)
+            .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.s)
             switch section {
             case .favorites: favoritesList
             case .projects: ProjectsGrid()
@@ -277,6 +279,32 @@ Group {
     }
 
     private var favoritesList: some View { SavedAyatList() }
+
+    /// Counts of what the library holds; tapping one opens its section.
+    private var summary: some View {
+        HStack(spacing: Brand.Space.s) {
+            stat(ProjectStore.shared.projects.count, "مشروع", "square.stack", .projects)
+            stat(Favorites.list(favorites).count, "آية محفوظة", "heart", .favorites)
+            stat(KhatmaStore.load(khatmaRaw) == nil ? 0 : 1, "خطة", "calendar", .plans)
+        }
+    }
+
+    private func stat(_ n: Int, _ label: String, _ symbol: String, _ s: Section) -> some View {
+        Button { withAnimation(.snappy) { section = s } } label: {
+            HStack(spacing: Brand.Space.s) {
+                IconTile(symbol, style: section == s ? .emerald : .gold, size: 34)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(Num.int(n)).font(.ui(.headline)).foregroundStyle(Brand.ink)
+                    Text(label).font(.ui(.caption2)).foregroundStyle(Brand.muted).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(Brand.Space.s + 2)
+            .surface(section == s ? .gold : .raised, radius: 16)
+        }
+        .buttonStyle(.pressable)
+        .accessibilityLabel("\(Num.int(n)) \(label)")
+    }
 }
 
 // MARK: - Projects

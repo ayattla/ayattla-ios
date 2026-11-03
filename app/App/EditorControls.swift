@@ -142,3 +142,109 @@ struct CanvasStage<Content: View>: View {
             }
     }
 }
+
+// MARK: - Moving the text on the canvas
+
+extension CGSize {
+    /// Keeps dragged text on the canvas: ±25 % across, ±35 % up and down.
+    var clampedTextOffset: CGSize {
+        CGSize(width: min(max(width, -0.25), 0.25), height: min(max(height, -0.35), 0.35))
+    }
+}
+
+/// Lets the person drag the text block on the preview, as in design tools. The offset is a fraction
+/// of the canvas, so the exported image and video place it the same way at full size.
+struct TextDrag: ViewModifier {
+    @Binding var offset: CGSize
+    @State private var start: CGSize?
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            GeometryReader { g in
+                Color.clear.contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 4)
+                        .onChanged { v in
+                            let s = start ?? offset
+                            if start == nil { start = offset }
+                            // Preview and export both draw right-to-left, so the offset means the same in each.
+                            offset = CGSize(width: s.width + v.translation.width / max(g.size.width, 1),
+                                            height: s.height + v.translation.height / max(g.size.height, 1)).clampedTextOffset
+                        }
+                        .onEnded { _ in start = nil })
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+}
+
+extension View {
+    func textDrag(_ offset: Binding<CGSize>) -> some View { modifier(TextDrag(offset: offset)) }
+}
+
+/// Row under the size picker: drag hint, or a way back to the centre.
+struct TextPositionRow: View {
+    @Binding var offset: CGSize
+    var body: some View {
+        HStack {
+            Label("اسحب النص في المعاينة لتغيير موضعه", systemImage: "hand.draw")
+                .font(.ui(.footnote)).foregroundStyle(Brand.muted)
+            Spacer()
+            if offset != .zero {
+                Button("توسيط") { withAnimation(.snappy) { offset = .zero } }.font(.ui(.footnote, .semibold))
+            }
+        }
+    }
+}
+
+// MARK: - Ready styles (one tap sets size, background and text size)
+
+struct StylePreset: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let ratio: CardOptions.Ratio
+    let backgroundID: String
+    let fontScale: Double
+
+    var background: CardOptions.Background { CardOptions.backgrounds.first { $0.id == backgroundID } ?? CardOptions.backgrounds[0] }
+
+    static let all: [StylePreset] = [
+        .init(id: "status", name: "حالة زمردية", ratio: .story, backgroundID: "emerald", fontScale: 1.15),
+        .init(id: "post-dawn", name: "منشور الفجر", ratio: .portrait, backgroundID: "dawn", fontScale: 1),
+        .init(id: "night", name: "مربع ليلي", ratio: .square, backgroundID: "night", fontScale: 1),
+        .init(id: "sand", name: "رملي هادئ", ratio: .portrait, backgroundID: "sand", fontScale: 1),
+        .init(id: "dusk", name: "حالة الغروب", ratio: .story, backgroundID: "dusk", fontScale: 1),
+        .init(id: "youtube", name: "يوتيوب حبر", ratio: .wide, backgroundID: "ink", fontScale: 0.85),
+    ]
+}
+
+/// Strip of ready styles, each drawn at its size and colours.
+struct StylePresetPicker: View {
+    let current: (ratio: CardOptions.Ratio, backgroundID: String, fontScale: Double)
+    let pick: (StylePreset) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .bottom, spacing: Brand.Space.s) {
+                ForEach(StylePreset.all) { p in
+                    let on = p.ratio == current.ratio && p.backgroundID == current.backgroundID && p.fontScale == current.fontScale
+                    Button { pick(p) } label: {
+                        VStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.background.gradient)
+                                .overlay(StarMark().frame(width: 12, height: 12).opacity(0.9))
+                                .aspectRatio(p.ratio.size.width / p.ratio.size.height, contentMode: .fit)
+                                .frame(height: 64)
+                                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(on ? Brand.accent : Brand.line, lineWidth: on ? 2.5 : 1))
+                            Text(p.name).font(.ui(.caption2, on ? .semibold : .regular))
+                                .foregroundStyle(on ? Brand.primaryInk : Brand.muted).lineLimit(1)
+                        }
+                        .frame(minWidth: 70)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("نمط \(p.name)")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
