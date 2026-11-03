@@ -1,6 +1,6 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-03 06:45 UTC — PR #12 إلى #18 مدموجة، CI ناجح
+آخر تحديث: 2026-11-03 20:10 UTC — PR #12 إلى #19 مدموجة، CI ناجح
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
@@ -18,6 +18,12 @@
 - انتبه: الفرع `ci-shots` مشترك بين كل التشغيلات، فآخر CI يكتب فوق لقطات غيره.
 
 ## 1. آخر حالة دقيقة
+
+- **PR #19 مدموج (المرحلة الثانية من التصميم الفاخر):** سحب النص على المعاينة (`TextDrag`، `textOffset` في `CardCanvas.Model`، ويحفظ في `EditorSettings.textX/textY`)، «أنماط جاهزة» (`StylePreset`)، شاشة الحالة الجديدة مع «حالات جاهزة» ٩:١٦، ملخص مكتبتي، بطاقة التطبيق في الإعدادات، وتقسيم `HadithDuasViews.swift` و`QuranView.swift` إلى ملفات.
+- **قرارات اتخذت دون سؤال (مسجلة):**
+  - الحد الأدنى صار **iOS 18.2**: على محاكيات 17.0 و17.4 و18.1 نصوص خلايا List وForm معكوسة كالمرآة، وجُربت إصلاحات كثيرة بلا أثر (التفاصيل في `docs/APP_ARCHITECTURE.md`). يعاد النظر بعد تجربة جهاز حقيقي.
+  - التطبيق صار مُوطَّنا بالعربية فعلا (`ar.lproj`)، فأزرار النظام بالعربية، والخطوط معلنة في `UIAppFonts`.
+  - CI على **macOS 14 مع Xcode 16.2** لأن مشغلات macOS 15 arm64 كانت بلا سعة؛ اللقطات على أحدث iOS، ثم لقطات `min-ios-*` على أقدم iOS مدعوم (`tools/pick_sim.py`).
 
 - **طلب المالك «PREMIUM iOS UPGRADE» (3 نوفمبر)، المرحلة الأولى مدموجة في PR #18:**
   - نظام التصميم v2 في `AyatDesign/Surfaces.swift` (نقش النجمة الثمانية، `heroSurface`، `surface(.raised/.flat/.tinted/.gold)`، `HeroHeader`، `ServiceCard`، `LauncherTile`، `IconTile`، `Badge`، `PressableStyle`، `Brand.Space/Radius/readableWidth`). `card()` و`emeraldPanel()` و`brandScreen()` و`ToolCard` صارت تمر عبره، فتغيرت كل الشاشات.
