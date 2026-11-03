@@ -215,7 +215,6 @@ Group {
         }
         .onChange(of: repeatEach) { _, r in player.repeatEach = r }
         .onChange(of: reciter) { _, _ in if player.isPlaying { start(at: player.current?.ayah ?? 1) } }
-        .onDisappear { player.stop() }
     }
 
     private func start(at ayah: Int = 1) {

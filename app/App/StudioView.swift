@@ -43,6 +43,13 @@ struct StudioView: View {
     var body: some View {
         List {
 Group {
+            Section {
+                NavigationLink { LibraryView(initial: .projects) } label: {
+                    Label { Text("مكتبتي: المشاريع والمفضلة والتنزيلات").font(.ui(.subheadline, .medium)) }
+                        icon: { Image(systemName: "books.vertical").foregroundStyle(Brand.goldInk) }
+                        .frame(minHeight: Brand.minTap)
+                }
+            }
             Section("مشروع جديد") {
                 ForEach(Creator.allCases) { c in
                     NavigationLink {
@@ -73,7 +80,7 @@ Group {
 }.listRowBackground(Brand.surface)
 }
         .brandScreen()
-        .navigationTitle("الاستوديو")
+        .navigationTitle("صناعة المحتوى")
     }
 }
 

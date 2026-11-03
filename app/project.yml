@@ -52,6 +52,7 @@ targets:
         NSPhotoLibraryAddUsageDescription: لحفظ المقاطع والبطاقات في الصور
         NSPhotoLibraryUsageDescription: لاختيار صورة خلفية من جهازك
         NSCameraUsageDescription: لالتقاط صورة خلفية
+        UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
   AyatTutlaTests:
     type: bundle.unit-test

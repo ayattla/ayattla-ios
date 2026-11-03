@@ -180,7 +180,8 @@ struct MushafReader: View {
     @State private var page = 1
     @State private var layer = QuranLayer.mushaf
     @State private var selected: RecitationPlayer.Position?
-    @State private var player = RecitationPlayer()
+    /// Reuses the recitation already playing (from the mini player) so its controls show here.
+    @State private var player = (AudioCenter.shared.active as? RecitationPlayer) ?? RecitationPlayer()
     private let lib = ContentLibrary.shared
 
     init(startPage: Int, focus: RecitationPlayer.Position? = nil) {
@@ -232,8 +233,12 @@ struct MushafReader: View {
         .onAppear {
             player.folder = folder
             player.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
+            player.stopAt = nil
+            player.stopsAtSurahEnd = false
+            AudioCenter.shared.fullPlayerShown = folder != nil
         }
-        .onDisappear { player.stop() }
+        // Playback carries on after leaving the mushaf; the mini player takes over.
+        .onDisappear { AudioCenter.shared.fullPlayerShown = false }
         .onChange(of: page) { _, p in lastPage = p }
         .onChange(of: player.current) { _, c in
             if let c, let p = (try? lib.store?.ayat(surah: c.surah, from: c.ayah, to: c.ayah))?.first?.page, p != page {
