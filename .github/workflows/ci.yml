@@ -88,7 +88,7 @@ jobs:
 
   packages:
     name: Swift packages (swift test)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
 
   app:
     name: App build, tests and screenshots (simulator)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     needs: [packages, content]
     permissions:

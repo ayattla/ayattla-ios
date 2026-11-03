@@ -284,7 +284,7 @@ Group {
     private var summary: some View {
         HStack(spacing: Brand.Space.s) {
             stat(ProjectStore.shared.projects.count, "مشروع", "square.stack", .projects)
-            stat(Favorites.list(favorites).count, "آية محفوظة", "heart", .favorites)
+            stat(Favorites.list(favorites).count, "محفوظة", "heart", .favorites)
             stat(KhatmaStore.load(khatmaRaw) == nil ? 0 : 1, "خطة", "calendar", .plans)
         }
     }
