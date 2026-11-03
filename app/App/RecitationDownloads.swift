@@ -95,6 +95,7 @@ struct DownloadsView: View {
         let folders = (try? lib.store?.reciterFolders()) ?? [:]
         let inv = dl.inventory { lib.surah($0)?.ayahCount ?? 0 }
         List {
+Group {
             Section {
                 Picker("القارئ", selection: $reciter) { ForEach(Catalog.reciters) { Text($0.name).tag($0.id) } }
                 Picker("السورة", selection: $surah) {
@@ -113,7 +114,7 @@ struct DownloadsView: View {
                         } label: { Label("تنزيل للاستماع دون إنترنت", systemImage: "arrow.down.circle") }
                     }
                 }
-                if let f = dl.failed { Text(f).font(.footnote).foregroundStyle(.red) }
+                if let f = dl.failed { Text(f).font(.ui(.footnote)).foregroundStyle(.red) }
             } header: { Text("تنزيل سورة") } footer: {
                 Text("التلاوة من EveryAyah آية آية، وتستخدم في المصحف وصانع المقاطع دون اتصال.")
             }
@@ -130,7 +131,9 @@ struct DownloadsView: View {
                     }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
         .id(refresh)
     }
 }

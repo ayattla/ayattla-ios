@@ -23,7 +23,7 @@ struct LayerPage: View {
                 ForEach(ayat) { a in
                     VStack(alignment: .leading, spacing: 10) {
                         Text(QuranText.reference(.init(surah: a.surah, ayah: a.ayah)))
-                            .font(.caption.weight(.semibold)).foregroundStyle(Brand.primaryInk)
+                            .font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
                         switch layer {
                         case .tajweed:
                             if let html = tajweed[a.id] {
@@ -38,7 +38,7 @@ struct LayerPage: View {
                             Text(a.textUthmani + " " + QuranText.marker(a.ayah))
                                 .font(.custom(ContentLibrary.mushafFont, size: 22 * scale, relativeTo: .title3)).lineSpacing(8)
                             if let t = words[a.id]?.tafsir {
-                                Text(t).font(.body).lineSpacing(5).foregroundStyle(.secondary).textSelection(.enabled)
+                                Text(t).font(.ui(.body)).lineSpacing(5).foregroundStyle(.secondary).textSelection(.enabled)
                             } else if !failed { ProgressView() }
                         case .mushaf:
                             EmptyView()
@@ -48,9 +48,9 @@ struct LayerPage: View {
                     .card()
                 }
                 if failed {
-                    Text("تعذر التحميل من Quran.com الآن. تحقق من الاتصال.").font(.footnote).foregroundStyle(.secondary)
+                    Text("تعذر التحميل من Quran.com الآن. تحقق من الاتصال.").font(.ui(.footnote)).foregroundStyle(.secondary)
                 }
-                Text(sourceLine).font(.caption2).foregroundStyle(.secondary)
+                Text(sourceLine).font(.ui(.caption2)).foregroundStyle(.secondary)
             }
             .padding(.horizontal, 16).padding(.bottom, 16)
         }
@@ -98,7 +98,7 @@ struct WordGrid: View {
             ForEach(Array(words.enumerated()), id: \.offset) { _, w in
                 VStack(spacing: 4) {
                     Text(w.t).font(.custom(ContentLibrary.mushafFont, size: 22 * scale))
-                    Text(w.m).font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    Text(w.m).font(.ui(.caption2)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                         .environment(\.layoutDirection, .leftToRight)
                 }
                 .padding(.horizontal, 8).padding(.vertical, 6)
@@ -116,7 +116,7 @@ struct TajweedLegend: View {
                 ForEach(Tajweed.rules, id: \.0) { r in
                     HStack(spacing: 6) {
                         Text("ب").font(.custom(ContentLibrary.mushafFont, size: 22)).foregroundStyle(Tajweed.color(r.0) ?? .primary)
-                        Text(r.1).font(.caption)
+                        Text(r.1).font(.ui(.caption))
                     }
                 }
             }
@@ -138,6 +138,7 @@ struct TajweedView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 Picker("السورة", selection: $surah) {
                     ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
@@ -160,7 +161,10 @@ struct TajweedView: View {
                         .textSelection(.enabled)
                 }
             } footer: { Text("نص ملون بأحكام التجويد من Quran.com (Quran Foundation).") }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("المصحف الملون بالتجويد")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: surah) {
@@ -179,6 +183,7 @@ struct WordByWordView: View {
 
     var body: some View {
         List {
+Group {
             Section {
                 Picker("السورة", selection: $surah) {
                     ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
@@ -195,10 +200,13 @@ struct WordByWordView: View {
             ForEach(verses, id: \.key) { v in
                 Section("الآية \(Num.int(v.n))") {
                     WordGrid(words: v.words)
-                    if let t = v.tafsir { Text(t).font(.footnote).foregroundStyle(.secondary) }
+                    if let t = v.tafsir { Text(t).font(.ui(.footnote)).foregroundStyle(.secondary) }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("معاني الكلمات")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(surah)-\(lang)") {
@@ -229,7 +237,8 @@ struct RuqyaView: View {
         Group {
             if let d = data {
                 List {
-                    Section { Text(d.title).font(.headline) }
+Group {
+                    Section { Text(d.title).font(.ui(.headline)) }
                     ForEach(d.items, id: \.self) { q in
                         let ayat = (try? lib.store?.ayat(surah: q.s, from: q.a, to: q.b)) ?? []
                         let name = lib.surah(q.s)?.shortName ?? ""
@@ -246,11 +255,14 @@ struct RuqyaView: View {
                             }
                         }
                     }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
             } else {
                 ContentUnavailableView("الرقية غير متاحة", systemImage: "book", description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             }
         }
+        .brandScreen()
         .navigationTitle("الرقية الشرعية")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { player.stop() }
@@ -272,7 +284,7 @@ struct AsmaView: View {
                         TextCardView(title: "بطاقة اسم", text: a.name, reference: "من أسماء الله الحسنى", initialRatio: .square)
                     } label: {
                         VStack(spacing: 6) {
-                            Text(Num.int(a.n)).font(.caption2).foregroundStyle(.secondary)
+                            Text(Num.int(a.n)).font(.ui(.caption2)).foregroundStyle(.secondary)
                             Text(a.name).font(.custom("Amiri", size: 22, relativeTo: .title3)).foregroundStyle(Brand.primaryInk)
                                 .multilineTextAlignment(.center).minimumScaleFactor(0.6)
                         }
@@ -285,8 +297,9 @@ struct AsmaView: View {
             }
             .padding(16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
         .overlay { if names.isEmpty { ContentUnavailableView("غير متاح", systemImage: "sparkles") } }
+        .brandScreen()
         .navigationTitle("الأسماء الحسنى")
         .searchable(text: $query, prompt: "ابحث في الأسماء")
     }

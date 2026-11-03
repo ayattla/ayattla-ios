@@ -139,7 +139,7 @@ struct ClipMakerView: View {
                     NavigationLink {
                         ClipExportView(job: job(folder: folder))
                     } label: {
-                        Label("أنشئ المقطع", systemImage: "film").font(.headline)
+                        Label("أنشئ المقطع", systemImage: "film").font(.ui(.headline))
                     }
                 } else {
                     Text("لا يتوفر صوت لهذا القارئ").foregroundStyle(.secondary)
@@ -148,6 +148,7 @@ struct ClipMakerView: View {
                 Text("يصنع المقطع على جهازك. تجلب التلاوة من EveryAyah عند الإنشاء ثم تحذف. يحفظ المقطع في مكتبتي.")
             }
         }
+        .brandScreen()
         .navigationTitle("مقطع قرآني")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: surah) { old, s in if old != s { from = 1; to = min(lib.surah(s)?.ayahCount ?? 1, 7) } }
@@ -182,7 +183,7 @@ struct ClipMakerView: View {
 
     private func backgroundRow(title: String, items: [ClipBackground]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.ui(.caption)).foregroundStyle(.secondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(items, id: \.self) { b in
@@ -323,7 +324,7 @@ struct ClipExportView: View {
                 }
                 .padding(.horizontal, 16)
                 .frame(maxWidth: 560)
-                Text("حفظ في مكتبتي").font(.footnote).foregroundStyle(Brand.muted)
+                Text("حفظ في مكتبتي").font(.ui(.footnote)).foregroundStyle(Brand.muted)
                 Spacer()
             case .failed(let why):
                 ContentUnavailableView {
@@ -336,6 +337,7 @@ struct ClipExportView: View {
             }
         }
         .padding(.vertical, 16)
+        .brandScreen()
         .navigationTitle(job.title)
         .navigationBarTitleDisplayMode(.inline)
         .alert("حفظ المقطع في الصور", isPresented: $saved) { Button("حسنا", role: .cancel) {} }

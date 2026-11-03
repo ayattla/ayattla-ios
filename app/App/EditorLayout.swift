@@ -19,20 +19,26 @@ struct EditorLayout<Preview: View, Controls: View>: View {
                 preview
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(32)
-                    .background(Color(.systemGroupedBackground))
+                    .background(Brand.background)
                 Divider()
-                Form { controls() }
+                Form {
+Group { controls() 
+}.listRowBackground(Brand.surface)
+}
                     .frame(width: 420)
             }
         } else {
             Form {
+Group {
                 Section {
                     preview.frame(maxWidth: .infinity, maxHeight: 400)
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
                 controls()
-            }
+            
+}.listRowBackground(Brand.surface)
+}
         }
     }
 }

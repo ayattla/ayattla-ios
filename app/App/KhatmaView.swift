@@ -34,6 +34,7 @@ struct KhatmaView: View {
                 KhatmaSetup(initial: nil) { raw = KhatmaStore.save($0) }
             }
         }
+        .brandScreen()
         .navigationTitle("خطة الختمة")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: raw) { _, _ in Task { await Reminders.reschedule() } }
@@ -46,6 +47,7 @@ struct KhatmaView: View {
                             Button("حذف الخطة", role: .destructive) { raw = ""; editing = false }
                         }
                     }
+                    .brandScreen()
                     .navigationTitle("تعديل الخطة")
                     .navigationBarTitleDisplayMode(.inline)
             }
@@ -64,6 +66,7 @@ struct KhatmaSetup: View {
 
     var body: some View {
         Form {
+Group {
             Section {
                 Picker("مدة الختمة", selection: $days) {
                     ForEach(Self.presets, id: \.self) { Text("\(Num.int($0)) يوما").tag($0) }
@@ -72,7 +75,7 @@ struct KhatmaSetup: View {
                 DatePicker("تاريخ البدء", selection: $start, displayedComponents: .date)
                 Stepper("أبدأ من صفحة \(Num.int(startPage))", value: $startPage, in: 1...KhatmaPlan.pages)
                 if startPage > 1 {
-                    Text(KhatmaStore.surahName(atPage: startPage)).font(.footnote).foregroundStyle(.secondary)
+                    Text(KhatmaStore.surahName(atPage: startPage)).font(.ui(.footnote)).foregroundStyle(.secondary)
                 }
             } footer: {
                 let p = KhatmaPlan(days: days, startPage: startPage, startDate: start)
@@ -84,10 +87,12 @@ struct KhatmaSetup: View {
                     if let i = initial, i.days == days, i.startPage == startPage { p.completedDays = i.completedDays }
                     done(p)
                 }
-                .font(.headline)
+                .font(.ui(.headline))
                 .frame(maxWidth: .infinity, minHeight: Brand.minTap)
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
         .onAppear {
             if let i = initial { days = i.days; start = i.startDate; startPage = i.startPage }
         }
@@ -111,16 +116,16 @@ struct KhatmaProgressView: View {
             }
             .padding(16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
         .toolbar { ToolbarItem(placement: .primaryAction) { Button("تعديل", action: edit) } }
     }
 
     private func summary(_ today: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("ختمة في \(Num.int(plan.days)) يوما").font(.title3.weight(.semibold))
-            Text("اليوم \(Num.int(today)) · \(Num.decimal(plan.pagesPerDay)) صفحة يوميا").font(.subheadline).opacity(0.9)
+            Text("ختمة في \(Num.int(plan.days)) يوما").font(.ui(.title3, .semibold))
+            Text("اليوم \(Num.int(today)) · \(Num.decimal(plan.pagesPerDay)) صفحة يوميا").font(.ui(.subheadline)).opacity(0.9)
             Text("الختم المتوقع: \(plan.expectedEnd().formatted(Date.FormatStyle(date: .long, time: .omitted, locale: Num.locale)))")
-                .font(.footnote).opacity(0.9)
+                .font(.ui(.footnote)).opacity(0.9)
             ProgressView(value: Double(plan.completedDays.count), total: Double(plan.days))
                 .tint(.white).padding(.top, 4)
                 .accessibilityLabel("أنجزت \(Num.int(plan.completedDays.count)) من \(Num.int(plan.days)) يوما")
@@ -128,25 +133,25 @@ struct KhatmaProgressView: View {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+        .background(Brand.gradient,
                     in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func wird(day: Int, _ r: ClosedRange<Int>) -> some View {
         let isDone = plan.completedDays.contains(day)
         return VStack(alignment: .leading, spacing: 12) {
-            Text("ورد اليوم").font(.headline)
+            Text("ورد اليوم").font(.ui(.headline))
             Text("من صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound)) · \(KhatmaStore.surahName(atPage: r.lowerBound))")
-                .font(.subheadline).foregroundStyle(Brand.muted)
+                .font(.ui(.subheadline)).foregroundStyle(Brand.muted)
             HStack(spacing: 10) {
                 NavigationLink { MushafReader(startPage: r.lowerBound) } label: {
-                    Text("ابدأ القراءة").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                    Text("ابدأ القراءة").font(.ui(.subheadline, .semibold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: Brand.minTap)
                         .background(Brand.primary, in: Capsule())
                 }
                 Button { toggle(day) } label: {
                     Label("تم", systemImage: isDone ? "checkmark.circle.fill" : "circle")
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.primaryInk)
+                        .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
                         .padding(.horizontal, 18).frame(minHeight: Brand.minTap)
                         .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
                 }
@@ -161,7 +166,7 @@ struct KhatmaProgressView: View {
         let parts = KhatmaPlan.splitOverPrayers(r)
         let names = [Prayer.fajr, .dhuhr, .asr, .maghrib, .isha].map(\.name)
         return VStack(alignment: .leading, spacing: 10) {
-            Text("توزيع على الصلوات").font(.headline)
+            Text("توزيع على الصلوات").font(.ui(.headline))
             VStack(spacing: 0) {
                 ForEach(0..<5, id: \.self) { i in
                     HStack {
@@ -185,7 +190,7 @@ struct KhatmaProgressView: View {
 
     private func daysGrid(_ today: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("الأيام (\(Num.int(plan.completedDays.count)) / \(Num.int(plan.days)))").font(.headline)
+            Text("الأيام (\(Num.int(plan.completedDays.count)) / \(Num.int(plan.days)))").font(.ui(.headline))
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
                 ForEach(1...plan.days, id: \.self) { d in
                     let on = plan.completedDays.contains(d)
@@ -207,11 +212,11 @@ struct KhatmaProgressView: View {
     private var groupKhatma: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("ختمة جماعية").font(.headline)
-                Text("وزع الأجزاء على الأهل والأصدقاء").font(.footnote).foregroundStyle(Brand.muted)
+                Text("ختمة جماعية").font(.ui(.headline))
+                Text("وزع الأجزاء على الأهل والأصدقاء").font(.ui(.footnote)).foregroundStyle(Brand.muted)
             }
             Spacer()
-            Text("قريبا").font(.footnote).foregroundStyle(.secondary)
+            Text("قريبا").font(.ui(.footnote)).foregroundStyle(.secondary)
         }
         .padding(16)
         .card()

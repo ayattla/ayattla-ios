@@ -1,17 +1,41 @@
 import SwiftUI
 
-/// Brand tokens from styles/tokens.css on the site (see design/System.dc.html).
+/// Brand tokens from ayattla.com (styles/tokens.css and the home page theme): deep emerald, gold
+/// and ivory, IBM Plex Sans Arabic for the interface and Amiri Quran for the Quran text.
 public enum Brand {
-    public static let g0 = Color(hex: 0x2F6B3B)
-    public static let primary = Color(hex: 0x427E45)      // buttons, large headings, fills
-    public static let primaryInk = Color(light: 0x2C5E37, dark: 0x8CC995)   // links and small green text (AA in both modes)
-    public static let accent = Color(hex: 0x2E9145)
-    public static let tint = Color(light: 0xEEF5EF, dark: 0x1D2B21)       // highlighted rows and cards
-    public static let line = Color(light: 0xE3EBE5, dark: 0x2E3B32)       // card borders and dividers
-    public static let dotOff = Color(hex: 0xCFE2D3)       // inactive page dot (design/Onboarding.dc.html)
-    public static let muted = Color(light: 0x56665B, dark: 0xA6B5AA)      // secondary text, 4.5:1+ in both modes
-    public static let radiusCard: CGFloat = 16
+    // Emerald
+    public static let g0 = Color(light: 0x17392F, dark: 0x143128)            // gradient start (--gradient-brand)
+    public static let primary = Color(light: 0x102D27, dark: 0x1B4238)       // fills with ivory text
+    public static let primaryInk = Color(light: 0x14463A, dark: 0xD9C28E)    // links, small accent text (AA in both modes)
+    public static let deep = Color(light: 0x0B211C, dark: 0x0A1814)          // gradient end
+    // Gold
+    public static let accent = Color(light: 0xC3A66B, dark: 0xD9C28E)
+    public static let goldInk = Color(light: 0x7A5F28, dark: 0xD9C28E)
+    public static let goldSoft = Color(light: 0xF1E8D3, dark: 0x2A3A2C)
+    public static let onDeepAccent = Color(hex: 0xD9C28E)                   // gold text on emerald
+    // Ivory and surfaces
+    public static let background = Color(light: 0xF6F2E9, dark: 0x0C1C18)
+    public static let surface = Color(light: 0xFFFFFF, dark: 0x11261F)
+    public static let surface2 = Color(light: 0xEFE9DC, dark: 0x173129)
+    public static let ink = Color(light: 0x202823, dark: 0xF1ECE1)
+    public static let onPrimary = Color(hex: 0xF6F2E9)
+    public static let tint = Color(light: 0xE4ECE6, dark: 0x1E3A30)          // --c-primary-soft
+    public static let line = Color(light: 0xE3EBE5, dark: 0x22392F)
+    public static let lineStrong = Color(light: 0xCFDCD3, dark: 0x2E4A3E)
+    public static let muted = Color(light: 0x5C625D, dark: 0xB9B3A5)
+    public static let dotOff = Color(light: 0xCFDCD3, dark: 0x2E4A3E)
+    // Shape
+    public static let radiusCard: CGFloat = 20                               // --r-card
+    public static let radiusSmall: CGFloat = 12                              // --r-sm
     public static let minTap: CGFloat = 44
+
+    /// --gradient-brand: emerald, top-leading to bottom-trailing.
+    public static var gradient: LinearGradient {
+        LinearGradient(colors: [g0, primary, deep], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    /// Interface font family (registered at launch from the bundled OFL files).
+    public static let uiFamily = "IBM Plex Sans Arabic"
 }
 
 public extension Color {
@@ -29,21 +53,66 @@ public extension Color {
         #endif
     }
 
-    /// Card surface: white on the grouped background in light mode, raised gray in dark mode.
-    static var cardSurface: Color {
-        #if canImport(UIKit)
-        Color(uiColor: .secondarySystemGroupedBackground)
-        #else
-        Color(nsColor: .controlBackgroundColor)
-        #endif
+    /// Card surface (--c-surface): white on ivory in light mode, deep emerald in dark mode.
+    static var cardSurface: Color { Brand.surface }
+}
+
+public extension Font {
+    /// IBM Plex Sans Arabic at the size of a system text style; follows Dynamic Type.
+    static func ui(_ style: Font.TextStyle, _ weight: Font.Weight? = nil) -> Font {
+        let (size, defaultWeight): (CGFloat, Font.Weight) = {
+            switch style {
+            case .largeTitle: (34, .semibold)
+            case .title: (28, .semibold)
+            case .title2: (22, .semibold)
+            case .title3: (20, .medium)
+            case .headline: (17, .semibold)
+            case .callout: (16, .regular)
+            case .subheadline: (15, .regular)
+            case .footnote: (13, .regular)
+            case .caption: (12, .regular)
+            case .caption2: (11, .regular)
+            default: (17, .regular)
+            }
+        }()
+        return .custom(face(weight ?? defaultWeight), size: size, relativeTo: style)
+    }
+
+    /// Fixed-size interface font (for drawn cards and video frames).
+    static func ui(size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .custom(face(weight), size: size)
+    }
+
+    private static func face(_ w: Font.Weight) -> String {
+        switch w {
+        case .bold, .heavy, .black: "IBMPlexSansArabic-Bold"
+        case .semibold: "IBMPlexSansArabic-SemiBold"
+        case .medium: "IBMPlexSansArabic-Medium"
+        default: "IBMPlexSansArabic-Regular"
+        }
     }
 }
 
 public extension View {
-    /// Card per design/System.dc.html: radius 16, 1px #E3EBE5 border, no shadow.
+    /// Card per the site: --c-surface, 1px --c-line border, radius 20, soft shadow (--sh-1).
     func card() -> some View {
-        background(Color.cardSurface, in: RoundedRectangle(cornerRadius: Brand.radiusCard))
-            .clipShape(RoundedRectangle(cornerRadius: Brand.radiusCard))
-            .overlay(RoundedRectangle(cornerRadius: Brand.radiusCard).stroke(Brand.line, lineWidth: 1))
+        background(Brand.surface, in: RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Brand.radiusCard, style: .continuous).stroke(Brand.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x102D27).opacity(0.07), radius: 8, y: 4)
+    }
+
+    /// The site's emerald panel with the gold frame line (--frame), for hero cards.
+    func emeraldPanel(radius: CGFloat = 24) -> some View {
+        background(Brand.gradient, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius - 6, style: .continuous)
+                .strokeBorder(Brand.accent.opacity(0.45), lineWidth: 1).padding(6))
+            .foregroundStyle(Brand.onPrimary)
+    }
+
+    /// Screen background: ivory (dark: deep emerald) behind lists, forms and scroll views.
+    func brandScreen() -> some View {
+        scrollContentBackground(.hidden)
+            .background(Brand.background.ignoresSafeArea())
     }
 }

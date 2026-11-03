@@ -38,15 +38,15 @@ struct TasbihView: View {
                 }
                 Button(action: tap) {
                     VStack(spacing: 6) {
-                        Text(Num.int(count)).font(.system(size: 64, weight: .semibold)).monospacedDigit()
+                        Text(Num.int(count)).font(.ui(size: 64, .semibold)).monospacedDigit()
                             .contentTransition(.numericText())
                         if let r = Self.remainingText(count: count, target: target) {
-                            Text(r).font(.subheadline).opacity(0.9)
+                            Text(r).font(.ui(.subheadline)).opacity(0.9)
                         }
                     }
                     .foregroundStyle(.white)
                     .frame(width: 250, height: 250)
-                    .background(LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+                    .background(Brand.gradient,
                                 in: Circle())
                     .overlay(Circle().stroke(Brand.tint, lineWidth: 10))
                 }
@@ -54,7 +54,7 @@ struct TasbihView: View {
                 .accessibilityLabel("تسبيحة، العدد \(Num.int(count))\(Self.remainingText(count: count, target: target).map { "، \($0)" } ?? "")")
 
                 Text("مجموع تسبيحك المحفوظ: \(Num.int(count))")
-                    .font(.footnote).foregroundStyle(Brand.muted)
+                    .font(.ui(.footnote)).foregroundStyle(Brand.muted)
 
                 HStack(spacing: 10) {
                     Menu {
@@ -70,12 +70,13 @@ struct TasbihView: View {
                         .buttonBorderShape(.capsule)
                         .frame(minHeight: Brand.minTap)
                 }
-                .font(.footnote.weight(.medium))
+                .font(.ui(.footnote, .medium))
                 .tint(Brand.primary)
             }
             .padding(.vertical, 16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Brand.background)
+        .brandScreen()
         .navigationTitle("المسبحة")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -109,7 +110,7 @@ struct TasbihView: View {
                     let on = p == phrase
                     Button { phrase = on ? "" : p; count = 0 } label: {
                         Text(Self.plain(p)).lineLimit(1)
-                            .font(.footnote.weight(.medium))
+                            .font(.ui(.footnote, .medium))
                             .foregroundStyle(on ? .white : .primary)
                             .padding(.horizontal, 14).frame(minHeight: 36)
                             .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
@@ -124,7 +125,7 @@ struct TasbihView: View {
                     }
                 }
                 Button { adding = true } label: {
-                    Label("إضافة", systemImage: "plus").font(.footnote.weight(.medium))
+                    Label("إضافة", systemImage: "plus").font(.ui(.footnote, .medium))
                         .foregroundStyle(Brand.primaryInk)
                         .padding(.horizontal, 14).frame(minHeight: 36)
                         .overlay(Capsule().strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4])).foregroundStyle(Brand.line))

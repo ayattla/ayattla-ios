@@ -92,20 +92,24 @@ struct ToolsView: View {
                             AllToolsView()
                         } label: {
                             Text("كل الأدوات (\(Num.int(ToolItem.allCases.count)))")
-                                .font(.headline).foregroundStyle(Brand.primaryInk)
+                                .font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
                                 .frame(maxWidth: .infinity, minHeight: Brand.minTap)
                         }
                     }
                     .padding(16)
                 }
-                .background(Color(.systemGroupedBackground))
+                .background(Brand.background)
             } else {
                 List(results) { item in
+Group {
                     NavigationLink { item.destination } label: { ToolRow(item: item) }
-                }
+                
+}.listRowBackground(Brand.surface)
+}
                 .overlay { if results.isEmpty { ContentUnavailableView.search(text: query) } }
             }
         }
+        .brandScreen()
         .navigationTitle("الأدوات")
         .searchable(text: $query, prompt: "ابحث عن أداة")
     }
@@ -117,7 +121,7 @@ struct ToolsView: View {
 
     private func section(_ title: String, _ items: [ToolItem]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline)
+            Text(title).font(.ui(.headline))
             // One column at accessibility text sizes so titles are never cut off.
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
                                      count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
@@ -134,12 +138,12 @@ struct ToolTile: View {
     let item: ToolItem
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: item.symbol).font(.title3)
+            Image(systemName: item.symbol).font(.ui(.title3))
                 .foregroundStyle(item.isReady ? Brand.primary : Brand.muted)
-            Text(item.title).font(.subheadline).multilineTextAlignment(.center).lineLimit(2)
+            Text(item.title).font(.ui(.subheadline)).multilineTextAlignment(.center).lineLimit(2)
                 .foregroundStyle(.primary)
             if !item.isReady {
-                Text("قريبا").font(.caption2).foregroundStyle(Brand.muted)
+                Text("قريبا").font(.ui(.caption2)).foregroundStyle(Brand.muted)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 88)
@@ -157,7 +161,7 @@ struct ToolRow: View {
             HStack {
                 Text(item.title)
                 Spacer()
-                if !item.isReady { Text("قيد البناء").font(.caption).foregroundStyle(.secondary) }
+                if !item.isReady { Text("قيد البناء").font(.ui(.caption)).foregroundStyle(.secondary) }
             }
         } icon: {
             Image(systemName: item.symbol).foregroundStyle(Brand.primary)
@@ -169,8 +173,12 @@ struct ToolRow: View {
 struct AllToolsView: View {
     var body: some View {
         List(ToolItem.allCases) { item in
+Group {
             NavigationLink { item.destination } label: { ToolRow(item: item) }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("كل الأدوات")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -190,11 +198,11 @@ struct NextPrayerCard: View {
             HStack(spacing: 12) {
                 NavigationLink { PrayerTimesView() } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("الصلاة القادمة").font(.footnote).foregroundStyle(.secondary)
-                        Text("\(d.next.prayer.name) · \(Num.time(t))").font(.title2.weight(.semibold))
+                        Text("الصلاة القادمة").font(.ui(.footnote)).foregroundStyle(.secondary)
+                        Text("\(d.next.prayer.name) · \(Num.time(t))").font(.ui(.title2, .semibold))
                             .foregroundStyle(Brand.primaryInk)
                         Text("\(place.name) · بعد \(Num.duration(minutes: d.next.minutesUntil))")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.ui(.footnote)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -203,7 +211,7 @@ struct NextPrayerCard: View {
                 .accessibilityElement(children: .combine)
                 NavigationLink { QiblaView() } label: {
                     Image(systemName: "location.north.line.fill")
-                        .font(.title3).foregroundStyle(.white)
+                        .font(.ui(.title3)).foregroundStyle(.white)
                         .frame(width: 48, height: 48)
                         .background(Brand.primary, in: Circle())
                 }

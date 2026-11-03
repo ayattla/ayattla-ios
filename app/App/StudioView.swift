@@ -42,6 +42,7 @@ struct StudioView: View {
 
     var body: some View {
         List {
+Group {
             Section("مشروع جديد") {
                 ForEach(Creator.allCases) { c in
                     NavigationLink {
@@ -55,20 +56,23 @@ struct StudioView: View {
                         }
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: c.symbol).font(.title3).foregroundStyle(Brand.primary)
+                            Image(systemName: c.symbol).font(.ui(.title3)).foregroundStyle(Brand.primary)
                                 .frame(width: 44, height: 44).background(Brand.tint, in: RoundedRectangle(cornerRadius: 12))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(c.title).font(.headline)
-                                Text(c.subtitle).font(.caption).foregroundStyle(.secondary)
+                                Text(c.title).font(.ui(.headline))
+                                Text(c.subtitle).font(.ui(.caption)).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            if !c.isReady { Text("قريبا").font(.caption).foregroundStyle(.secondary) }
+                            if !c.isReady { Text("قريبا").font(.ui(.caption)).foregroundStyle(.secondary) }
                         }
                         .frame(minHeight: Brand.minTap)
                     }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("الاستوديو")
     }
 }
@@ -77,10 +81,14 @@ struct StudioView: View {
 struct StatusSourceView: View {
     var body: some View {
         List {
+Group {
             NavigationLink { AyahCardView(surah: 2, from: 255) } label: { Label("آية", systemImage: "book") }
             NavigationLink { AzkarView() } label: { Label("ذكر", systemImage: "sun.max") }
             NavigationLink { HadithView() } label: { Label("حديث صحيح", systemImage: "text.book.closed") }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("حالة")
         .navigationBarTitleDisplayMode(.inline)
     }

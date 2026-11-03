@@ -162,6 +162,7 @@ struct AyahCardView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle("بطاقة آية")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in
@@ -243,8 +244,8 @@ struct CardCanvas: View {
                 VStack(spacing: 14 * unit) {
                     if let t = model.template {
                         VStack(spacing: 2 * unit) {
-                            Text(t).font(.system(size: 15 * unit, weight: .semibold))
-                            if let n = model.name { Text(n).font(.system(size: 12 * unit)) }
+                            Text(t).font(.ui(size: 15 * unit, .semibold))
+                            if let n = model.name { Text(n).font(.ui(size: 12 * unit)) }
                         }
                         .opacity(0.9)
                     }
@@ -254,9 +255,9 @@ struct CardCanvas: View {
                         .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.4)
-                    Text(model.reference).font(.system(size: 12 * unit, weight: .medium)).opacity(0.85)
+                    Text(model.reference).font(.ui(size: 12 * unit, .medium)).opacity(0.85)
                     Spacer(minLength: 0)
-                    Text("ayattla.com").font(.system(size: 10 * unit)).opacity(0.7)
+                    Text("ayattla.com").font(.ui(size: 10 * unit)).opacity(0.7)
                         .environment(\.layoutDirection, .leftToRight)
                 }
                 .foregroundStyle(ink)

@@ -18,9 +18,10 @@ struct HijriView: View {
 
     var body: some View {
         Form {
+Group {
             Section {
                 Text(Num.hijri(Date()))
-                    .font(.title2.weight(.semibold))
+                    .font(.ui(.title2, .semibold))
                     .foregroundStyle(Brand.primaryInk)
                     .frame(maxWidth: .infinity)
                     .accessibilityLabel("اليوم \(Num.hijri(Date()))")
@@ -57,14 +58,17 @@ struct HijriView: View {
                     }
                 }
             }
-        }
+        
+}.listRowBackground(Brand.surface)
+}
+        .brandScreen()
         .navigationTitle("التاريخ الهجري")
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func result(_ text: String) -> some View {
         HStack {
-            Text(text).font(.headline)
+            Text(text).font(.ui(.headline))
             Spacer()
             Button { UIPasteboard.general.string = text } label: { Image(systemName: "doc.on.doc") }
                 .accessibilityLabel("نسخ النتيجة")
@@ -86,20 +90,24 @@ struct OccasionsView: View {
     var body: some View {
         TimelineView(.everyMinute) { ctx in
             List(Occasion.upcoming(from: ctx.date), id: \.occasion) { u in
+Group {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(u.occasion.name).font(.headline)
+                        Text(u.occasion.name).font(.ui(.headline))
                         Text("\(Num.int(u.hijri.day)) \(Hijri.months[u.hijri.month - 1]) \(Num.int(u.hijri.year)) هـ · \(HijriView.gregorianText(u.gregorian))")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.ui(.footnote)).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Text(Self.countdown(u.days))
-                        .font(.headline).foregroundStyle(Brand.primaryInk)
+                        .font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
                 }
                 .padding(.vertical, 6)
                 .accessibilityElement(children: .combine)
-            }
+            
+}.listRowBackground(Brand.surface)
+}
         }
+        .brandScreen()
         .navigationTitle("المناسبات")
         .navigationBarTitleDisplayMode(.inline)
     }
