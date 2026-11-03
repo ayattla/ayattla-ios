@@ -92,6 +92,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 16 (macOS 14 images default to Xcode 15)
+        run: |
+          X=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
       - name: Xcode version
         run: xcodebuild -version && swift --version
       - name: Test AyatCalc
@@ -120,6 +125,11 @@ jobs:
         with:
           name: content-pack
           path: app/Content
+      - name: Select Xcode 16 (macOS 14 images default to Xcode 15)
+        run: |
+          X=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
