@@ -3,6 +3,7 @@ import AVFoundation
 import MediaPlayer
 import Observation
 import AyatDesign
+import ActivityKit
 
 /// Something that plays audio through the app: recitations (mushaf, ruqya, kids' Juz Amma) and
 /// the radio. Only one source plays at a time; AudioCenter pauses the others.
@@ -70,6 +71,28 @@ final class AudioCenter {
     func changed() {
         revision &+= 1
         updateNowPlaying()
+        updateActivity()
+    }
+
+    // MARK: Live Activity (Lock Screen and Dynamic Island)
+
+    @ObservationIgnored private var activity: Activity<ListeningAttributes>?
+
+    private func updateActivity() {
+        guard let a = active else {
+            if let act = activity {
+                activity = nil
+                Task { await act.end(nil, dismissalPolicy: .immediate) }
+            }
+            return
+        }
+        let state = ListeningAttributes.ContentState(title: a.audioTitle, subtitle: a.audioSubtitle,
+                                                     isPlaying: a.audioIsPlaying, isLive: a.audioIsLive)
+        if let act = activity {
+            Task { await act.update(ActivityContent(state: state, staleDate: nil)) }
+        } else if a.audioIsPlaying, ActivityAuthorizationInfo().areActivitiesEnabled {
+            activity = try? Activity.request(attributes: ListeningAttributes(), content: ActivityContent(state: state, staleDate: nil))
+        }
     }
 
     var isPlaying: Bool { active?.audioIsPlaying ?? false }

@@ -96,7 +96,14 @@ final class Router {
     static let shared = Router()
     var pending: Route?
 
-    func open(_ url: URL) { if let r = Route.parse(url) { pending = r } }
+    func open(_ url: URL) {
+        // From the Live Activity: show the full player rather than a screen.
+        if url.scheme == Route.scheme, url.host() == "now-playing" {
+            if AudioCenter.shared.active != nil { AudioCenter.shared.nowPlayingSheet = true }
+            return
+        }
+        if let r = Route.parse(url) { pending = r }
+    }
 }
 
 /// Receives reminder taps (and shows reminders while the app is open).
