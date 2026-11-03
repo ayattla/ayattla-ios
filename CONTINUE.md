@@ -18,6 +18,8 @@
 
 ## 1. آخر حالة دقيقة
 
+- **صفحة معاينة وملاحظات المالك**: https://claude.ai/artifact/8GHgvVpo6MofZeyAcjVMJF — ٥٢ لقطة من بناء PR #11 مقسمة حسب الأقسام، وتحت كل لقطة نموذج ملاحظة. الملاحظات في قاعدة بيانات الصفحة، المجموعة `notes` (الحقول: `screen`، `text`، `kind` = note|improve|urgent، `status` = new|working|done، `createdAt`). اقرأها بأداة ArtifactData (`list` على `notes`)، وحدّث `status` بعد التنفيذ. بعد نجاح CI لـ PR #12 أعد نشر الصفحة بلقطات الهوية الجديدة (نفس الرابط).
+
 - **PR #12 «الهوية والواجهة بجمالية الموقع»** (الفرع `claude/brand-ui`، مفتوح، لم يمر على CI بسبب الفوترة):
   - `AyatDesign/Brand.swift`: ألوان الصفحة الرئيسية للموقع (زمردي #102D27، ذهبي #C3A66B، عاجي #F6F2E9، والوضع الداكن #0C1C18)، `Font.ui` بخط IBM Plex Sans Arabic، `card()` بنصف قطر ٢٠ وظل خفيف، `emeraldPanel()` بإطار ذهبي، `brandScreen()`.
   - الخط يجلب في مهمة المحتوى (OFL) ويسجل عند التشغيل؛ `BrandAppearance.swift` لأشرطة التنقل والتبويب.
