@@ -3,22 +3,11 @@ import AVKit
 import AyatDesign
 import AyatContent
 
-/// Ayah of the day: one of the site's common-ayat shortcuts (clip maker and card tool:
-/// Al-Fatiha, Ayat al-Kursi, end of Al-Baqarah, Ash-Sharh 5–6, Al-Ikhlas, Al-Mulk, Ar-Ra'd 28),
-/// rotating by day. Text comes from the content pack.
+/// Ayah of the day (picks shared with the widget: AyatContent.DailyAyah).
 enum AyahOfTheDay {
-    struct Pick: Equatable { let surah: Int; let from: Int; let to: Int }
-
-    static let picks: [Pick] = [
-        .init(surah: 1, from: 1, to: 7), .init(surah: 2, from: 255, to: 255), .init(surah: 2, from: 285, to: 286),
-        .init(surah: 94, from: 5, to: 6), .init(surah: 112, from: 1, to: 4), .init(surah: 67, from: 1, to: 1),
-        .init(surah: 13, from: 28, to: 28),
-    ]
-
-    static func pick(for date: Date = Date()) -> Pick {
-        let day = Calendar(identifier: .gregorian).ordinality(of: .day, in: .era, for: date) ?? 0
-        return picks[day % picks.count]
-    }
+    typealias Pick = DailyAyah.Pick
+    static var picks: [Pick] { DailyAyah.picks }
+    static func pick(for date: Date = Date()) -> Pick { DailyAyah.pick(for: date) }
 
     static func reference(_ p: Pick) -> String {
         let name = ContentLibrary.shared.surah(p.surah)?.shortName ?? ""

@@ -197,33 +197,29 @@ struct MushafReader: View {
     var body: some View {
         VStack(spacing: 0) {
             LayerChips(selection: $layer)
-            TabView(selection: $page) {
-                ForEach(1...max(lib.pageCount, 1), id: \.self) { n in
-                    Group {
-                        if layer == .mushaf {
-                            MushafPage(number: n, scale: FontScale(rawValue: fontScale)?.factor ?? 1,
-                                       highlighted: player.current ?? focus)
-                                .blur(radius: hideText ? 9 : 0)
-                                .overlay {
-                                    if hideText {
-                                        Button { hideText = false } label: {
-                                            Label("الآيات مخفية لاختبار الحفظ، اضغط للإظهار", systemImage: "eye")
-                                                .font(.ui(.footnote, .medium)).foregroundStyle(Brand.primaryInk)
-                                                .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
-                                                .background(Brand.surface, in: Capsule())
-                                                .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                        } else {
-                            LayerPage(number: n, layer: layer, scale: FontScale(rawValue: fontScale)?.factor ?? 1)
+            GeometryReader { geo in
+                // iPad in landscape: two facing pages, odd on the right as in the printed mushaf.
+                if size == .regular && geo.size.width > geo.size.height * 1.15 && layer == .mushaf {
+                    TabView(selection: spread) {
+                        ForEach(1...max((lib.pageCount + 1) / 2, 1), id: \.self) { s in
+                            HStack(spacing: 1) {
+                                pageView(2 * s - 1)
+                                if 2 * s <= lib.pageCount { pageView(2 * s) }
+                            }
+                            .background(Brand.line)
+                            .tag(s)
                         }
                     }
-                    .tag(n)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                } else {
+                    TabView(selection: $page) {
+                        ForEach(1...max(lib.pageCount, 1), id: \.self) { n in
+                            pageView(n).tag(n)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
             .environment(\.openURL, OpenURLAction { url in
                 if let p = Self.position(url) { selected = p; return .handled }
                 return .systemAction
@@ -275,6 +271,38 @@ struct MushafReader: View {
                         onFavorite: { favorites = Favorites.toggled(favorites, p) })
                 .presentationDetents([.medium, .large])
         }
+    }
+
+    @Environment(\.horizontalSizeClass) private var size
+
+    /// Spread index (pages 2s-1 and 2s) mapped onto `page`, so the rest of the reader is unchanged.
+    private var spread: Binding<Int> {
+        Binding(get: { (page + 1) / 2 }, set: { page = 2 * $0 - 1 })
+    }
+
+    @ViewBuilder private func pageView(_ n: Int) -> some View {
+        Group {
+            if layer == .mushaf {
+                MushafPage(number: n, scale: FontScale(rawValue: fontScale)?.factor ?? 1,
+                           highlighted: player.current ?? focus)
+                    .blur(radius: hideText ? 9 : 0)
+                    .overlay {
+                        if hideText {
+                            Button { hideText = false } label: {
+                                Label("الآيات مخفية لاختبار الحفظ، اضغط للإظهار", systemImage: "eye")
+                                    .font(.ui(.footnote, .medium)).foregroundStyle(Brand.primaryInk)
+                                    .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
+                                    .background(Brand.surface, in: Capsule())
+                                    .overlay(Capsule().stroke(Brand.line, lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+            } else {
+                LayerPage(number: n, layer: layer, scale: FontScale(rawValue: fontScale)?.factor ?? 1)
+            }
+        }
+        .background(Color(light: 0xFBF9F2, dark: 0x121512))
     }
 
     private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
