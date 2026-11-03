@@ -40,47 +40,88 @@ struct StudioView: View {
         var isReady: Bool { true }
     }
 
+    @ViewBuilder private func destination(_ c: Creator) -> some View {
+        switch c {
+        case .card: AyahCardView()
+        case .clip: ClipMakerView()
+        case .status: StatusSourceView()
+        case .dedication: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
+        case .hadithCard: HadithView()
+        case .asmaCard: AsmaView()
+        }
+    }
+
+    /// Studio root (v2): hero, new-design cards, ready-made templates, then recent work.
     var body: some View {
-        List {
-Group {
-            Section {
-                NavigationLink { LibraryView(initial: .projects) } label: {
-                    Label { Text("مكتبتي: المشاريع والمفضلة والتنزيلات").font(.ui(.subheadline, .medium)) }
-                        icon: { Image(systemName: "books.vertical").foregroundStyle(Brand.goldInk) }
-                        .frame(minHeight: Brand.minTap)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Brand.Space.xl) {
+                HeroHeader(eyebrow: "الاستوديو", title: "صناعة المحتوى",
+                           subtitle: "مقاطع وبطاقات وحالات بهوية آيات تتلى، تصنع على جهازك بلا علامة مائية") {
+                    HStack(spacing: Brand.Space.s) {
+                        NavigationLink { ClipMakerView() } label: { Label("مقطع جديد", systemImage: "plus") }
+                            .buttonStyle(.brandGold)
+                        NavigationLink { LibraryView(initial: .projects) } label: { Label("مكتبتي", systemImage: "books.vertical") }
+                            .buttonStyle(GhostOnEmerald())
+                    }
+                    .padding(.top, Brand.Space.xs)
                 }
-            }
-            Section("مشروع جديد") {
-                ForEach(Creator.allCases) { c in
-                    NavigationLink {
-                        switch c {
-                        case .card: AyahCardView()
-                        case .clip: ClipMakerView()
-                        case .status: StatusSourceView()
-                        case .dedication: AyahCardView(surah: 2, from: 201, templateID: "ihdaa")
-                        case .hadithCard: HadithView()
-                        case .asmaCard: AsmaView()
-                        }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: c.symbol).font(.ui(.title3)).foregroundStyle(Brand.primary)
-                                .frame(width: 44, height: 44).background(Brand.tint, in: RoundedRectangle(cornerRadius: 12))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(c.title).font(.ui(.headline))
-                                Text(c.subtitle).font(.ui(.caption)).foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: Brand.Space.m) {
+                    SectionHeader("تصميم جديد")
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: Brand.Space.s)], spacing: Brand.Space.s) {
+                        ForEach(Creator.allCases) { c in
+                            NavigationLink { destination(c) } label: {
+                                ServiceCard(c.title, subtitle: c.subtitle, symbol: c.symbol, style: c == .clip ? .emerald : .gold)
                             }
-                            Spacer()
-                            if !c.isReady { Text("قريبا").font(.ui(.caption)).foregroundStyle(.secondary) }
+                            .buttonStyle(.pressable)
                         }
-                        .frame(minHeight: Brand.minTap)
                     }
                 }
+
+                PresetStrip()
+
+                RecentProjectsStrip()
             }
-        
-}.listRowBackground(Brand.surface)
-}
+            .padding(Brand.Space.l)
+            .frame(maxWidth: Brand.readableWidth)
+            .frame(maxWidth: .infinity)
+        }
         .brandScreen()
         .navigationTitle("صناعة المحتوى")
+    }
+}
+
+/// Latest saved projects with a shortcut to the library (shared by home and studio).
+struct RecentProjectsStrip: View {
+    var body: some View {
+        let recent = Array(ProjectStore.shared.projects.prefix(8))
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            SectionHeader("آخر المشاريع", subtitle: recent.isEmpty ? "ما تحفظه يظهر هنا لتعيد فتحه وتعديله" : nil) {
+                if !recent.isEmpty {
+                    NavigationLink("عرض الكل") { LibraryView(initial: .projects) }.font(.ui(.subheadline, .medium))
+                }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Brand.Space.s) {
+                    ForEach(recent) { p in
+                        NavigationLink { ProjectDetailView(project: p) } label: { ProjectTile(project: p, width: 110) }
+                            .buttonStyle(.pressable)
+                    }
+                    NavigationLink { ClipMakerView() } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: "plus").font(.ui(.title3))
+                            Text("مشروع جديد").font(.ui(.caption))
+                        }
+                        .foregroundStyle(Brand.primaryInk)
+                        .frame(width: 110, height: 150)
+                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(Brand.lineStrong))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, Brand.Space.l)
+            }
+            .padding(.horizontal, -Brand.Space.l)
+        }
     }
 }
 

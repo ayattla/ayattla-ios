@@ -6,26 +6,70 @@ import AyatDesign
 // the site's; where the site describes the web (files deleted after an hour), the app says what
 // it actually does (everything stays on the device).
 
-/// The six product cards under the hero.
+/// The site's six products as a design gallery (as in design tools: pick what to make, see its
+/// shape first). Each card previews its format on an emerald canvas with the star lattice.
 struct HomeProducts: View {
     @AppStorage("quran.lastPage") private var lastPage = 0
-    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private struct Item {
+        let title: String, subtitle: String, symbol: String, ratio: CGFloat, badge: String?
+        let open: () -> AnyView
+    }
+
+    private var items: [Item] {
+        [
+            .init(title: "مقطع تلاوة", subtitle: "فيديو بتظليل الكلمات وأكثر من ٣٠ قارئا", symbol: "play.fill", ratio: 9 / 16, badge: "MP4") { AnyView(ClipMakerView()) },
+            .init(title: "بطاقة آية", subtitle: "صورة جاهزة للمنشورات والحالة", symbol: "photo", ratio: 4 / 5, badge: nil) { AnyView(AyahCardView()) },
+            .init(title: "حالة واتساب", subtitle: "صورة أو فيديو أو نص متحرك", symbol: "text.bubble", ratio: 9 / 16, badge: nil) { AnyView(StatusSourceView()) },
+            .init(title: "بطاقة حديث", subtitle: "صحيح أو حسن مع تخريجه", symbol: "text.book.closed", ratio: 1, badge: nil) { AnyView(HadithView()) },
+            .init(title: "أسماء الله الحسنى", subtitle: "بطاقة لكل اسم بخلفية حقيقية", symbol: "sparkles", ratio: 1, badge: nil) { AnyView(AsmaView()) },
+            .init(title: "المصحف", subtitle: "٦٠٤ صفحات بترقيم مصحف المدينة", symbol: "book", ratio: 3 / 4, badge: nil) { AnyView(MushafReader(startPage: max(lastPage, 1))) },
+        ]
+    }
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : 2),
-                  spacing: 10) {
-            card("مقطع تلاوة", "فيديو بتظليل الكلمات وأكثر من ٣٠ قارئا", "play.rectangle") { ClipMakerView() }
-            card("بطاقة آية", "صورة جاهزة للمنشورات والحالة", "rectangle.portrait") { AyahCardView() }
-            card("حالة واتساب", "صورة أو فيديو أو نص متحرك", "text.bubble") { StatusSourceView() }
-            card("بطاقة حديث", "صحيح أو حسن مع تخريجه", "text.book.closed") { HadithView() }
-            card("أسماء الله الحسنى", "بطاقة لكل اسم بخلفية حقيقية", "sparkles") { AsmaView() }
-            card("المصحف", "٦٠٤ صفحات بترقيم مصحف المدينة", "book") { MushafReader(startPage: max(lastPage, 1)) }
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            SectionHeader("ماذا تصنع اليوم؟", subtitle: "اختر الشكل، ثم الآيات والقارئ والخلفية")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: Brand.Space.m) {
+                    ForEach(items.indices, id: \.self) { i in
+                        let it = items[i]
+                        NavigationLink { it.open() } label: { tile(it) }
+                            .buttonStyle(.pressable)
+                    }
+                }
+                .padding(.horizontal, Brand.Space.l)
+                .padding(.vertical, Brand.Space.s)
+            }
+            .padding(.horizontal, -Brand.Space.l)
         }
     }
 
-    private func card<D: View>(_ title: String, _ subtitle: String, _ symbol: String, @ViewBuilder _ to: @escaping () -> D) -> some View {
-        NavigationLink { to() } label: { ToolCard(title, subtitle: subtitle, symbol: symbol) }
-            .buttonStyle(.plain)
+    private func tile(_ it: Item) -> some View {
+        VStack(alignment: .leading, spacing: Brand.Space.s) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Brand.goldSoft.opacity(0.55))
+                // Format preview: the canvas shape of this product.
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Brand.gradient)
+                    .overlay(IslamicPattern(cell: 26, color: Brand.accent.opacity(0.18)).clipShape(RoundedRectangle(cornerRadius: 8)))
+                    .overlay(Image(systemName: it.symbol).font(.system(size: 20, weight: .medium)).foregroundStyle(Brand.onDeepAccent))
+                    .aspectRatio(it.ratio, contentMode: .fit)
+                    .padding(14)
+                    .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
+                if let b = it.badge {
+                    Badge(b, gold: true).padding(8).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
+            }
+            .frame(width: 150, height: 150)
+            Text(it.title).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+            Text(it.subtitle).font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(width: 150, alignment: .leading)
+        .padding(Brand.Space.s)
+        .surface(.raised)
+        .accessibilityElement(children: .combine)
     }
 }
 

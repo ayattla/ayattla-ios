@@ -92,27 +92,9 @@ public struct ToolCard: View {
         self.title = title; self.subtitle = subtitle; self.symbol = symbol
     }
 
+    /// Drawn by the v2 service card, so every list of services looks the same.
     public var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol)
-                .font(.ui(.body, .medium)).foregroundStyle(Brand.goldInk)
-                .frame(width: 42, height: 42)
-                .background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: Brand.radiusSmall, style: .continuous))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let subtitle {
-                    Text(subtitle).font(.ui(.caption)).foregroundStyle(Brand.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
-        .accessibilityElement(children: .combine)
+        ServiceCard(title, subtitle: subtitle, symbol: symbol)
     }
 }
 

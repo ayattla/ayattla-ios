@@ -103,9 +103,10 @@ struct ToolsView: View {
                                 .frame(maxWidth: .infinity, minHeight: Brand.minTap)
                         }
                     }
-                    .padding(16)
+                    .padding(Brand.Space.l)
+                    .frame(maxWidth: Brand.readableWidth)
+                    .frame(maxWidth: .infinity)
                 }
-                .background(Brand.background)
             } else {
                 List(results) { item in
 Group {
@@ -134,7 +135,7 @@ Group {
                                      count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
                 ForEach(items) { item in
                     NavigationLink { item.destination } label: { ToolTile(item: item) }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressable)
                 }
             }
         }
@@ -144,20 +145,7 @@ Group {
 struct ToolTile: View {
     let item: ToolItem
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: item.symbol).font(.ui(.title3))
-                .foregroundStyle(item.isReady ? Brand.primary : Brand.muted)
-            Text(item.title).font(.ui(.subheadline)).multilineTextAlignment(.center).lineLimit(2)
-                .foregroundStyle(.primary)
-            if !item.isReady {
-                Text("قريبا").font(.ui(.caption2)).foregroundStyle(Brand.muted)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 88)
-        .padding(.horizontal, 6)
-        .card()
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(Text(item.isReady ? String() : String("قيد البناء")))
+        LauncherTile(item.title, symbol: item.symbol)
     }
 }
 

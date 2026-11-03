@@ -13,32 +13,35 @@ struct EditorLayout<Preview: View, Controls: View>: View {
         self.controls = controls
     }
 
+    /// Like a design tool: the preview stays on a canvas stage while the options scroll —
+    /// pinned above them on iPhone, beside them on iPad.
     var body: some View {
         if size == .regular {
             HStack(spacing: 0) {
-                preview
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(32)
-                    .background(Brand.background)
+                CanvasStage { preview.padding(16) }
                 Divider()
                 Form {
-Group { controls() 
+Group { controls()
 }.listRowBackground(Brand.surface)
 }
+                    .scrollContentBackground(.hidden)
+                    .background(Brand.background)
                     .frame(width: 420)
             }
         } else {
-            Form {
-Group {
-                Section {
-                    preview.frame(maxWidth: .infinity, maxHeight: 400)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                controls()
-            
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    CanvasStage { preview }
+                        .frame(height: min(max(geo.size.height * 0.40, 220), 380))
+                    Divider()
+                    Form {
+Group { controls()
 }.listRowBackground(Brand.surface)
 }
+                        .scrollContentBackground(.hidden)
+                        .background(Brand.background)
+                }
+            }
         }
     }
 }
