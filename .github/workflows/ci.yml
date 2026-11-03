@@ -88,10 +88,15 @@ jobs:
 
   packages:
     name: Swift packages (swift test)
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 16 (macOS 14 images default to Xcode 15)
+        run: |
+          X=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
       - name: Xcode version
         run: xcodebuild -version && swift --version
       - name: Test AyatCalc
@@ -109,7 +114,7 @@ jobs:
 
   app:
     name: App build, tests and screenshots (simulator)
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 45
     needs: [packages, content]
     permissions:
@@ -120,6 +125,11 @@ jobs:
         with:
           name: content-pack
           path: app/Content
+      - name: Select Xcode 16 (macOS 14 images default to Xcode 15)
+        run: |
+          X=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
@@ -128,8 +138,12 @@ jobs:
       - name: Pick simulator
         id: sim
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          # Newest iOS runtime for the main run; the oldest supported one (iOS 18 and later) for a second pass.
+          read UDID RT < <(xcrun simctl list devices available -j | python3 tools/pick_sim.py new)
+          read OLD ORT < <(xcrun simctl list devices available -j | python3 tools/pick_sim.py old)
+          echo "Main: $RT  Minimum: $ORT"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
       - name: Build and test
         working-directory: app
         run: |
@@ -145,11 +159,12 @@ jobs:
           BUNDLE=com.ayattla.AyatTutla
           xcrun simctl boot "$UDID" || true
           APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          ls -d "$APP"/*.lproj || echo "no lproj in app"
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
           xcrun simctl location "$UDID" set 24.7136,46.6753 || true
           mkdir -p shots
-          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm clip duas hadith checker guide radio hifz kids tajweed wbw ruqya asma downloads azkar-hub topics topic juz; do
+          for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm clip duas hadith checker guide radio hifz kids tajweed wbw ruqya asma downloads azkar-hub topics topic juz status; do
             xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/$s.png"
@@ -176,7 +191,7 @@ jobs:
           xcrun simctl io "$UDID" screenshot "shots/link-azkar.png"
           xcrun simctl shutdown "$UDID" || true
           # iPad: two-column layouts.
-          IPAD=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPad')), ''))")
+          IPAD=$(xcrun simctl list devices available -j | python3 tools/pick_sim.py new iPad | cut -d' ' -f1)
           if [ -n "$IPAD" ]; then
             xcrun simctl boot "$IPAD" || true
             xcrun simctl bootstatus "$IPAD" -b || true
@@ -188,6 +203,19 @@ jobs:
               xcrun simctl io "$IPAD" screenshot "shots/ipad-$s.png"
             done
           fi
+      - name: Screenshots on the minimum iOS
+        if: success() && steps.sim.outputs.old != steps.sim.outputs.udid
+        run: |
+          OLD="${{ steps.sim.outputs.old }}"
+          BUNDLE=com.ayattla.AyatTutla
+          xcrun simctl boot "$OLD" || true
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$OLD" "$APP"
+          for s in home settings zakat card; do
+            xcrun simctl launch --terminate-running-process "$OLD" "$BUNDLE" -screen "$s"
+            sleep 6
+            xcrun simctl io "$OLD" screenshot "shots/min-ios-$s.png"
+          done
       - name: Publish screenshots to the ci-shots branch
         if: success()
         run: |

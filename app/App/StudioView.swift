@@ -125,17 +125,34 @@ struct RecentProjectsStrip: View {
     }
 }
 
-/// Status: choose what it is made from (ayah, dhikr or hadith), as in the site's status editor.
+/// Status (site's status editor): pick what it is made from, or start from a ready status design.
+/// Every editor offers the three outputs: still image, video with recitation, animated text.
 struct StatusSourceView: View {
     var body: some View {
-        List {
-Group {
-            NavigationLink { AyahCardView(surah: 2, from: 255) } label: { Label("آية", systemImage: "book") }
-            NavigationLink { AzkarView() } label: { Label("ذكر", systemImage: "sun.max") }
-            NavigationLink { HadithView() } label: { Label("حديث صحيح", systemImage: "text.book.closed") }
-        
-}.listRowBackground(Brand.surface)
-}
+        ScrollView {
+            VStack(alignment: .leading, spacing: Brand.Space.xl) {
+                HeroHeader(eyebrow: "حالات واتساب", title: "صمم حالتك",
+                           subtitle: "صورة ثابتة، أو فيديو بالتلاوة، أو نص متحرك بلا صوت، بمقاس الحالة ١٠٨٠×١٩٢٠")
+                VStack(alignment: .leading, spacing: Brand.Space.m) {
+                    SectionHeader("من أين تبدأ؟")
+                    NavigationLink {
+                        AyahCardView(settings: .init(surah: 2, from: 255, to: 255, ratio: "9:16", background: "emerald",
+                                                     fontScale: 1, template: "", name: ""))
+                    } label: { ServiceCard("آية", subtitle: "بالرسم العثماني من المصحف الموثق", symbol: "book", style: .emerald) }
+                    NavigationLink { AzkarView() } label: {
+                        ServiceCard("ذكر", subtitle: "من حصن المسلم، ثم «اصنع حالة» تحت الذكر", symbol: "sun.max")
+                    }
+                    NavigationLink { HadithView() } label: {
+                        ServiceCard("حديث صحيح أو حسن", subtitle: "بالراوي والمصدر والحكم من الدرر السنية", symbol: "text.book.closed")
+                    }
+                }
+                .buttonStyle(.pressable)
+                PresetStrip(title: "حالات جاهزة", subtitle: "اضغط على حالة لتعدلها وتشاركها", presets: StudioPreset.statuses)
+            }
+            .padding(Brand.Space.l)
+            .frame(maxWidth: Brand.readableWidth)
+            .frame(maxWidth: .infinity)
+        }
         .brandScreen()
         .navigationTitle("حالة")
         .navigationBarTitleDisplayMode(.inline)

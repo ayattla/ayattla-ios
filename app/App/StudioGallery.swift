@@ -19,7 +19,16 @@ struct StudioPreset: Identifiable {
         .init(id: "ramadan", title: "رمضان مبارك", settings: .init(surah: 2, from: 285, to: 286, ratio: "9:16", background: "dusk", fontScale: 0.85, template: "ramadan", name: "")),
         .init(id: "ikhlas", title: "سورة الإخلاص", settings: .init(surah: 112, from: 1, to: 4, ratio: "16:9", background: "ink", fontScale: 1, template: "", name: "")),
         .init(id: "eid", title: "عيد مبارك", settings: .init(surah: 1, from: 1, to: 7, ratio: "1:1", background: "dawn", fontScale: 0.85, template: "eid", name: "")),
+        // Status-sized (9:16) designs for the status screen.
+        .init(id: "st-kursi", title: "حالة آية الكرسي", settings: .init(surah: 2, from: 255, to: 255, ratio: "9:16", background: "night", fontScale: 1, template: "", name: "")),
+        .init(id: "st-jumuah", title: "حالة الجمعة", settings: .init(surah: 112, from: 1, to: 4, ratio: "9:16", background: "emerald", fontScale: 1.15, template: "jumuah", name: "")),
+        .init(id: "st-eid", title: "حالة العيد", settings: .init(surah: 94, from: 5, to: 6, ratio: "9:16", background: "sand", fontScale: 1.15, template: "eid", name: "")),
     ]
+
+    /// The ready designs at status size (9:16).
+    static var statuses: [StudioPreset] { all.filter { $0.settings.ratio == "9:16" } }
+    /// Ready designs for the studio and home (statuses have their own screen).
+    static var general: [StudioPreset] { all.filter { !$0.id.hasPrefix("st-") } }
 
     /// The canvas model for the live preview, built the same way as the card editor's.
     var model: CardCanvas.Model {
@@ -69,13 +78,14 @@ struct PresetTile: View {
 struct PresetStrip: View {
     var title = "قوالب جاهزة"
     var subtitle = "ابدأ من تصميم جاهز ثم غير الآية والخلفية والمقاس"
+    var presets: [StudioPreset] = StudioPreset.general
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
             SectionHeader(title, subtitle: subtitle)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Brand.Space.m) {
-                    ForEach(StudioPreset.all) { p in
+                    ForEach(presets) { p in
                         NavigationLink { AyahCardView(settings: p.settings) } label: { PresetTile(preset: p) }
                             .buttonStyle(.pressable)
                     }

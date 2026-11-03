@@ -71,6 +71,7 @@ struct AyahCardView: View {
     @State private var name = ""
     @State private var background = CardOptions.backgrounds[0]
     @State private var fontScale = 1.0
+    @State private var textOffset = CGSize.zero
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
     @State private var saved = false
@@ -91,18 +92,26 @@ struct AyahCardView: View {
         _background = State(initialValue: CardOptions.backgrounds.first { $0.id == e.background } ?? CardOptions.backgrounds[0])
         _fontScale = State(initialValue: e.fontScale)
         _name = State(initialValue: e.name)
+        _textOffset = State(initialValue: CGSize(width: e.textX ?? 0, height: e.textY ?? 0))
     }
 
     private var settings: EditorSettings {
         EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue, background: photo == nil ? background.id : "photo",
-                       fontScale: fontScale, template: template.id, name: name, reciter: reciter)
+                       fontScale: fontScale, template: template.id, name: name, reciter: reciter,
+                       textX: textOffset.width, textY: textOffset.height)
     }
 
     var body: some View {
         EditorLayout(preview: CardCanvas(model: model, photo: photo)
             .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .textDrag($textOffset)
             .accessibilityLabel("معاينة البطاقة")) {
+            Section("أنماط جاهزة") {
+                StylePresetPicker(current: (ratio, background.id, fontScale)) { p in
+                    withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale; photo = nil; photoItem = nil }
+                }
+            }
             Section("الآيات") {
                 Picker("السورة", selection: $surah) {
                     ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
@@ -116,6 +125,7 @@ struct AyahCardView: View {
             }
             Section("المقاس") {
                 RatioPicker(ratio: $ratio)
+                TextPositionRow(offset: $textOffset)
             }
             Section("حجم الخط") {
                 Picker("حجم الخط", selection: $fontScale) {
@@ -167,7 +177,7 @@ struct AyahCardView: View {
         let ref = from == to ? "[\(s): \(Num.int(from))]" : "[\(s): \(Num.int(from))–\(Num.int(to))]"
         return .init(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
                      name: name.isEmpty ? nil : name, background: background, fontScale: fontScale,
-                     ratio: ratio, lightBackground: background.id == "sand")
+                     ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset)
     }
 }
 
@@ -188,6 +198,8 @@ struct CardCanvas: View {
         /// Word to highlight (0-based among the ayah's words; pause marks are not counted), and its color.
         var highlightWord: Int? = nil
         var highlightColor: UInt32 = 0xF7CD6E
+        /// Where the text sits, as a fraction of the canvas (0,0 = centred); set by dragging it.
+        var textOffset: CGSize = .zero
     }
 
     let model: Model
@@ -235,12 +247,15 @@ struct CardCanvas: View {
                         .opacity(0.9)
                     }
                     Spacer(minLength: 0)
-                    Text(QuranWords.highlighted(model.text, word: model.highlightWord, color: Color(hex: model.highlightColor)))
-                        .font(.custom(model.fontName, size: baseSize * unit * model.fontScale))
-                        .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
-                        .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.4)
-                    Text(model.reference).font(.ui(size: 12 * unit, .medium)).opacity(0.85)
+                    VStack(spacing: 14 * unit) {
+                        Text(QuranWords.highlighted(model.text, word: model.highlightWord, color: Color(hex: model.highlightColor)))
+                            .font(.custom(model.fontName, size: baseSize * unit * model.fontScale))
+                            .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.4)
+                        Text(model.reference).font(.ui(size: 12 * unit, .medium)).opacity(0.85)
+                    }
+                    .offset(x: model.textOffset.width * g.size.width, y: model.textOffset.height * g.size.height)
                     Spacer(minLength: 0)
                     Text("ayattla.com").font(.ui(size: 10 * unit)).opacity(0.7)
                         .environment(\.layoutDirection, .leftToRight)

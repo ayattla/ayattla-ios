@@ -140,7 +140,6 @@ struct RouteSheet: ViewModifier {
                             ToolbarItem(placement: .cancellationAction) { Button("إغلاق") { router.pending = nil } }
                         }
                 }
-                .environment(\.layoutDirection, .rightToLeft)
             }
     }
 }

@@ -13,6 +13,8 @@ struct AyatTutlaApp: App {
 
     var body: some Scene {
         WindowGroup {
+            // Right to left in both SwiftUI (here) and UIKit (BrandAppearance): when the two disagree,
+            // iOS 17 mirrors the text inside List and Form cells.
             StartView()
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Num.locale)
@@ -199,6 +201,7 @@ enum DebugScreen {
         case "azkar-hub": AzkarHadithView()
         case "topics": TopicsView()
         case "juz": JuzListView()
+        case "status": StatusSourceView()
         case "topic": if let t = ContentLibrary.shared.topics.first { TopicView(topic: t) } else { TopicsView() }
         case "now-playing": NowPlayingSheet()
         default: ToolsView()

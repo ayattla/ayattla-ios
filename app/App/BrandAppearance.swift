@@ -11,6 +11,9 @@ enum BrandAppearance {
     }
 
     static func apply() {
+        // UIKit right to left, matching the SwiftUI environment set at the root (see AyatTutlaApp).
+        UIView.appearance().semanticContentAttribute = .forceRightToLeft
+
         let ink = UIColor(Brand.ink)
         let bar = UINavigationBarAppearance()
         bar.configureWithTransparentBackground()
