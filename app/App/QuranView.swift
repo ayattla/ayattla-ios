@@ -376,6 +376,10 @@ struct MushafPage: View {
 
     var body: some View {
         let ayat = (try? lib.store?.page(number)) ?? []
+        // Text grows with the page width (iPad, landscape spread) so a page fills the screen as on
+        // a phone; the reader's own size setting multiplies on top.
+        GeometryReader { geo in
+        let scale = self.scale * min(max(geo.size.width / 400, 1), 1.7)
         ScrollView {
             VStack(spacing: 16) {
                 ForEach(Array(blocks(ayat).enumerated()), id: \.offset) { _, block in
@@ -407,6 +411,7 @@ struct MushafPage: View {
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(light: 0xE8E2D0, dark: 0x2E3B32), lineWidth: 1))
             .padding(.horizontal, 16).padding(.bottom, 12)
             Text(Num.int(number)).font(.ui(.caption)).foregroundStyle(.secondary).padding(.bottom, 8)
+        }
         }
     }
 

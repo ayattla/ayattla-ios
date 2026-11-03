@@ -110,5 +110,58 @@ struct DailyAyahWidget: Widget {
 
 @main
 struct AyatWidgetBundle: WidgetBundle {
-    var body: some Widget { DailyAyahWidget() }
+    /// Registers the bundled fonts (and opens the pack) before any widget or activity draws.
+    init() { _ = WidgetContent.store }
+
+    var body: some Widget {
+        DailyAyahWidget()
+        ListeningLiveActivity()
+    }
+}
+
+// MARK: - Live Activity (recitation and radio)
+
+struct ListeningLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ListeningAttributes.self) { context in
+            HStack(spacing: 12) {
+                Image(systemName: context.state.isLive ? "antenna.radiowaves.left.and.right" : "waveform")
+                    .font(.title3).foregroundStyle(Color(hex: 0xD9C28E))
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(context.state.title).font(.ui(.headline)).foregroundStyle(Color(hex: 0xF6F2E9)).lineLimit(1)
+                    Text(context.state.subtitle).font(.ui(.caption)).foregroundStyle(Color(hex: 0xF6F2E9).opacity(0.8)).lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: context.state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.title).foregroundStyle(Color(hex: 0xD9C28E))
+                    .accessibilityLabel(context.state.isPlaying ? "يعمل" : "متوقف")
+            }
+            .padding(16)
+            .environment(\.layoutDirection, .rightToLeft)
+            .activityBackgroundTint(Color(hex: 0x102D27))
+            .activitySystemActionForegroundColor(Color(hex: 0xD9C28E))
+            .widgetURL(URL(string: "ayattla://now-playing"))
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: context.state.isLive ? "antenna.radiowaves.left.and.right" : "waveform")
+                        .foregroundStyle(Color(hex: 0xD9C28E))
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(context.state.title).font(.ui(.subheadline, .semibold)).lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    Text(context.state.subtitle).font(.ui(.caption)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            } compactLeading: {
+                Image(systemName: "waveform").foregroundStyle(Color(hex: 0xD9C28E))
+            } compactTrailing: {
+                Image(systemName: context.state.isPlaying ? "pause.fill" : "play.fill").foregroundStyle(Color(hex: 0xD9C28E))
+            } minimal: {
+                Image(systemName: "waveform").foregroundStyle(Color(hex: 0xD9C28E))
+            }
+        }
+    }
 }

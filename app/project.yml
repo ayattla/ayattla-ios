@@ -25,6 +25,7 @@ targets:
     platform: iOS
     sources:
       - App
+      - Shared
       # content-v1.sqlite from the CI content job (not in git); copied as the "Content" folder
       - path: Content
         type: folder
@@ -55,6 +56,7 @@ targets:
         NSPhotoLibraryUsageDescription: لاختيار صورة خلفية من جهازك
         NSCameraUsageDescription: لالتقاط صورة خلفية
         UIBackgroundModes: [audio]
+        NSSupportsLiveActivities: true
         ITSAppUsesNonExemptEncryption: false
   # «آية اليوم» widget (Home Screen and Lock Screen). Carries its own copy of the content pack
   # and fonts, so it needs no App Group.
@@ -63,6 +65,7 @@ targets:
     platform: iOS
     sources:
       - Widget
+      - Shared
       - path: Content
         type: folder
         buildPhase: resources

@@ -101,9 +101,18 @@ struct ClipMakerView: View {
             } header: { Text("الآيات") } footer: { Text("حتى \(Num.int(Self.maxAyat)) آية في المقطع، كما في الموقع.") }
 
             Section {
-                Picker("القارئ", selection: $reciter) {
+                // Full name under the label: a menu value is cut in the middle on small iPhones.
+                Picker(selection: $reciter) {
                     ForEach(Catalog.reciters) { Text($0.wordHighlight ? "\($0.name) ★" : $0.name).tag($0.id) }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("القارئ")
+                        Text(Catalog.reciter(reciter).map { $0.wordHighlight ? "\($0.name) ★" : $0.name } ?? "")
+                            .font(.ui(.footnote)).foregroundStyle(Brand.primaryInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                .pickerStyle(.navigationLink)
                 if qfID != nil {
                     Toggle("تظليل الكلمة", isOn: $highlight)
                     if highlight {
