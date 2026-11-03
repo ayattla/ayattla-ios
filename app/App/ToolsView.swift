@@ -86,7 +86,9 @@ struct ToolsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         NextPrayerCard()
-                        HStack(spacing: 10) {
+                        // Side by side, or stacked at accessibility text sizes so no word breaks.
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+                                                 count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 10) {
                             NavigationLink { LibraryView() } label: { ToolCard("مكتبتي", subtitle: "المشاريع والمفضلة والتنزيلات", symbol: "books.vertical") }
                             NavigationLink { SettingsView() } label: { ToolCard("الإعدادات", subtitle: "القارئ والخط والتنبيهات", symbol: "gearshape") }
                         }
