@@ -34,6 +34,8 @@ targets:
       - package: AyatContent
       - package: AyatTiming
       - package: AyatDesign
+      - target: AyatWidget
+        embed: true
     info:
       path: App/Info.plist
       properties:
@@ -54,6 +56,33 @@ targets:
         NSCameraUsageDescription: لالتقاط صورة خلفية
         UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
+  # «آية اليوم» widget (Home Screen and Lock Screen). Carries its own copy of the content pack
+  # and fonts, so it needs no App Group.
+  AyatWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widget
+      - path: Content
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: AyatContent
+      - package: AyatDesign
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: آية اليوم
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: ar
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ayattla.AyatTutla.AyatWidget
   AyatTutlaTests:
     type: bundle.unit-test
     platform: iOS

@@ -51,3 +51,13 @@ final class ContentStoreTests: XCTestCase {
         XCTAssertEqual(ContentStore.clean("أَإِآ  ٱلـ"), "ااا ال")
     }
 }
+
+final class DailyAyahTests: XCTestCase {
+    func testRotatesThroughTheSitePicksByDay() {
+        let cal = Calendar(identifier: .gregorian)
+        let d0 = cal.date(from: DateComponents(year: 2026, month: 11, day: 3, hour: 12))!
+        let week = (0..<7).map { DailyAyah.pick(for: cal.date(byAdding: .day, value: $0, to: d0)!) }
+        XCTAssertEqual(Set(week.map { "\($0.surah):\($0.from)" }).count, 7, "a full week shows every pick once")
+        XCTAssertEqual(DailyAyah.pick(for: d0), DailyAyah.pick(for: cal.date(byAdding: .day, value: 7, to: d0)!))
+    }
+}
