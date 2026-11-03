@@ -138,8 +138,12 @@ jobs:
       - name: Pick simulator
         id: sim
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          # Newest iOS runtime for the main run; the oldest (the app's minimum, iOS 17) for a second pass.
+          read UDID RT < <(xcrun simctl list devices available -j | python3 tools/pick_sim.py new)
+          read OLD ORT < <(xcrun simctl list devices available -j | python3 tools/pick_sim.py old)
+          echo "Main: $RT  Minimum: $ORT"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
       - name: Build and test
         working-directory: app
         run: |
@@ -199,6 +203,19 @@ jobs:
               xcrun simctl io "$IPAD" screenshot "shots/ipad-$s.png"
             done
           fi
+      - name: Screenshots on the minimum iOS
+        if: success() && steps.sim.outputs.old != steps.sim.outputs.udid
+        run: |
+          OLD="${{ steps.sim.outputs.old }}"
+          BUNDLE=com.ayattla.AyatTutla
+          xcrun simctl boot "$OLD" || true
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$OLD" "$APP"
+          for s in home settings zakat fonttest card; do
+            xcrun simctl launch --terminate-running-process "$OLD" "$BUNDLE" -screen "$s"
+            sleep 6
+            xcrun simctl io "$OLD" screenshot "shots/ios17-$s.png"
+          done
       - name: Publish screenshots to the ci-shots branch
         if: success()
         run: |
