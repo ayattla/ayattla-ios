@@ -1,5 +1,6 @@
 import XCTest
 import AVFoundation
+import AyatDesign
 @testable import AyatTutla
 
 /// The site's media library client, favorites, the tool usage list and the video background reader.
