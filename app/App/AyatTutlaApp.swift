@@ -87,12 +87,19 @@ struct RootView: View {
                         .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
                 }
             } else {
+                // The system tab bar is hidden; the site's floating bar (FloatingTabBar) replaces it.
+                // TabView still holds each section's navigation state.
                 TabView(selection: $tab) {
                     ForEach(Tab.allCases) { t in
                         NavigationStack { screen(t) }
-                            .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
-                            .tabItem { Label(t.title, systemImage: t.symbol) }
+                            .toolbar(.hidden, for: .tabBar)
                             .tag(t)
+                    }
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 6) {
+                        MiniPlayerBar()
+                        FloatingTabBar(selection: $tab)
                     }
                 }
             }
@@ -202,6 +209,8 @@ enum DebugScreen {
         case "topics": TopicsView()
         case "juz": JuzListView()
         case "status": StatusSourceView()
+        case "home-mid": ScrollView { VStack(spacing: 32) { HomeProducts(); HomeSources(); HomeSteps() }.padding(16) }.brandScreen()
+        case "home-low": ScrollView { VStack(spacing: 32) { HomeFeatures(); HomeStats(); HomeClosing() }.padding(16) }.brandScreen()
         case "topic": if let t = ContentLibrary.shared.topics.first { TopicView(topic: t) } else { TopicsView() }
         case "now-playing": NowPlayingSheet()
         default: ToolsView()
@@ -209,3 +218,46 @@ enum DebugScreen {
     }
 }
 #endif
+
+/// The site's mobile bar (.foot-tabbar, floating variant): a white rounded card with a fine border
+/// and soft shadow; the current section is filled with the green gradient.
+struct FloatingTabBar: View {
+    @Binding var selection: Tab
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(Tab.allCases) { t in
+                let on = t == selection
+                Button {
+                    withAnimation(.snappy(duration: 0.22)) { selection = t }
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: on ? t.symbol + ".fill" : t.symbol)
+                            .font(.system(size: 18, weight: .medium))
+                        if !typeSize.isAccessibilitySize {
+                            Text(t.title).font(.ui(size: 11, on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                    }
+                    .foregroundStyle(on ? Color.white : Brand.muted)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background {
+                        if on { RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Brand.siteGradient) }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(t.longTitle)
+                .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
+            }
+        }
+        .padding(5)
+        .background(Brand.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+        .shadow(color: Color(hex: 0x0F1F17).opacity(0.14), radius: 18, y: 8)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 2)
+        .frame(maxWidth: 560)
+        .accessibilityElement(children: .contain)
+    }
+}

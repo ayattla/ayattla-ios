@@ -35,49 +35,67 @@ public extension SectionHeader where Trailing == EmptyView {
     init(_ title: String, subtitle: String? = nil) { self.init(title, subtitle: subtitle) { EmptyView() } }
 }
 
-/// The site's main button: emerald pill with ivory text (`.btn-primary`).
+/// The site's primary button: --s-grad fill, white text, radius 14, soft green shadow.
 public struct PrimaryButtonStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.ui(.subheadline, .semibold))
-            .foregroundStyle(Brand.onPrimary)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
-            .frame(minHeight: 48)
-            .background(Brand.primary, in: Capsule())
-            .opacity(configuration.isPressed ? 0.85 : 1)
+            .frame(minHeight: 50)
+            .background(Brand.siteGradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .shadow(color: Color(hex: 0x1F8A62).opacity(0.35), radius: 12, y: 8)
+            .opacity(configuration.isPressed ? 0.88 : 1)
     }
 }
 
-/// The site's outline button (`.btn-ghost`): line border, emerald ink.
+/// The site's light button: white, fine border, ink text.
 public struct SecondaryButtonStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.ui(.subheadline, .medium))
-            .foregroundStyle(Brand.primaryInk)
+            .font(.ui(.subheadline, .semibold))
+            .foregroundStyle(Brand.ink)
             .padding(.horizontal, 18)
-            .frame(minHeight: 48)
-            .background(Brand.surface, in: Capsule())
-            .overlay(Capsule().stroke(Brand.lineStrong, lineWidth: 1))
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .frame(minHeight: 50)
+            .background(Brand.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x0F1F17).opacity(0.07), radius: 10, y: 6)
+            .opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
 
-/// Gold pill on emerald panels (hero buttons).
+/// The site's .btn.gold: gold gradient for "create" actions.
 public struct GoldButtonStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.ui(.subheadline, .semibold))
-            .foregroundStyle(Brand.primary)
+            .foregroundStyle(.white)
             .padding(.horizontal, 18)
-            .frame(minHeight: 48)
-            .background(Brand.accent, in: Capsule())
+            .frame(minHeight: 50)
+            .background(Brand.goldGradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .shadow(color: Color(hex: 0xB7791F).opacity(0.35), radius: 12, y: 8)
+            .opacity(configuration.isPressed ? 0.88 : 1)
+    }
+}
+
+/// Deep emerald button (the site's «ابدأ مقطعك الآن», «تحميل الصورة»).
+public struct DarkButtonStyle: ButtonStyle {
+    public init() {}
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.ui(.subheadline, .semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 20)
+            .frame(minHeight: 50)
+            .background(Brand.primary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
 
+public extension ButtonStyle where Self == DarkButtonStyle { static var brandDark: DarkButtonStyle { .init() } }
 public extension ButtonStyle where Self == PrimaryButtonStyle { static var brandPrimary: PrimaryButtonStyle { .init() } }
 public extension ButtonStyle where Self == SecondaryButtonStyle { static var brandSecondary: SecondaryButtonStyle { .init() } }
 public extension ButtonStyle where Self == GoldButtonStyle { static var brandGold: GoldButtonStyle { .init() } }
@@ -115,10 +133,12 @@ public struct CategorySelector<ID: Hashable>: View {
                     let on = item.id == selection
                     Button { selection = item.id } label: {
                         Text(item.title).font(.ui(.footnote, .medium)).lineLimit(1)
-                            .foregroundStyle(on ? Brand.onPrimary : Brand.ink)
-                            .padding(.horizontal, 14).frame(minHeight: 36)
-                            .background(on ? Brand.primary : Brand.surface, in: Capsule())
-                            .overlay(Capsule().stroke(on ? Color.clear : Brand.line, lineWidth: 1))
+                            .foregroundStyle(on ? Color.white : Brand.ink)
+                            .padding(.horizontal, 16).frame(minHeight: 40)
+                            .background {
+                                if on { Capsule().fill(Brand.siteGradient) } else { Capsule().fill(Brand.surface) }
+                            }
+                            .overlay(Capsule().stroke(on ? Color.clear : Brand.lineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])

@@ -15,37 +15,48 @@ enum AyahOfTheDay {
     }
 }
 
-/// Home: the site's home page in its order (design/Main.dc.html, docs/SITE_AUDIT.md §2).
+/// Home (v3): ayattla.com's home page made native — hero with the site's headline and badges, the
+/// ayah of the day as the "phone" card, today's essentials as a bento row, then the site's sections
+/// (products, how it works, features, tool directory, numbers, questions, closing call).
 struct HomeView: View {
     @AppStorage("quran.lastPage") private var lastPage = 0
     @AppStorage(Favorites.key) private var favorites = ""
+    @Environment(\.dynamicTypeSize) private var typeSize
     private let lib = ContentLibrary.shared
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Brand.Space.xl) {
-                // Site order (docs/SITE_AUDIT.md §2), with the app's daily cards after the products.
-                header
+            VStack(spacing: Brand.Space.xxl) {
+                hero
                 if lib.isReady { ayahCard }
+                today
                 HomeProducts()
                 PresetStrip()
                 HomeSources()
-                NextPrayerCard()
-                if lib.isReady { continueReading }
                 RecentProjectsStrip()
                 HomeSteps()
                 HomeFeatures()
-                toolGroups
+                toolDirectory
                 HomeStats()
                 HomeFAQ()
                 HomeClosing()
                 footer
             }
-            .padding(Brand.Space.l)
+            .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.l)
             .frame(maxWidth: Brand.readableWidth)
             .frame(maxWidth: .infinity)
         }
-        .brandScreen()
+        .background {
+            ZStack(alignment: .top) {
+                Brand.page
+                // The site hero's glow: green top-right, teal under the headline.
+                RadialGradient(colors: [Brand.green.opacity(0.18), .clear], center: UnitPoint(x: 0.1, y: 0), startRadius: 0, endRadius: 380)
+                    .frame(height: 520)
+                RadialGradient(colors: [Brand.teal.opacity(0.10), .clear], center: UnitPoint(x: 0.95, y: 0.6), startRadius: 0, endRadius: 320)
+                    .frame(height: 620)
+            }
+            .ignoresSafeArea()
+        }
         .navigationTitle("آيات تتلى")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -60,45 +71,89 @@ struct HomeView: View {
         }
     }
 
-    /// Greeting line under the bar: hijri date and the site's tagline.
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(Num.hijri(Date())).font(.ui(.subheadline, .medium)).foregroundStyle(Brand.goldInk)
-            Text("اصنع مقطعك القرآني، واقرأ وردك، وأذكارك معك").font(.ui(.title3, .semibold)).foregroundStyle(Brand.ink)
+    /// The site's hero: badge pill, two-line headline (second line in the green gradient), lead,
+    /// primary and secondary actions, then the four sizes.
+    private var hero: some View {
+        VStack(spacing: Brand.Space.l) {
+            FlowLayout(spacing: 14) {
+                ForEach(["مجاني بالكامل", "بدون تسجيل", "بدون علامة مائية"], id: \.self) { t in
+                    HStack(spacing: 6) {
+                        Circle().fill(Brand.green).frame(width: 7, height: 7)
+                        Text(t).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.ink)
+                    }
+                }
+            }
+            .padding(.horizontal, 18).padding(.vertical, 10)
+            .background(Brand.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x0F1F17).opacity(0.08), radius: 12, y: 6)
+
+            VStack(spacing: 2) {
+                Text("آيات تتلى كلمة كلمة").foregroundStyle(Brand.ink)
+                Text("في مقطع جاهز للنشر").foregroundStyle(Brand.siteGradient)
+            }
+            .font(.ui(.largeTitle, .bold))
+            .multilineTextAlignment(.center)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+
+            Text("اختر الآيات والقارئ، فيظهر النص بخط المصحف ويتلون مع التلاوة لحظة بلحظة. أربعة مقاسات للريلز والستوري ويوتيوب، وقوالب للإهداء والصدقة الجارية.")
+                .font(.ui(.subheadline)).foregroundStyle(Brand.muted)
+                .multilineTextAlignment(.center).lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 10) {
+                NavigationLink { ClipMakerView() } label: {
+                    Label("ابدأ مجانا الآن", systemImage: "play.rectangle").frame(maxWidth: 320)
+                }
+                .buttonStyle(.brandPrimary)
+                NavigationLink { StatusSourceView() } label: {
+                    Label("صمم حالة واتساب", systemImage: "photo").frame(maxWidth: 320)
+                }
+                .buttonStyle(.brandSecondary)
+            }
+            .padding(.top, 4)
+            Text(Num.hijri(Date())).font(.ui(.caption, .medium)).foregroundStyle(Brand.muted)
         }
+        .padding(.top, Brand.Space.s)
     }
 
+    /// Ayah of the day drawn like the site's phone preview: emerald screen with the gold frame,
+    /// floating chips, and actions.
     private var ayahCard: some View {
         let p = AyahOfTheDay.pick()
         let ayat = (try? lib.store?.ayat(surah: p.surah, from: p.from, to: p.to)) ?? []
         let text = ayat.map { $0.textUthmani + " " + QuranText.marker($0.ayah) }.joined(separator: " ")
         let first = RecitationPlayer.Position(surah: p.surah, ayah: p.from)
         let isFav = Favorites.list(favorites).contains(first)
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                StarOrnament().frame(width: 18, height: 18)
-                Text("آية اليوم").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.onDeepAccent)
+        return VStack(spacing: 14) {
+            HStack {
+                Eyebrow("آية اليوم")
+                    .environment(\.colorScheme, .dark)
                 Spacer()
-                Text(AyahOfTheDay.reference(p)).font(.ui(.footnote, .medium)).foregroundStyle(Brand.onDeepAccent.opacity(0.9))
+                Text(AyahOfTheDay.reference(p)).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.onDeepAccent)
             }
             Text(text)
-                .font(.custom(ContentLibrary.mushafFont, size: 23, relativeTo: .title3))
-                .lineSpacing(10)
+                .font(.custom(ContentLibrary.mushafFont, size: 24, relativeTo: .title3))
+                .lineSpacing(12)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-                .lineLimit(8)
-            HStack(spacing: 10) {
+                .lineLimit(7)
+                .padding(.vertical, 6)
+            HStack(spacing: 8) {
                 NavigationLink { MushafReader(startPage: ayat.first?.page ?? 1, focus: first) } label: {
-                    Label("اقرأ في المصحف", systemImage: "book")
-                        .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primary)
-                        .padding(.horizontal, 16).frame(minHeight: Brand.minTap)
-                        .background(Brand.accent, in: Capsule())
+                    Label("اقرأ في المصحف", systemImage: "book").font(.ui(.footnote, .semibold))
+                        .lineLimit(1).fixedSize()
+                        .foregroundStyle(Brand.primary)
+                        .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
+                        .background(Brand.onDeepAccent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 NavigationLink { ClipMakerView(surah: p.surah, from: p.from, to: p.to) } label: {
-                    Label("اصنع مقطعا", systemImage: "play.rectangle")
-                        .font(.ui(.footnote, .semibold))
-                        .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
-                        .overlay(Capsule().stroke(Brand.onDeepAccent.opacity(0.6), lineWidth: 1))
+                    Label("اصنع مقطعا", systemImage: "play.rectangle").font(.ui(.footnote, .semibold))
+                        .lineLimit(1).fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: Brand.minTap)
+                        .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Brand.onDeepAccent.opacity(0.45), lineWidth: 1))
                 }
                 Spacer(minLength: 0)
                 ShareLink(item: "﴿\(text)﴾ [\(AyahOfTheDay.reference(p))]") {
@@ -112,53 +167,88 @@ struct HomeView: View {
             }
         }
         .padding(22)
-        .emeraldPanel()
+        .heroSurface(radius: 30)
+        // Floating chips, as on the site's phone preview.
+        .overlay(alignment: .topLeading) {
+            chip("تظليل الكلمة مع التلاوة", symbol: "checkmark.circle.fill").offset(x: 10, y: -16)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            chip("+٣٠ قارئا", symbol: "waveform").offset(x: -10, y: 16)
+        }
+        .padding(.vertical, 12)
     }
 
-    /// The site's tool groups (docs/site_snapshot: groups), each a card of quick links.
-    private var toolGroups: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("أدوات تكمل يومك مع القرآن").font(.ui(.title3, .semibold))
-                Text("كلها مجانية وتعمل على جهازك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
+    private func chip(_ text: String, symbol: String) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
+            .labelStyle(.titleAndIcon)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Brand.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x0F1F17).opacity(0.18), radius: 10, y: 6)
+            .accessibilityHidden(true)
+    }
+
+    /// Today's essentials as a bento: next prayer (wide), then reading and azkar side by side.
+    private var today: some View {
+        VStack(spacing: Brand.Space.m) {
+            NextPrayerCard()
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
+                                     count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
+                if lib.isReady { continueReading }
+                NavigationLink { AzkarView() } label: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        IconTile("sun.horizon", style: .gradient(2), size: 44)
+                        Text("أذكار اليوم").font(.ui(.headline)).foregroundStyle(Brand.ink)
+                        Text("الصباح والمساء والنوم مع العداد").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+                    .surface(.raised)
+                }
+                .buttonStyle(.pressable)
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 12)], spacing: 12) {
-                ForEach(HomeToolGroup.all) { g in
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 8) {
-                            StarOrnament().frame(width: 16, height: 16)
-                            Text(g.title).font(.ui(.headline))
-                        }
-                        FlowLayout(spacing: 8) {
-                            ForEach(g.links) { l in
-                                NavigationLink { l.destination() } label: {
-                                    Label(l.title, systemImage: l.symbol)
-                                        .font(.ui(.footnote, .medium))
-                                        .foregroundStyle(Brand.primaryInk)
-                                        .padding(.horizontal, 12).frame(minHeight: 36)
-                                        .background(Brand.tint, in: Capsule())
-                                }
-                                .buttonStyle(.plain)
-                            }
+        }
+    }
+
+    /// The site's tool directory: four groups, each with its title between two green rules and a
+    /// grid of compact tool tiles, then «كل الأدوات».
+    private var toolDirectory: some View {
+        VStack(spacing: Brand.Space.xl) {
+            SiteSectionHead(eyebrow: "الأدوات", "أدوات تكمل يومك مع القرآن", subtitle: "كلها مجانية وتعمل على جهازك")
+            ForEach(SiteTool.Group.allCases) { g in
+                VStack(spacing: Brand.Space.m) {
+                    HStack(spacing: 10) {
+                        LinearGradient(colors: [.clear, Brand.green.opacity(0.45)], startPoint: .leading, endPoint: .trailing).frame(height: 2)
+                        Text(g.title).font(.ui(.headline)).foregroundStyle(Brand.ink).fixedSize()
+                        LinearGradient(colors: [Brand.green.opacity(0.45), .clear], startPoint: .leading, endPoint: .trailing).frame(height: 2)
+                    }
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+                                             count: typeSize.isAccessibilitySize ? 2 : 3), spacing: 10) {
+                        ForEach(SiteTool.all.filter { $0.group == g }) { t in
+                            NavigationLink { t.destination } label: { SiteToolCard(tool: t, compact: true) }
+                                .buttonStyle(.pressable)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .card()
                 }
             }
+            NavigationLink { ToolsView() } label: { Label("كل الأدوات", systemImage: "square.grid.2x2").frame(maxWidth: 320) }
+                .buttonStyle(.brandSecondary)
         }
     }
 
     private var footer: some View {
-        VStack(spacing: 6) {
-            Image("LogoFull").resizable().scaledToFit().frame(width: 64, height: 64).opacity(0.9)
+        VStack(spacing: 8) {
+            Image("LogoFull").resizable().scaledToFit().frame(width: 72, height: 72)
+                .padding(10).background(Brand.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .shadow(color: Color(hex: 0x0F1F17).opacity(0.08), radius: 12, y: 6)
                 .accessibilityHidden(true)
-            Text("مجاني بالكامل · بلا حساب · بلا علامة مائية").font(.ui(.caption)).foregroundStyle(Brand.muted)
-            Text("نسأل الله أن يجعله صدقة جارية").font(.ui(.caption, .medium)).foregroundStyle(Brand.goldInk)
+            Text("صانع مقاطع وبطاقات قرآنية مجاني، صدقة جارية لكل من شارك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
+                .multilineTextAlignment(.center)
+            Text("© آيات تتلى — ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
+        .padding(.vertical, Brand.Space.l)
     }
 
     private var continueReading: some View {
@@ -166,19 +256,16 @@ struct HomeView: View {
         let first = (try? lib.store?.page(page))?.first
         let name = first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
         return NavigationLink { MushafReader(startPage: page) } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "book").font(.ui(.title3)).foregroundStyle(Brand.primary)
-                    .frame(width: 44, height: 44).background(Brand.tint, in: RoundedRectangle(cornerRadius: 12))
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(lastPage > 0 ? "تابع القراءة" : "ابدأ القراءة").font(.ui(.headline)).foregroundStyle(.primary)
-                    Text("\(name) · صفحة \(Num.int(page))").font(.ui(.footnote)).foregroundStyle(Brand.muted)
-                    ProgressView(value: Double(page), total: Double(max(lib.pageCount, 1))).tint(Brand.primary)
-                }
+            VStack(alignment: .leading, spacing: 10) {
+                IconTile("book.pages", style: .gradient(0), size: 44)
+                Text(lastPage > 0 ? "تابع القراءة" : "ابدأ القراءة").font(.ui(.headline)).foregroundStyle(Brand.ink)
+                Text("\(name) · صفحة \(Num.int(page))").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                ProgressView(value: Double(page), total: Double(max(lib.pageCount, 1))).tint(Brand.green)
             }
-            .padding(16)
-            .card()
+            .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+            .surface(.raised)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 
     private var projects: some View {

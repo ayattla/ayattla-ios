@@ -29,7 +29,7 @@ struct HomeProducts: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
-            SectionHeader("ماذا تصنع اليوم؟", subtitle: "اختر الشكل، ثم الآيات والقارئ والخلفية")
+            SiteSectionHead(eyebrow: "اصنع", "ماذا تصنع اليوم؟", subtitle: "اختر الشكل، ثم الآيات والقارئ والخلفية")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Brand.Space.m) {
                     ForEach(items.indices, id: \.self) { i in
@@ -48,12 +48,11 @@ struct HomeProducts: View {
     private func tile(_ it: Item) -> some View {
         VStack(alignment: .leading, spacing: Brand.Space.s) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Brand.goldSoft.opacity(0.55))
-                // Format preview: the canvas shape of this product.
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Brand.gradient)
-                    .overlay(IslamicPattern(cell: 26, color: Brand.accent.opacity(0.18)).clipShape(RoundedRectangle(cornerRadius: 8)))
-                    .overlay(Image(systemName: it.symbol).font(.system(size: 20, weight: .medium)).foregroundStyle(Brand.onDeepAccent))
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Brand.surface2)
+                // Format preview: the canvas shape of this product, in the site's tile colours.
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Brand.tileGradient(items.firstIndex { $0.title == it.title } ?? 0))
+                    .overlay(Image(systemName: it.symbol).font(.system(size: 22, weight: .semibold)).foregroundStyle(.white))
                     .aspectRatio(it.ratio, contentMode: .fit)
                     .padding(14)
                     .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
@@ -62,7 +61,7 @@ struct HomeProducts: View {
                 }
             }
             .frame(width: 150, height: 150)
-            Text(it.title).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+            Text(it.title).font(.ui(.headline)).foregroundStyle(Brand.ink)
             Text(it.subtitle).font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -76,21 +75,26 @@ struct HomeProducts: View {
 /// «مصادر موثوقة:» line with the three sources.
 struct HomeSources: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("مصادر موثوقة:").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.ink)
-            FlowLayout(spacing: 6) {
-                chip("النص القرآني من Tanzil")
-                chip("التلاوات من EveryAyah")
-                chip("توقيت الكلمات من Quran.com")
+        VStack(spacing: 10) {
+            Text("مصادر موثوقة:").font(.ui(.subheadline, .bold)).foregroundStyle(Brand.ink)
+            FlowLayout(spacing: 8) {
+                pill("النص القرآني من Tanzil")
+                pill("التلاوات من EveryAyah")
+                pill("توقيت الكلمات من Quran.com")
             }
         }
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 
-    private func chip(_ t: String) -> some View {
-        Label(t, systemImage: "checkmark.seal").font(.ui(.caption, .medium)).foregroundStyle(Brand.primaryInk)
-            .padding(.horizontal, 10).frame(minHeight: 30)
-            .background(Brand.tint, in: Capsule())
+    private func pill(_ t: String) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(Brand.green).frame(width: 7, height: 7)
+            Text(t).font(.ui(.caption, .medium)).foregroundStyle(Brand.muted)
+        }
+        .padding(.horizontal, 12).frame(minHeight: 32)
+        .background(Brand.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
     }
 }
 
@@ -103,28 +107,28 @@ struct HomeSteps: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("ثلاث خطوات ويصبح مقطعك جاهزا")
+        VStack(spacing: Brand.Space.l) {
+            SiteSectionHead(eyebrow: "كيف تعمل", "ثلاث خطوات ويصبح مقطعك جاهزا", subtitle: "كل شيء على جهازك، بلا حساب ولا تسجيل.")
             ForEach(Array(Self.steps.enumerated()), id: \.offset) { i, s in
-                HStack(alignment: .top, spacing: 12) {
-                    Text(Num.int(i + 1)).font(.ui(.headline)).foregroundStyle(Brand.primary)
-                        .frame(width: 36, height: 36).background(Brand.accent, in: Circle())
+                VStack(spacing: 10) {
+                    Text(Num.int(i + 1)).font(.ui(.title3, .bold)).foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Brand.tileGradient(i == 2 ? 4 : 0), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(s.0).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-                        Text(s.1).font(.ui(.footnote)).foregroundStyle(Brand.muted).fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
+                    Text(s.0).font(.ui(.headline)).foregroundStyle(Brand.ink)
+                    Text(s.1).font(.ui(.footnote)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.vertical, 22).padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .surface(.raised)
                 .accessibilityElement(children: .combine)
             }
             NavigationLink { ClipMakerView() } label: {
-                Label("ابدأ مجانا الآن", systemImage: "play.fill").frame(maxWidth: .infinity)
+                Label("ابدأ مجانا الآن", systemImage: "play.fill").frame(maxWidth: 320)
             }
             .buttonStyle(.brandPrimary)
         }
-        .padding(16)
-        .card()
     }
 }
 
@@ -140,11 +144,41 @@ struct HomeFeatures: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("ما الذي يميز آيات تتلى")
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 10)], spacing: 10) {
-                ForEach(Array(Self.items.enumerated()), id: \.offset) { _, f in ToolCard(f.0, subtitle: f.1, symbol: f.2) }
+        VStack(spacing: Brand.Space.l) {
+            SiteSectionHead(eyebrow: "المزايا", "ما الذي يميز آيات تتلى")
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: Brand.Space.m)], spacing: Brand.Space.m) {
+                ForEach(Array(Self.items.enumerated()), id: \.offset) { i, f in
+                    VStack(spacing: 10) {
+                        Image(systemName: f.2).font(.system(size: 26, weight: .medium)).foregroundStyle(.white)
+                            .frame(width: 64, height: 64)
+                            .background(i == 0 ? AnyShapeStyle(Color.white.opacity(0.18)) : AnyShapeStyle(Brand.tileGradient(i)),
+                                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: Color(hex: 0x1F8A62).opacity(i == 0 ? 0 : 0.35), radius: 12, y: 8)
+                            .accessibilityHidden(true)
+                        Text(f.0).font(.ui(.headline)).foregroundStyle(i == 0 ? Color.white : Brand.ink)
+                        Text(f.1).font(.ui(.footnote)).multilineTextAlignment(.center)
+                            .foregroundStyle(i == 0 ? Color.white.opacity(0.88) : Brand.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 24).padding(.horizontal, 18)
+                    .frame(maxWidth: .infinity)
+                    .modifier(FeatureCardStyle(featured: i == 0))
+                    .accessibilityElement(children: .combine)
+                }
             }
+        }
+    }
+}
+
+/// First feature card in the site's green gradient; the rest are white cards with a top accent.
+private struct FeatureCardStyle: ViewModifier {
+    let featured: Bool
+    func body(content: Content) -> some View {
+        if featured {
+            content.featureSurface(radius: Brand.Radius.card)
+        } else {
+            content.surface(.raised)
+                .overlay(alignment: .top) { Capsule().fill(Brand.siteGradient).frame(width: 46, height: 3).offset(y: -1.5) }
         }
     }
 }
@@ -154,20 +188,24 @@ struct HomeStats: View {
     var body: some View {
         let surahs = ContentLibrary.shared.surahs.count
         let translations = Catalog.translations.filter { !$0.id.isEmpty }.count
-        HStack(spacing: 0) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)], spacing: 20) {
             stat(Catalog.reciters.count, "قارئا")
             stat(surahs > 0 ? surahs : 114, "سورة")
             stat(translations, "ترجمة وتفسير")
             stat(CardOptions.Ratio.allCases.count, "مقاسات")
         }
-        .padding(.vertical, 18)
-        .emeraldPanel(radius: 20)
+        .padding(.vertical, 28).padding(.horizontal, 12)
+        .featureSurface()
+        .overlay {
+            // Hairline dividers between the four numbers, as on the site.
+            Rectangle().fill(Color.white.opacity(0.22)).frame(width: 1).padding(.vertical, 24)
+        }
     }
 
     private func stat(_ n: Int, _ label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(Num.int(n)).font(.ui(.title2, .semibold)).foregroundStyle(Brand.onDeepAccent)
-            Text(label).font(.ui(.caption)).foregroundStyle(Brand.onPrimary.opacity(0.85)).multilineTextAlignment(.center)
+        VStack(spacing: 2) {
+            Text(Num.int(n)).font(.ui(size: 40, .bold)).foregroundStyle(.white)
+            Text(label).font(.ui(.footnote)).foregroundStyle(Color.white.opacity(0.85))
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
@@ -187,7 +225,7 @@ struct HomeFAQ: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader("الأسئلة الشائعة")
+            SiteSectionHead(eyebrow: "أسئلة", "الأسئلة الشائعة")
             VStack(spacing: 0) {
                 ForEach(Array(Self.items.enumerated()), id: \.offset) { i, q in
                     DisclosureGroup {
@@ -212,16 +250,15 @@ struct HomeFAQ: View {
 /// Closing call: «اجعلها صدقة جارية».
 struct HomeClosing: View {
     var body: some View {
-        VStack(spacing: 12) {
-            StarOrnament().frame(width: 22, height: 22)
-            Text("اجعلها صدقة جارية، اصنع مقطعا وشاركه").font(.ui(.title3, .semibold)).multilineTextAlignment(.center)
+        VStack(spacing: 14) {
+            Text("اجعلها صدقة جارية — اصنع مقطعا وشاركه").font(.ui(.title3, .bold)).multilineTextAlignment(.center)
             Text("صانع مقاطع وبطاقات قرآنية مجاني، صدقة جارية لكل من شارك").font(.ui(.footnote))
-                .foregroundStyle(Brand.onPrimary.opacity(0.85)).multilineTextAlignment(.center)
+                .foregroundStyle(Color.white.opacity(0.88)).multilineTextAlignment(.center)
             NavigationLink { ClipMakerView() } label: { Text("اصنع مقطعك الآن") }
-                .buttonStyle(.brandGold)
+                .buttonStyle(.brandDark)
         }
-        .padding(22)
+        .padding(26)
         .frame(maxWidth: .infinity)
-        .emeraldPanel()
+        .featureSurface()
     }
 }
