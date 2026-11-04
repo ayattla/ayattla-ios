@@ -1,0 +1,72 @@
+name: Site reference dump (read only, temporary)
+on:
+  push:
+    branches: [claude/site-dump]
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch pages and stylesheets (read only)
+        run: |
+          mkdir -p dump/css && cd dump
+          for p in "" tools/ tools/ayah-card status/ status/editor tools/azkar tools/mushaf tools/listen ayat/ tools/hadith-card; do
+            f=$(echo "home/$p" | tr '/' '_'); curl -sSL --retry 3 -m 30 "https://ayattla.com/$p" -o "$f.html" || true
+          done
+          cat *.html | grep -oE 'href="[^"]+\.css[^"]*"' | sed 's/href="//;s/"$//' | sort -u > css-list.txt
+          cat css-list.txt
+          i=0; while read u; do i=$((i+1)); case "$u" in http*) url="$u";; /*) url="https://ayattla.com$u";; *) url="https://ayattla.com/$u";; esac
+            curl -sSL -m 30 "$url" -o "css/$i-$(basename "${u%%\?*}")" || true; done < css-list.txt
+          # Inline <style> blocks of the home page
+          python3 - <<'PY'
+          import re,glob
+          for f in glob.glob('*.html'):
+              s=open(f,encoding='utf-8',errors='ignore').read()
+              st=re.findall(r'<style[^>]*>(.*?)</style>', s, re.S)
+              if st: open('css/inline-'+f.replace('.html','.css'),'w').write('\n/*---*/\n'.join(st))
+          PY
+          ls -la css
+      - name: Screenshots at phone width (Playwright)
+        run: |
+          cd dump && mkdir -p shots
+          npm init -y >/dev/null && npm i -s playwright@1.47.2 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const pages = ['', 'tools/', 'tools/ayah-card', 'status/', 'status/editor', 'tools/azkar', 'ayat/', 'tools/listen'];
+            for (const scheme of ['light', 'dark']) {
+              const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: scheme, locale: 'ar-SA' });
+              for (const p of pages) {
+                const pg = await ctx.newPage();
+                try {
+                  await pg.goto('https://ayattla.com/' + p, { waitUntil: 'networkidle', timeout: 45000 });
+                  await pg.waitForTimeout(1500);
+                  const name = (p || 'home').replace(/\//g, '_');
+                  await pg.screenshot({ path: `shots/${scheme}-${name}.png`, fullPage: true });
+                  if (scheme === 'light' && p === '') {
+                    const tokens = await pg.evaluate(() => {
+                      const cs = getComputedStyle(document.documentElement); const out = {};
+                      for (const s of document.styleSheets) { try { for (const r of s.cssRules) { if (r.selectorText && /:root|html|body/.test(r.selectorText)) for (const n of r.style) if (n.startsWith('--')) out[n] = cs.getPropertyValue(n).trim(); } } catch (e) {} }
+                      const pick = sel => { const e = document.querySelector(sel); if (!e) return null; const c = getComputedStyle(e);
+                        return { bg: c.backgroundColor, color: c.color, border: c.border, radius: c.borderRadius, shadow: c.boxShadow, font: c.fontFamily, size: c.fontSize, weight: c.fontWeight, padding: c.padding }; };
+                      return { vars: out, body: pick('body'), h1: pick('h1'), h2: pick('h2'), card: pick('.card, .tool, .tools a, article'), btn: pick('.btn, button'), chip: pick('.chip'), nav: pick('nav') };
+                    });
+                    require('fs').writeFileSync('tokens.json', JSON.stringify(tokens, null, 2));
+                  }
+                } catch (e) { console.log('fail', p, e.message); }
+                await pg.close();
+              }
+              await ctx.close();
+            }
+            await b.close();
+          })();
+          JS
+          node shot.js; ls shots | head -40
+      - name: Push to site-dump
+        run: |
+          cd dump && rm -rf node_modules package*.json shot.js
+          git init -q -b site-dump && git add . && git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm dump
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" site-dump
