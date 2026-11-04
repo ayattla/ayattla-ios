@@ -180,18 +180,9 @@ struct HomeMediaGallery: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .bottom, spacing: 10) {
                     if items.isEmpty {
-                        ForEach(0..<5, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(loading ? Brand.surface2 : Brand.tileGradient(i).opacity(0.25))
-                                .frame(width: i % 3 == 0 ? 132 : 118, height: i % 3 == 0 ? 236 : 158)
-                        }
+                        ForEach(0..<5, id: \.self) { i in placeholder(i) }
                     }
-                    ForEach(items) { it in
-                        NavigationLink {
-                            if it.type == .video { ClipMakerView(media: it.ref) } else { AyahCardView(media: it.ref) }
-                        } label: { tile(it) }
-                        .buttonStyle(.pressable)
-                    }
+                    ForEach(items) { it in link(it) }
                 }
                 .padding(.horizontal, Brand.Space.l).padding(.vertical, 4)
             }
@@ -207,6 +198,22 @@ struct HomeMediaGallery: View {
             items = await media.gallery(category)
             loading = false
         }
+    }
+
+    private func placeholder(_ i: Int) -> some View {
+        let tall = i % 3 == 0
+        return RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(Brand.surface2)
+            .frame(width: tall ? 132 : 118, height: tall ? 236 : 158)
+    }
+
+    @ViewBuilder private func editor(_ it: MediaLibrary.Item) -> some View {
+        if it.type == .video { ClipMakerView(media: it.ref) } else { AyahCardView(media: it.ref) }
+    }
+
+    private func link(_ it: MediaLibrary.Item) -> some View {
+        NavigationLink { editor(it) } label: { tile(it) }
+            .buttonStyle(.pressable)
     }
 
     private func tile(_ it: MediaLibrary.Item) -> some View {
