@@ -36,6 +36,10 @@ jobs:
             curl -sSL -m 30 "https://ayattla.com/api/media/search?type=$t&orientation=portrait&category=$c&page=1" -o "api/search-$t-$c.json" || true
           done; done
           curl -sSL -m 30 "https://ayattla.com/api/meta" -o api/meta.json || true
+          curl -sSL -m 30 "https://ayattla.com/api/media/collections" -o api/collections.json || true
+          curl -sSL -m 60 -D api/raw-image-headers.txt -o api/raw-image.bin "https://ayattla.com/api/media/raw?rm=pixabay:6604492:image&w=1080" || true
+          ls -la api/raw-image.bin || true; head -c 0 api/raw-image.bin
+          rm -f api/raw-image.bin
           ls -la api; head -c 1500 api/search-image-mosques.json
       - name: Screenshots at phone width (Playwright)
         run: |
