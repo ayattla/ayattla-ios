@@ -118,7 +118,7 @@ struct AyahProgress: View {
 
     static func clock(_ s: Double) -> String {
         let t = max(0, Int(s.isFinite ? s.rounded() : 0))
-        return "\(Num.int(t / 60)):\(t % 60 < 10 ? Num.int(0) : "")\(Num.int(t % 60))"
+        return "\u{2066}\(Num.int(t / 60)):\(t % 60 < 10 ? Num.int(0) : "")\(Num.int(t % 60))\u{2069}"
     }
 }
 

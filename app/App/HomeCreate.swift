@@ -218,7 +218,7 @@ struct HomeMediaGallery: View {
 
     private func tile(_ it: MediaLibrary.Item) -> some View {
         let video = it.type == .video
-        return Color.clear
+        return Brand.surface2
             .frame(width: video ? 132 : 118, height: video ? 236 : 158)
             .overlay { MediaThumb(url: it.thumbUrl) }
             .overlay { LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom) }

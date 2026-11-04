@@ -183,7 +183,7 @@ enum MediaLibrary {
     static func durationText(_ s: Double?) -> String? {
         guard let s, s > 0 else { return nil }
         let t = Int(s.rounded())
-        return "\(Num.int(t / 60)):\(t % 60 < 10 ? Num.int(0) : "")\(Num.int(t % 60))"
+        return "\u{2066}\(Num.int(t / 60)):\(t % 60 < 10 ? Num.int(0) : "")\(Num.int(t % 60))\u{2069}"
     }
 }
 
@@ -381,7 +381,7 @@ struct MediaTile: View {
 
     var body: some View {
         Button(action: pick) {
-            Color.clear
+            Brand.surface2
                 .aspectRatio(3 / 4, contentMode: .fit)
                 .overlay { MediaThumb(url: item.thumbUrl) }
                 .overlay(alignment: .topLeading) {
@@ -429,8 +429,8 @@ struct MediaThumb: View {
         AsyncImage(url: url, transaction: .init(animation: .easeOut(duration: 0.2))) { phase in
             switch phase {
             case .success(let img): img.resizable().scaledToFill()
-            case .failure: ZStack { Brand.surface2; Image(systemName: "photo").foregroundStyle(Brand.muted) }
-            default: Brand.surface2
+            // Transparent while loading or on failure, so the tile colour behind shows.
+            default: Color.clear
             }
         }
     }
