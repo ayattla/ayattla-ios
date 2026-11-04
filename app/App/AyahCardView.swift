@@ -101,69 +101,126 @@ struct AyahCardView: View {
                        textX: textOffset.width, textY: textOffset.height)
     }
 
+    /// Quick picks, as on the site's makers (الفاتحة، آية الكرسي، خواتيم البقرة …).
+    static let quickPicks: [(String, Int, Int, Int)] = [
+        ("الفاتحة", 1, 1, 7), ("آية الكرسي", 2, 255, 255), ("خواتيم البقرة", 2, 285, 286),
+        ("الشرح ٥–٦", 94, 5, 6), ("الإخلاص", 112, 1, 4), ("الرعد ٢٨", 13, 28, 28),
+    ]
+    @State private var jumping = false
+
+    /// Card editor (v3): a design board on top that stays in view, then the site's numbered steps —
+    /// ① الآيات ② القالب والنمط ③ الشكل ④ حفظ ومشاركة — each in its own card.
     var body: some View {
-        EditorLayout(preview: CardCanvas(model: model, photo: photo)
+        DesignEditorLayout(preview: CardCanvas(model: model, photo: photo)
             .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .textDrag($textOffset)
             .accessibilityLabel("معاينة البطاقة")) {
-            Section("أنماط جاهزة") {
+            EditorStep(1, "الآيات", detail: "سورة وآيات، أو اختيار سريع") {
+                FlowLayout(spacing: 8) {
+                    ForEach(Self.quickPicks.indices, id: \.self) { i in
+                        let q = Self.quickPicks[i]
+                        let on = surah == q.1 && from == q.2 && to == q.3
+                        Button {
+                            jumping = surah != q.1
+                            surah = q.1; from = q.2; to = q.3
+                        } label: {
+                            Text(q.0).font(.ui(.footnote, .medium))
+                                .foregroundStyle(on ? Color.white : Brand.ink)
+                                .padding(.horizontal, 14).frame(minHeight: 38)
+                                .background { if on { Capsule().fill(Brand.siteGradient) } else { Capsule().fill(Brand.surface) } }
+                                .overlay(Capsule().strokeBorder(on ? Color.clear : Brand.lineStrong, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+                EditorField("السورة") {
+                    Picker("السورة", selection: $surah) {
+                        ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
+                    }
+                    .labelsHidden()
+                    .tint(Brand.ink)
+                }
+                HStack(spacing: 10) {
+                    EditorField("من آية") {
+                        Stepper(Num.int(from), value: $from, in: 1...ayahCount).font(.ui(.subheadline, .semibold))
+                    }
+                    EditorField("إلى آية") {
+                        Stepper(Num.int(to), value: $to, in: from...min(ayahCount, from + CardOptions.maxAyat - 1)).font(.ui(.subheadline, .semibold))
+                    }
+                }
+            }
+
+            EditorStep(2, "القالب والنمط", detail: "أنماط جاهزة وقوالب الإهداء") {
                 StylePresetPicker(current: (ratio, background.id, fontScale)) { p in
                     withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale; photo = nil; photoItem = nil }
                 }
-            }
-            Section("الآيات") {
-                Picker("السورة", selection: $surah) {
-                    ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
-                }
-                Stepper("من آية \(Num.int(from))", value: $from, in: 1...ayahCount)
-                Stepper("إلى آية \(Num.int(to))", value: $to, in: from...min(ayahCount, from + CardOptions.maxAyat - 1))
-            }
-            Section("القالب") {
+                Divider().overlay(Brand.line)
                 TemplatePicker(template: $template)
-                if !template.id.isEmpty { TextField("الاسم (اختياري)", text: $name) }
+                if !template.id.isEmpty {
+                    EditorField("سطر إهداء باسم (اختياري)") {
+                        TextField("مثال: إهداء إلى والدي", text: $name).font(.ui(.subheadline))
+                    }
+                }
             }
-            Section("المقاس") {
-                RatioPicker(ratio: $ratio)
+
+            EditorStep(3, "الشكل", detail: "الخلفية والمقاس وحجم الخط") {
+                Text("الخلفية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+                BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil }
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label(photo == nil ? "أو ارفع صورة من جهازك" : "غير الصورة", systemImage: "photo.badge.plus")
+                        .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5])).foregroundStyle(Brand.lineStrong))
+                }
+                Text("المقاس").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                SiteSegmented([CardOptions.Ratio.story, .portrait, .square, .wide].map { (id: $0, title: $0.label, detail: Optional($0.useLabel)) },
+                              selection: $ratio)
+                Text("حجم خط الآية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                SiteSegmented(CardOptions.fontScales.map { (id: $0.1, title: $0.0, detail: String?.none) }, selection: $fontScale)
                 TextPositionRow(offset: $textOffset)
             }
-            Section("حجم الخط") {
-                Picker("حجم الخط", selection: $fontScale) {
-                    ForEach(CardOptions.fontScales, id: \.1) { Text($0.0).tag($0.1) }
-                }
-                .pickerStyle(.segmented)
-            }
-            Section("الخلفية") {
-                BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil }
-                PhotosPicker(selection: $photoItem, matching: .images) { Label("صورة من الجهاز", systemImage: "photo") }
-            }
-            Section {
+
+            EditorStep(4, "حفظ ومشاركة", detail: "صورة PNG بدقة كاملة، أو فيديو") {
                 Button {
                     if let image = CardCanvas.render(model, photo: photo) {
                         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                         try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
                         saved = true
                     }
-                } label: { Label("حفظ في الصور ومكتبتي", systemImage: "square.and.arrow.down") }
-                ShareLink(item: CardImage(model: model, photo: photo),
-                          preview: SharePreview(model.reference)) { Label("مشاركة", systemImage: "square.and.arrow.up") }
-                if let folder = (try? lib.store?.reciterFolders())?[reciter] {
-                    NavigationLink {
-                        ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
-                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo,
-                                                    settings: settings))
-                    } label: { Label("حولها إلى فيديو بالتلاوة", systemImage: "film") }
+                } label: { Label("تحميل الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
+                .buttonStyle(.brandDark)
+                HStack(spacing: 10) {
+                    ShareLink(item: CardImage(model: model, photo: photo), preview: SharePreview(model.reference)) {
+                        Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.brandSecondary)
+                    if let folder = (try? lib.store?.reciterFolders())?[reciter] {
+                        NavigationLink {
+                            ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
+                                                        ratio: ratio, folder: folder, title: model.reference, photo: photo,
+                                                        settings: settings))
+                        } label: { Label("فيديو بالتلاوة", systemImage: "film").frame(maxWidth: .infinity) }
+                        .buttonStyle(.brandGold)
+                    }
                 }
                 AnimatedTextButton(model: model, photo: photo, title: model.reference)
+                    .font(.ui(.subheadline, .semibold))
+                    .tint(Brand.primaryInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .brandScreen()
-        .navigationTitle("بطاقة آية")
+        .navigationTitle("صانع بطاقات الآيات")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in
             Task { if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage(data: data) } }
         }
-        .onChange(of: surah) { _, _ in from = 1; to = 1 }
+        .onChange(of: surah) { _, _ in
+            if jumping { jumping = false } else { from = 1; to = 1 }
+        }
         .onChange(of: from) { _, f in if to < f || to > f + CardOptions.maxAyat - 1 { to = f } }
         .alert("حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }

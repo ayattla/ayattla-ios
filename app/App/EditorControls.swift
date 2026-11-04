@@ -125,21 +125,34 @@ struct BackgroundSwatches: View {
     }
 }
 
-/// The canvas stage behind an editor preview: soft ivory with the lattice, like a design board.
+/// The board behind an editor preview: mint with a fine dot grid, like a design tool's canvas.
 struct CanvasStage<Content: View>: View {
     let content: Content
     init(@ViewBuilder content: () -> Content) { self.content = content() }
     var body: some View {
         content
-            .shadow(color: .black.opacity(0.22), radius: 16, y: 8)
+            .shadow(color: .black.opacity(0.22), radius: 18, y: 10)
             .padding(Brand.Space.l)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 ZStack {
                     Brand.surface2
-                    IslamicPattern(cell: 40, color: Brand.accent.opacity(0.14))
+                    Canvas { ctx, size in
+                        let step: CGFloat = 18
+                        var y: CGFloat = step / 2
+                        while y < size.height {
+                            var x: CGFloat = step / 2
+                            while x < size.width {
+                                ctx.fill(Path(ellipseIn: CGRect(x: x - 0.9, y: y - 0.9, width: 1.8, height: 1.8)), with: .color(Brand.lineStrong))
+                                x += step
+                            }
+                            y += step
+                        }
+                    }
+                    .accessibilityHidden(true)
                 }
             }
+            .overlay(alignment: .bottom) { Divider().overlay(Brand.line) }
     }
 }
 
@@ -245,6 +258,85 @@ struct StylePresetPicker: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+}
+
+// MARK: - Design editor layout (v3)
+
+/// Editor as a design tool: the board (preview) stays in view — on top on iPhone, beside the steps on
+/// iPad — and the steps scroll in site-style cards.
+struct DesignEditorLayout<Preview: View, Controls: View>: View {
+    @Environment(\.horizontalSizeClass) private var size
+    let preview: Preview
+    @ViewBuilder let controls: () -> Controls
+
+    init(preview: Preview, @ViewBuilder controls: @escaping () -> Controls) {
+        self.preview = preview
+        self.controls = controls
+    }
+
+    var body: some View {
+        if size == .regular {
+            HStack(spacing: 0) {
+                CanvasStage { preview.padding(24) }
+                Divider()
+                steps.frame(width: 460)
+            }
+        } else {
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    CanvasStage { preview }
+                        .frame(height: min(max(geo.size.height * 0.40, 230), 380))
+                    steps
+                }
+            }
+        }
+    }
+
+    private var steps: some View {
+        ScrollView {
+            VStack(spacing: Brand.Space.m) { controls() }
+                .padding(Brand.Space.l)
+                .padding(.bottom, Brand.Space.xl)
+        }
+        .background(Brand.background)
+        .scrollDismissesKeyboard(.interactively)
+    }
+}
+
+/// One numbered step of an editor (the site's ① ② ③ cards).
+struct EditorStep<Content: View>: View {
+    let number: Int
+    let title: String
+    let detail: String?
+    let content: Content
+    init(_ number: Int, _ title: String, detail: String? = nil, @ViewBuilder content: () -> Content) {
+        self.number = number; self.title = title; self.detail = detail; self.content = content()
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            StepHeader(number, title, detail: detail)
+            content
+        }
+        .padding(Brand.Space.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .surface(.raised)
+    }
+}
+
+/// Labelled field box (the site's inputs: mint fill, fine border, radius 12).
+struct EditorField<Content: View>: View {
+    let label: String
+    let content: Content
+    init(_ label: String, @ViewBuilder content: () -> Content) { self.label = label; self.content = content() }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.ui(.caption, .semibold)).foregroundStyle(Brand.muted)
+            HStack { content }
+                .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
         }
     }
 }
