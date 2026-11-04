@@ -209,6 +209,8 @@ enum DebugScreen {
         case "topics": TopicsView()
         case "juz": JuzListView()
         case "status": StatusSourceView()
+        case "home-mid": ScrollView { VStack(spacing: 32) { HomeProducts(); HomeSources(); HomeSteps() }.padding(16) }.brandScreen()
+        case "home-low": ScrollView { VStack(spacing: 32) { HomeFeatures(); HomeStats(); HomeClosing() }.padding(16) }.brandScreen()
         case "topic": if let t = ContentLibrary.shared.topics.first { TopicView(topic: t) } else { TopicsView() }
         case "now-playing": NowPlayingSheet()
         default: ToolsView()

@@ -143,12 +143,14 @@ struct HomeView: View {
             HStack(spacing: 8) {
                 NavigationLink { MushafReader(startPage: ayat.first?.page ?? 1, focus: first) } label: {
                     Label("اقرأ في المصحف", systemImage: "book").font(.ui(.footnote, .semibold))
+                        .lineLimit(1).fixedSize()
                         .foregroundStyle(Brand.primary)
                         .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
                         .background(Brand.onDeepAccent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 NavigationLink { ClipMakerView(surah: p.surah, from: p.from, to: p.to) } label: {
                     Label("اصنع مقطعا", systemImage: "play.rectangle").font(.ui(.footnote, .semibold))
+                        .lineLimit(1).fixedSize()
                         .padding(.horizontal, 12).frame(minHeight: Brand.minTap)
                         .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Brand.onDeepAccent.opacity(0.45), lineWidth: 1))
