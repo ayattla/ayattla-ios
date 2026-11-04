@@ -78,6 +78,14 @@ struct MushafReader: View {
                 .accessibilityElement(children: .combine)
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("حجم الخط", selection: $fontScale) {
+                        ForEach(FontScale.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                } label: { Image(systemName: "textformat.size") }
+                .accessibilityLabel("حجم خط المصحف")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button { hideText.toggle() } label: { Image(systemName: hideText ? "eye" : "eye.slash") }
                     .accessibilityLabel(hideText ? "أظهر الآيات" : "أخف الآيات لاختبار الحفظ")
                     .disabled(layer != .mushaf)
@@ -182,24 +190,8 @@ struct LayerChips: View {
     @Binding var selection: QuranLayer
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(QuranLayer.allCases) { l in
-                    let on = selection == l
-                    Button { selection = l } label: {
-                        Text(l.title)
-                            .font(.ui(.footnote, .medium))
-                            .foregroundStyle(on ? .white : .primary)
-                            .padding(.horizontal, 14).frame(minHeight: 36)
-                            .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
-                            .overlay(Capsule().stroke(on ? .clear : Brand.line, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(on ? [.isSelected] : [])
-                }
-            }
-            .padding(.horizontal, 16).padding(.vertical, 8)
-        }
+        CategorySelector(QuranLayer.allCases.map { (id: $0, title: $0.title) }, selection: $selection)
+            .padding(.vertical, 8)
     }
 }
 
@@ -220,31 +212,37 @@ struct MushafPage: View {
                 ForEach(Array(blocks(ayat).enumerated()), id: \.offset) { _, block in
                     switch block {
                     case .header(let s):
-                        Text(s.namePlain)
-                            .font(.custom(ContentLibrary.mushafFont, size: 20 * scale, relativeTo: .title3))
-                            .foregroundStyle(Brand.primaryInk)
-                            .frame(maxWidth: .infinity, minHeight: 46)
-                            .background(Brand.goldSoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Brand.accent.opacity(0.7), lineWidth: 1))
-                            .overlay(alignment: .leading) { StarOrnament().frame(width: 14, height: 14).padding(.leading, 12) }
-                            .overlay(alignment: .trailing) { StarOrnament().frame(width: 14, height: 14).padding(.trailing, 12) }
-                            .accessibilityAddTraits(.isHeader)
+                        // Surah title between two fine rules: no ornaments over or near the ayat.
+                        HStack(spacing: 12) {
+                            Rectangle().fill(Brand.lineStrong).frame(height: 1)
+                            Text(s.namePlain)
+                                .font(.custom(ContentLibrary.mushafFont, size: 21 * scale, relativeTo: .title3))
+                                .foregroundStyle(Brand.primaryInk)
+                                .fixedSize()
+                            Rectangle().fill(Brand.lineStrong).frame(height: 1)
+                        }
+                        .frame(minHeight: 46)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isHeader)
                     case .basmala(let text):
-                        Text(text).font(.custom(ContentLibrary.mushafFont, size: 22 * scale, relativeTo: .title3))
+                        Text(text).font(.custom(ContentLibrary.mushafFont, size: 23 * scale, relativeTo: .title3))
+                            .foregroundStyle(Color(light: 0x1B1A16, dark: 0xECE8DC))
                     case .text(let run):
                         Text(attributed(run))
-                            .font(.custom(ContentLibrary.mushafFont, size: 23 * scale, relativeTo: .title2))
-                            .lineSpacing(10 * scale)
+                            // Room above and below each line so the marks never touch the next line.
+                            .font(.custom(ContentLibrary.mushafFont, size: 25 * scale, relativeTo: .title2))
+                            .lineSpacing(15 * scale)
+                            .foregroundStyle(Color(light: 0x1B1A16, dark: 0xECE8DC))
                             .multilineTextAlignment(.center)
                             .tint(.primary)
                             .frame(maxWidth: .infinity)
                     }
                 }
             }
-            .padding(.horizontal, 20).padding(.vertical, 22)
-            .background(Color(light: 0xFFFDF7, dark: 0x1A1D1A), in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(light: 0xE8E2D0, dark: 0x2E3B32), lineWidth: 1))
-            .padding(.horizontal, 16).padding(.bottom, 12)
+            // Plain page: no card, border or shadow around the ayat.
+            .padding(.horizontal, 22).padding(.vertical, 18)
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
             Text(Num.int(number)).font(.ui(.caption)).foregroundStyle(.secondary).padding(.bottom, 8)
         }
         }
@@ -273,7 +271,7 @@ struct MushafPage: View {
             var part = AttributedString(a.textUthmani + " " + QuranText.marker(a.ayah) + " ")
             part.link = URL(string: "ayah:\(a.surah):\(a.ayah)")
             if highlighted == .init(surah: a.surah, ayah: a.ayah) {
-                part.backgroundColor = Color(hex: 0xF3D27A).opacity(0.55)
+                part.backgroundColor = Color(light: 0xF6E7B0, dark: 0x2F4A38)
             }
             out += part
         }

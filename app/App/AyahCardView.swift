@@ -74,11 +74,15 @@ struct AyahCardView: View {
     @State private var textOffset = CGSize.zero
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
+    @State private var mediaID: String?
     @State private var saved = false
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     private let lib = ContentLibrary.shared
 
-    init(surah: Int = 2, from: Int = 255, to: Int? = nil, templateID: String = "") {
+    private var startMedia: MediaLibrary.Ref?
+
+    init(surah: Int = 2, from: Int = 255, to: Int? = nil, templateID: String = "", media: MediaLibrary.Ref? = nil) {
+        startMedia = media
         _template = State(initialValue: CardOptions.templates.first { $0.id == templateID } ?? CardOptions.templates[0])
         _surah = State(initialValue: surah)
         _from = State(initialValue: from)
@@ -154,7 +158,7 @@ struct AyahCardView: View {
 
             EditorStep(2, "القالب والنمط", detail: "أنماط جاهزة وقوالب الإهداء") {
                 StylePresetPicker(current: (ratio, background.id, fontScale)) { p in
-                    withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale; photo = nil; photoItem = nil }
+                    withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale; photo = nil; photoItem = nil; mediaID = nil }
                 }
                 Divider().overlay(Brand.line)
                 TemplatePicker(template: $template)
@@ -165,9 +169,12 @@ struct AyahCardView: View {
                 }
             }
 
-            EditorStep(3, "الشكل", detail: "الخلفية والمقاس وحجم الخط") {
-                Text("الخلفية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-                BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil }
+            EditorStep(3, "الخلفية", detail: "صور حقيقية من المكتبة، أو خلفيات الموقع، أو صورة من جهازك") {
+                LibraryStrip(kind: .image, selectedID: mediaID) { picked in
+                    if case .image(let it, let img) = picked { withAnimation(.snappy) { photo = img; mediaID = it.id; photoItem = nil } }
+                }
+                Text("خلفيات الموقع").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil; mediaID = nil }
                 PhotosPicker(selection: $photoItem, matching: .images) {
                     Label(photo == nil ? "أو ارفع صورة من جهازك" : "غير الصورة", systemImage: "photo.badge.plus")
                         .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
@@ -176,7 +183,10 @@ struct AyahCardView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5])).foregroundStyle(Brand.lineStrong))
                 }
-                Text("المقاس").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+            }
+
+            EditorStep(4, "المقاس والخط", detail: "حسب مكان النشر") {
+                Text("المقاس").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
                 SiteSegmented([CardOptions.Ratio.story, .portrait, .square, .wide].map { (id: $0, title: $0.label, detail: Optional($0.useLabel)) },
                               selection: $ratio)
                 Text("حجم خط الآية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
@@ -184,44 +194,47 @@ struct AyahCardView: View {
                 TextPositionRow(offset: $textOffset)
             }
 
-            EditorStep(4, "حفظ ومشاركة", detail: "صورة PNG بدقة كاملة، أو فيديو") {
-                Button {
-                    if let image = CardCanvas.render(model, photo: photo) {
-                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                        try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
-                        saved = true
-                    }
-                } label: { Label("تحميل الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
-                .buttonStyle(.brandDark)
-                HStack(spacing: 10) {
-                    ShareLink(item: CardImage(model: model, photo: photo), preview: SharePreview(model.reference)) {
-                        Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.brandSecondary)
-                    if let folder = (try? lib.store?.reciterFolders())?[reciter] {
-                        NavigationLink {
-                            ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
-                                                        ratio: ratio, folder: folder, title: model.reference, photo: photo,
-                                                        settings: settings))
-                        } label: { Label("فيديو بالتلاوة", systemImage: "film").frame(maxWidth: .infinity) }
-                        .buttonStyle(.brandGold)
-                    }
+            EditorStep(5, "فيديو وحركة", detail: "البطاقة نفسها مقطعا بالتلاوة أو بنص متحرك") {
+                if let folder = (try? lib.store?.reciterFolders())?[reciter] {
+                    NavigationLink {
+                        ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
+                                                    ratio: ratio, folder: folder, title: model.reference, photo: photo,
+                                                    settings: settings))
+                    } label: { Label("فيديو بالتلاوة", systemImage: "film").frame(maxWidth: .infinity) }
+                    .buttonStyle(.brandGold)
                 }
                 AnimatedTextButton(model: model, photo: photo, title: model.reference)
                     .font(.ui(.subheadline, .semibold))
                     .tint(Brand.primaryInk)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+        } bar: {
+            Button {
+                if let image = CardCanvas.render(model, photo: photo) {
+                    UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                    try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
+                    saved = true
+                }
+            } label: { Label("تحميل الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
+            .buttonStyle(.brandDark)
+            ShareLink(item: CardImage(model: model, photo: photo), preview: SharePreview(model.reference)) {
+                Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.brandSecondary)
         }
         .navigationTitle("صانع بطاقات الآيات")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in
-            Task { if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage(data: data) } }
+            Task { if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage(data: data); mediaID = nil } }
         }
         .onChange(of: surah) { _, _ in
             if jumping { jumping = false } else { from = 1; to = 1 }
         }
         .onChange(of: from) { _, f in if to < f || to > f + CardOptions.maxAyat - 1 { to = f } }
+        .task {
+            // Opened from a photo in the home gallery: that photo is the background.
+            if let m = startMedia, photo == nil, let img = try? await MediaLibrary.image(m) { photo = img; mediaID = m.key }
+        }
         .alert("حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }
 

@@ -266,14 +266,16 @@ struct StylePresetPicker: View {
 
 /// Editor as a design tool: the board (preview) stays in view — on top on iPhone, beside the steps on
 /// iPad — and the steps scroll in site-style cards.
-struct DesignEditorLayout<Preview: View, Controls: View>: View {
+struct DesignEditorLayout<Preview: View, Controls: View, Bar: View>: View {
     @Environment(\.horizontalSizeClass) private var size
     let preview: Preview
     @ViewBuilder let controls: () -> Controls
+    let bar: Bar
 
-    init(preview: Preview, @ViewBuilder controls: @escaping () -> Controls) {
+    init(preview: Preview, @ViewBuilder controls: @escaping () -> Controls, @ViewBuilder bar: () -> Bar) {
         self.preview = preview
         self.controls = controls
+        self.bar = bar()
     }
 
     var body: some View {
@@ -286,8 +288,9 @@ struct DesignEditorLayout<Preview: View, Controls: View>: View {
         } else {
             GeometryReader { geo in
                 VStack(spacing: 0) {
+                    // The preview takes close to half the screen (the owner's "كبر منطقة المعاينة").
                     CanvasStage { preview }
-                        .frame(height: min(max(geo.size.height * 0.40, 230), 380))
+                        .frame(height: min(max(geo.size.height * 0.47, 260), 460))
                     steps
                 }
             }
@@ -302,6 +305,116 @@ struct DesignEditorLayout<Preview: View, Controls: View>: View {
         }
         .background(Brand.background)
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !(bar is EmptyView) {
+                HStack(spacing: 10) { bar }
+                    .padding(.horizontal, Brand.Space.l).padding(.vertical, 10)
+                    .background(Brand.surface)
+                    .overlay(alignment: .top) { Rectangle().fill(Brand.line).frame(height: 1) }
+            }
+        }
+    }
+}
+
+extension DesignEditorLayout where Bar == EmptyView {
+    init(preview: Preview, @ViewBuilder controls: @escaping () -> Controls) {
+        self.init(preview: preview, controls: controls) { EmptyView() }
+    }
+}
+
+/// A row of real photos or videos from the site's library under an editor's background step,
+/// with «المكتبة كاملة» for collections, search and favorites (MediaLibrarySheet).
+struct LibraryStrip: View {
+    let kind: MediaLibrary.Kind
+    var kinds: [MediaLibrary.Kind] = [.image]
+    var categories = ["mosques", "night"]
+    let selectedID: String?
+    let onPick: (PickedMedia) -> Void
+
+    @State private var items: [MediaLibrary.Item] = []
+    @State private var loading = true
+    @State private var failed = false
+    @State private var fetching: String?
+    @State private var sheet = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(kind == .video ? "مقاطع حقيقية" : "صور حقيقية", systemImage: kind == .video ? "video" : "photo.on.rectangle")
+                    .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+                Spacer()
+                Button { sheet = true } label: {
+                    Text("المكتبة كاملة").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+                        .frame(minHeight: Brand.minTap)
+                }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    if loading && items.isEmpty {
+                        ForEach(0..<5, id: \.self) { _ in
+                            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Brand.surface2).frame(width: 78, height: 104)
+                        }
+                    } else if failed && items.isEmpty {
+                        Button { Task { await load() } } label: {
+                            Label("تعذر التحميل، اضغط للمحاولة", systemImage: "arrow.clockwise")
+                                .font(.ui(.footnote)).foregroundStyle(Brand.muted).frame(height: 104)
+                        }
+                    }
+                    ForEach(items) { it in
+                        MediaTile(item: it, busy: fetching == it.id, selected: selectedID == it.id) { pick(it) }
+                            .frame(width: 78)
+                    }
+                    Button { sheet = true } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: "square.grid.2x2").font(.ui(.title3))
+                            Text("المزيد").font(.ui(.caption, .semibold))
+                        }
+                        .foregroundStyle(Brand.primaryInk)
+                        .frame(width: 78, height: 104)
+                        .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5])).foregroundStyle(Brand.lineStrong))
+                    }
+                    .buttonStyle(.pressable)
+                    .accessibilityLabel("افتح مكتبة الخلفيات")
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .task(id: kind) { await load() }
+        .sheet(isPresented: $sheet) { MediaLibrarySheet(kinds: kinds, initial: kind, onPick: onPick) }
+    }
+
+    private func load() async {
+        loading = true; failed = false
+        var out: [MediaLibrary.Item] = []
+        for c in categories {
+            if let got = try? await MediaLibrary.search(kind, category: c) {
+                let cur = got.filter(\.curated)
+                out += (cur.isEmpty ? got : cur).prefix(6)
+            }
+        }
+        items = out
+        failed = out.isEmpty
+        loading = false
+    }
+
+    private func pick(_ it: MediaLibrary.Item) {
+        guard fetching == nil else { return }
+        fetching = it.id
+        Task {
+            defer { fetching = nil }
+            switch it.type {
+            case .image:
+                if let img = try? await MediaLibrary.image(it) { onPick(.image(it, img)) } else { failed = true }
+            case .video:
+                if let url = try? await MediaLibrary.video(it) {
+                    var poster: UIImage?
+                    if let t = it.thumbUrl, let d = try? await URLSession.shared.data(from: t).0 { poster = UIImage(data: d) }
+                    onPick(.video(it, url, poster: poster))
+                }
+            }
+        }
     }
 }
 

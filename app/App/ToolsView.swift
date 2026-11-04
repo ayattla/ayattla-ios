@@ -75,38 +75,61 @@ enum ToolItem: String, CaseIterable, Identifiable {
     static let worship: [ToolItem] = [.hijri, .zakat, .qada, .sawm, .mosques, .hadith]
 }
 
-/// «المزيد» tab: the site's /tools/ page — page head, search, group filter chips, then every tool
-/// as a coloured card in a grid. A short "today" strip (next prayer, library, settings) leads it.
+/// How often each tool is opened, on this device only, for «الأكثر استخداما».
+enum ToolUsage {
+    static let key = "tools.usage"
+    static var counts: [String: Int] {
+        get { (UserDefaults.standard.dictionary(forKey: key) as? [String: Int]) ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+    static func record(_ id: String) { var c = counts; c[id, default: 0] += 1; counts = c }
+
+    /// Most used first; the site's own leading tools fill the row until there is history.
+    static func top(_ n: Int) -> [SiteTool] {
+        let c = counts
+        let used = SiteTool.all.filter { (c[$0.id] ?? 0) > 0 }.sorted { (c[$0.id] ?? 0) > (c[$1.id] ?? 0) }
+        let defaults = ["listen", "prayer-times", "azkar", "qibla", "tasbih", "search", "hadith-card", "khatma"]
+            .compactMap { id in SiteTool.all.first { $0.id == id } }
+        var out: [SiteTool] = []
+        for t in used + defaults where !out.contains(where: { $0.id == t.id }) { out.append(t) }
+        return Array(out.prefix(n))
+    }
+}
+
+/// «المزيد» tab: the site's /tools/ page — a compact head with quick search, group chips, the most
+/// used tools within one tap, the three content makers as large cards, then each group under its
+/// own heading as tidy rows (no tall half-empty cards).
 struct ToolsView: View {
     enum Filter: Hashable { case all, group(SiteTool.Group), new }
 
     @State private var query = ""
     @State private var filter = Filter.all
+    @State private var usageTick = 0
+    @FocusState private var searching: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.horizontalSizeClass) private var size
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Brand.Space.xl) {
-                HeroHeader(eyebrow: "الأدوات", title: "أدوات تكمل يومك مع القرآن",
-                           subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية تعمل على جهازك: بطاقات الآيات، المصحف المسموع للتحفيظ، البحث في القرآن، الأذكار، الإذاعات، مواقيت الصلاة، القبلة، خطة الختمة، الزكاة، والمناسبات.") {
-                    searchField.padding(.top, Brand.Space.s)
-                }
-
+            VStack(alignment: .leading, spacing: Brand.Space.xl) {
+                head
                 CategorySelector(filters, selection: $filter)
                     .padding(.horizontal, -Brand.Space.l)
 
-                if query.isEmpty && filter == .all { todayStrip }
-
-                if results.isEmpty {
+                if browsing {
+                    frequent
+                    featured
+                    NextPrayerCard()
+                    ForEach(SiteTool.Group.allCases) { g in group(g) }
+                    quickLinks
+                } else if results.isEmpty {
                     EmptyState("لا توجد أداة بهذا الاسم", symbol: "magnifyingglass", message: "جرب كلمة أخرى مثل الأذكار أو القبلة")
+                        .frame(minHeight: 240)
                 } else {
-                    LazyVGrid(columns: columns, spacing: Brand.Space.m) {
-                        ForEach(results) { t in
-                            NavigationLink { t.destination } label: { SiteToolCard(tool: t) }
-                                .buttonStyle(.pressable)
-                        }
+                    if !query.isEmpty {
+                        Text("\(Num.int(results.count)) نتيجة").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.muted)
                     }
+                    rows(results)
                 }
 
                 Label("كل الأدوات مجانية وبدون تسجيل، وما تحفظه (مثل عداد التسبيح وتقدم الختمة) يبقى على جهازك فقط.",
@@ -117,18 +140,153 @@ struct ToolsView: View {
                     .background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(alignment: .trailing) { Capsule().fill(Brand.accent).frame(width: 3).padding(.vertical, 8) }
             }
-            .padding(Brand.Space.l)
+            .padding(.horizontal, Brand.Space.l).padding(.top, Brand.Space.s).padding(.bottom, Brand.Space.xl)
             .frame(maxWidth: Brand.readableWidth)
             .frame(maxWidth: .infinity)
         }
+        .scrollDismissesKeyboard(.interactively)
         .brandScreen()
         .navigationTitle("المزيد")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { usageTick += 1 }
+    }
+
+    private var browsing: Bool { query.trimmingCharacters(in: .whitespaces).isEmpty && filter == .all }
+
+    /// Title, count and the search box in one short white band.
+    private var head: some View {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("أدوات تكمل يومك مع القرآن").font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("\(Num.int(SiteTool.all.count)) أداة مجانية تعمل على جهازك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
+                }
+                Spacer(minLength: 0)
+            }
+            searchField
+        }
+        .padding(Brand.Space.l)
+        .pageHeadSurface()
+    }
+
+    /// «الأكثر استخداما»: one-tap row of the tools opened most on this device.
+    private var frequent: some View {
+        let _ = usageTick
+        let hasHistory = !ToolUsage.counts.isEmpty
+        return VStack(alignment: .leading, spacing: Brand.Space.s) {
+            Text(hasHistory ? "الأكثر استخداما" : "وصول سريع").font(.ui(.headline)).foregroundStyle(Brand.ink)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(ToolUsage.top(8)) { t in
+                        NavigationLink { open(t) } label: {
+                            VStack(spacing: 6) {
+                                IconTile(t.symbol, style: .gradient(t.index), size: 50)
+                                Text(t.title).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
+                                    .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.85)
+                                    .frame(width: 84)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(width: 88)
+                            .accessibilityElement(children: .combine)
+                        }
+                        .buttonStyle(.pressable)
+                    }
+                }
+                .padding(.horizontal, Brand.Space.l).padding(.vertical, 2)
+            }
+            .padding(.horizontal, -Brand.Space.l)
+        }
+    }
+
+    /// The three content makers, larger than the rest (clip full width, card and status halves).
+    private var featured: some View {
+        let ids = ["clip", "ayah-card", "status"]
+        let tools = ids.compactMap { id in SiteTool.all.first { $0.id == id } }
+        return VStack(spacing: Brand.Space.m) {
+            if let clip = tools.first {
+                NavigationLink { open(clip) } label: {
+                    HStack(spacing: Brand.Space.m) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 6) {
+                                Text(clip.title).font(.ui(.title3, .bold)).foregroundStyle(.white)
+                                if clip.isNew { Badge("جديد", gold: true) }
+                            }
+                            Text(clip.subtitle).font(.ui(.footnote)).foregroundStyle(.white.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: clip.symbol).font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: 60, height: 60)
+                            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .padding(20)
+                    .featureSurface()
+                }
+                .buttonStyle(.pressable)
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m, alignment: .top),
+                                     count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
+                ForEach(tools.dropFirst()) { t in
+                    NavigationLink { open(t) } label: { SiteToolCard(tool: t) }
+                        .buttonStyle(.pressable)
+                }
+            }
+        }
+    }
+
+    /// One group: title with the count, then tidy rows.
+    private func group(_ g: SiteTool.Group) -> some View {
+        let featuredIDs: Set<String> = ["clip", "ayah-card", "status"]
+        let tools = SiteTool.all.filter { $0.group == g && !featuredIDs.contains($0.id) }
+        return VStack(alignment: .leading, spacing: Brand.Space.s) {
+            HStack(spacing: 8) {
+                Capsule().fill(Brand.siteGradient).frame(width: 4, height: 20)
+                Text(g.title).font(.ui(.headline)).foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
+                Text(Num.int(tools.count)).font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+                    .padding(.horizontal, 8).padding(.vertical, 2).background(Brand.tint, in: Capsule())
+                Spacer()
+                Button { withAnimation(.snappy) { filter = .group(g) } } label: {
+                    Text("عرض الكل").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk).frame(minHeight: Brand.minTap)
+                }
+            }
+            rows(tools)
+        }
+    }
+
+    private func rows(_ tools: [SiteTool]) -> some View {
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(tools) { t in
+                NavigationLink { open(t) } label: {
+                    ServiceCard(t.title, subtitle: t.subtitle, symbol: t.symbol, badge: t.isNew ? "جديد" : nil,
+                                style: .gradient(t.index), layout: .row)
+                }
+                .buttonStyle(.pressable)
+            }
+        }
+    }
+
+    private var quickLinks: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m), count: typeSize.isAccessibilitySize ? 1 : 2),
+                  spacing: Brand.Space.m) {
+            NavigationLink { LibraryView() } label: {
+                ServiceCard("مكتبتي", subtitle: "المشاريع والمفضلة والتنزيلات", symbol: "square.stack.3d.up", style: .emerald, layout: .row)
+            }
+            NavigationLink { SettingsView() } label: {
+                ServiceCard("الإعدادات", subtitle: "القارئ والخط والتنبيهات", symbol: "gearshape", style: .soft, layout: .row)
+            }
+        }
+        .buttonStyle(.pressable)
+    }
+
+    /// The tool's screen; opening it counts for «الأكثر استخداما».
+    private func open(_ t: SiteTool) -> some View {
+        t.destination.onAppear { ToolUsage.record(t.id) }
     }
 
     private var columns: [GridItem] {
-        let n = typeSize.isAccessibilitySize ? 1 : (size == .regular ? 3 : 2)
-        return Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m, alignment: .top), count: n)
+        let n = typeSize.isAccessibilitySize ? 1 : (size == .regular ? 2 : 1)
+        return Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: n)
     }
 
     private var filters: [(id: Filter, title: String)] {
@@ -147,38 +305,22 @@ struct ToolsView: View {
         .filter { q.isEmpty || $0.title.localizedStandardContains(q) || $0.subtitle.localizedStandardContains(q) }
     }
 
-    /// Site-style search box («ابحث في الأدوات: مثلا الأذكار أو القبلة»).
+    /// Site-style search box («ابحث في الأدوات: مثلا الأذكار أو القبلة»); filters as you type.
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(Brand.muted)
             TextField("ابحث في الأدوات: مثلا الأذكار أو القبلة", text: $query)
                 .font(.ui(.subheadline))
                 .submitLabel(.search)
+                .focused($searching)
             if !query.isEmpty {
-                Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Brand.lineStrong) }
+                Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Brand.muted) }
                     .accessibilityLabel("مسح البحث")
             }
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
-        .background(Brand.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
-    }
-
-    /// Next prayer as a wide card, then the library and settings side by side (bento row).
-    private var todayStrip: some View {
-        VStack(spacing: Brand.Space.m) {
-            NextPrayerCard()
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m), count: typeSize.isAccessibilitySize ? 1 : 2),
-                      spacing: Brand.Space.m) {
-                NavigationLink { LibraryView() } label: {
-                    ServiceCard("مكتبتي", subtitle: "المشاريع والمفضلة والتنزيلات", symbol: "square.stack.3d.up", style: .emerald, layout: .row)
-                }
-                NavigationLink { SettingsView() } label: {
-                    ServiceCard("الإعدادات", subtitle: "القارئ والخط والتنبيهات", symbol: "gearshape", style: .soft, layout: .row)
-                }
-            }
-            .buttonStyle(.pressable)
-        }
+        .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(searching ? Brand.green : Brand.line, lineWidth: searching ? 1.5 : 1))
     }
 }
 

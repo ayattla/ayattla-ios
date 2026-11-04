@@ -19,6 +19,8 @@ enum MotionStyle: String, CaseIterable, Identifiable, Codable {
 enum MotionBackground {
     case style(MotionStyle)
     case photo(UIImage, slowZoom: Bool)
+    /// A real video from the site's library (Pixabay/Pexels), looped under the text.
+    case video(VideoFrames, poster: UIImage?)
 
     /// Draws the background at time `t` (seconds) of a clip lasting `total` seconds.
     /// The context uses Core Graphics coordinates (origin at the bottom left).
@@ -26,7 +28,19 @@ enum MotionBackground {
         switch self {
         case .style(let s): Self.draw(s, ctx, size, t)
         case .photo(let img, let zoom): Self.drawPhoto(img, ctx, size, progress: total > 0 ? t / total : 0, zoom: zoom)
+        case .video(let v, let poster):
+            if let f = v.frame(at: t) { Self.drawFill(f, ctx, size, zoom: 1) }
+            else if let cg = poster?.cgImage { Self.drawFill(cg, ctx, size, zoom: 1) }
+            ctx.setFillColor(Self.rgb(0x000000, 0.42))
+            ctx.fill(CGRect(origin: .zero, size: size))
         }
+    }
+
+    private static func drawFill(_ cg: CGImage, _ ctx: CGContext, _ size: CGSize, zoom z: CGFloat) {
+        let iw = CGFloat(cg.width), ih = CGFloat(cg.height)
+        let fill = max(size.width / iw, size.height / ih)
+        let dw = iw * fill * z, dh = ih * fill * z
+        ctx.draw(cg, in: CGRect(x: (size.width - dw) / 2, y: (size.height - dh) / 2, width: dw, height: dh))
     }
 
     /// One still for previews and thumbnails.

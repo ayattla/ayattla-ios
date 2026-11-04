@@ -30,11 +30,17 @@ final class RecitationPlayer {
     /// Stop after the last ayah of the surah instead of moving on (kids' Juz Amma, as on the site).
     var stopsAtSurahEnd = false
     var speed: Float = 1.0 { didSet { if isPlaying { player.rate = speed } } }
+    /// Where the current ayah is (seconds), for the progress bar; updated four times a second.
+    private(set) var elapsed: Double = 0
+    private(set) var duration: Double = 0
+    /// How many times the current ayah has played (for «٢ من ٣»).
+    var playCount: Int { playedThisAyah + 1 }
 
     @ObservationIgnored private let player = AVPlayer()
     @ObservationIgnored private var playedThisAyah = 0
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     @ObservationIgnored private var statusObserver: NSKeyValueObservation?
+    @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored var folder: String?
     @ObservationIgnored var ayahCount: (Int) -> Int = { _ in 0 }
 
@@ -44,10 +50,17 @@ final class RecitationPlayer {
             guard let self, (note.object as? AVPlayerItem) === self.player.currentItem else { return }
             self.finishedAyah()
         }
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 4), queue: .main) { [weak self] t in
+            guard let self else { return }
+            let d = self.player.currentItem?.duration.seconds ?? 0
+            self.duration = d.isFinite ? d : 0
+            self.elapsed = t.seconds.isFinite ? t.seconds : 0
+        }
     }
 
     deinit {
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        if let timeObserver { player.removeTimeObserver(timeObserver) }
     }
 
     /// https://everyayah.com/data/<folder>/SSSAAA.mp3
@@ -61,6 +74,7 @@ final class RecitationPlayer {
         failed = false
         current = p
         playedThisAyah = 0
+        elapsed = 0; duration = 0
         // A downloaded copy (Library → التنزيلات) plays without internet.
         let item = AVPlayerItem(url: RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah) ?? url)
         statusObserver = item.observe(\.status) { [weak self] item, _ in
@@ -82,6 +96,14 @@ final class RecitationPlayer {
         } else {
             play(from: p)
         }
+    }
+
+    /// Moves within the current ayah (0…1), from the progress bar.
+    func seek(fraction: Double) {
+        guard duration > 0 else { return }
+        let t = CMTime(seconds: duration * min(max(fraction, 0), 1), preferredTimescale: 600)
+        elapsed = t.seconds
+        player.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
     func pause() {

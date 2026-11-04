@@ -15,6 +15,8 @@ struct TextCardView: View {
     @State private var fontScale = 1.0
     @State private var textOffset = CGSize.zero
     @State private var saved = false
+    @State private var photo: UIImage?
+    @State private var mediaID: String?
 
     init(title: String, text: String, reference: String, initialRatio: CardOptions.Ratio = .square) {
         self.title = title; self.text = text; self.reference = reference
@@ -27,40 +29,50 @@ struct TextCardView: View {
     }
 
     var body: some View {
-        EditorLayout(preview: CardCanvas(model: model, photo: nil)
+        DesignEditorLayout(preview: CardCanvas(model: model, photo: photo)
             .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .textDrag($textOffset)) {
-            Section("أنماط جاهزة") {
+            .textDrag($textOffset)
+            .accessibilityLabel("معاينة البطاقة")) {
+            EditorStep(1, "النمط", detail: "أنماط جاهزة بلمسة") {
                 StylePresetPicker(current: (ratio, background.id, fontScale)) { p in
-                    withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale }
+                    withAnimation(.snappy) { ratio = p.ratio; background = p.background; fontScale = p.fontScale; photo = nil; mediaID = nil }
                 }
             }
-            Section("الشكل") {
-                RatioPicker(ratio: $ratio)
+            EditorStep(2, "الخلفية", detail: "صور حقيقية من المكتبة أو خلفيات الموقع") {
+                LibraryStrip(kind: .image, categories: ["mosques", "nature"], selectedID: mediaID) { picked in
+                    if case .image(let it, let img) = picked { withAnimation(.snappy) { photo = img; mediaID = it.id } }
+                }
+                Text("خلفيات الموقع").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                BackgroundSwatches(selected: photo == nil ? background : nil) { background = $0; photo = nil; mediaID = nil }
+            }
+            EditorStep(3, "المقاس والخط") {
+                SiteSegmented([CardOptions.Ratio.story, .portrait, .square, .wide].map { (id: $0, title: $0.label, detail: Optional($0.useLabel)) },
+                              selection: $ratio)
+                Text("حجم الخط").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                SiteSegmented(CardOptions.fontScales.map { (id: $0.1, title: $0.0, detail: String?.none) }, selection: $fontScale)
                 TextPositionRow(offset: $textOffset)
-                Picker("حجم الخط", selection: $fontScale) { ForEach(CardOptions.fontScales, id: \.1) { Text($0.0).tag($0.1) } }
-                    .pickerStyle(.segmented)
             }
-            Section("الخلفية") {
-                BackgroundSwatches(selected: background) { background = $0 }
+            EditorStep(4, "نص متحرك") {
+                AnimatedTextButton(model: model, photo: photo, title: title)
+                    .font(.ui(.subheadline, .semibold)).tint(Brand.primaryInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Section {
-                Button {
-                    if let img = CardCanvas.render(model, photo: nil) {
-                        UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
-                        try? ProjectStore.shared.addImage(img, kind: title == "بطاقة حديث" ? .hadithCard : .status, title: title,
-                                                          ratio: ratio.rawValue, settings: nil)
-                        saved = true
-                    }
-                } label: { Label("حفظ في الصور ومكتبتي", systemImage: "square.and.arrow.down") }
-                ShareLink(item: CardImage(model: model, photo: nil), preview: SharePreview(title)) {
-                    Label("مشاركة", systemImage: "square.and.arrow.up")
+        } bar: {
+            Button {
+                if let img = CardCanvas.render(model, photo: photo) {
+                    UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
+                    try? ProjectStore.shared.addImage(img, kind: title == "بطاقة حديث" ? .hadithCard : .status, title: title,
+                                                      ratio: ratio.rawValue, settings: nil)
+                    saved = true
                 }
-                AnimatedTextButton(model: model, photo: nil, title: title)
+            } label: { Label("حفظ الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
+            .buttonStyle(.brandDark)
+            ShareLink(item: CardImage(model: model, photo: photo), preview: SharePreview(title)) {
+                Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
             }
+            .buttonStyle(.brandSecondary)
         }
-        .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .alert("حفظت الصورة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
