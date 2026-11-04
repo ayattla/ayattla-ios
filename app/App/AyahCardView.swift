@@ -75,6 +75,7 @@ struct AyahCardView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
     @State private var mediaID: String?
+    @State private var loadingMedia = false
     @State private var saved = false
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     private let lib = ContentLibrary.shared
@@ -119,6 +120,7 @@ struct AyahCardView: View {
             .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .textDrag($textOffset)
+            .overlay { if loadingMedia { ProgressView("جار تجهيز الصورة").tint(.white).foregroundStyle(.white).padding(14).background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 14)) } }
             .accessibilityLabel("معاينة البطاقة")) {
             EditorStep(1, "الآيات", detail: "سورة وآيات، أو اختيار سريع") {
                 FlowLayout(spacing: 8) {
@@ -233,7 +235,10 @@ struct AyahCardView: View {
         .onChange(of: from) { _, f in if to < f || to > f + CardOptions.maxAyat - 1 { to = f } }
         .task {
             // Opened from a photo in the home gallery: that photo is the background.
-            if let m = startMedia, photo == nil, let img = try? await MediaLibrary.image(m) { photo = img; mediaID = m.key }
+            guard let m = startMedia, photo == nil else { return }
+            loadingMedia = true
+            if let img = try? await MediaLibrary.image(m) { photo = img; mediaID = m.key }
+            loadingMedia = false
         }
         .alert("حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }

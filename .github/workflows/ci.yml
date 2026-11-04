@@ -166,14 +166,14 @@ jobs:
           mkdir -p shots
           for s in home tools prayer qibla zakat hijri occasions mosques settings onboarding quran reader azkar azkar-session tasbih library khatma card studio qada sawm clip duas hadith checker guide radio hifz kids tajweed wbw ruqya asma downloads azkar-hub topics topic juz status home-feed home-mid home-low home-site media media-image clip-video card-photo text-card reader-playing; do
             xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
-            sleep 6
+            case "$s" in clip-video|card-photo|media*|home-mid) sleep 15 ;; *) sleep 6 ;; esac
             xcrun simctl io "$UDID" screenshot "shots/$s.png"
           done
           # Dark mode, then the largest accessibility text size (light), for the main screens.
           xcrun simctl ui "$UDID" appearance dark
           for s in home tools prayer mosques settings onboarding home-feed home-mid home-low reader reader-playing card clip clip-video media azkar-session; do
             xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" -screen "$s"
-            sleep 6
+            case "$s" in clip-video|card-photo|media*|home-mid) sleep 15 ;; *) sleep 6 ;; esac
             xcrun simctl io "$UDID" screenshot "shots/$s-dark.png"
           done
           xcrun simctl ui "$UDID" appearance light
@@ -199,7 +199,7 @@ jobs:
             xcrun simctl privacy "$IPAD" grant location "$BUNDLE" || true
             for s in home home-mid card card-photo clip-video reader-playing tools media; do
               xcrun simctl launch --terminate-running-process "$IPAD" "$BUNDLE" -screen "$s"
-              sleep 7
+              case "$s" in clip-video|card-photo|media*|home-mid) sleep 15 ;; *) sleep 7 ;; esac
               xcrun simctl io "$IPAD" screenshot "shots/ipad-$s.png"
             done
           fi
