@@ -166,6 +166,24 @@ struct StartView: View {
 }
 
 #if DEBUG
+/// The mushaf with a recitation playing (for the player screenshots): ayah 1:1, repeat 3, speed 1.25.
+struct DebugPlayingReader: View {
+    @State private var ready = false
+    var body: some View {
+        Group { if ready { MushafReader(startPage: 1) } else { Color.clear } }
+            .onAppear {
+                let lib = ContentLibrary.shared
+                let p = RecitationPlayer()
+                p.folder = (try? lib.store?.reciterFolders())?[Prefs.defaultReciter]
+                p.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
+                p.repeatEach = 3
+                p.speed = 1.25
+                p.play(from: .init(surah: 1, ayah: 1))
+                ready = true
+            }
+    }
+}
+
 enum DebugScreen {
     static let all = ["home", "tools", "prayer", "qibla", "zakat", "hijri", "occasions", "mosques", "settings", "onboarding", "quran", "reader", "azkar", "azkar-session", "tasbih", "library", "home-feed", "khatma", "card", "studio", "qada", "sawm", "clip", "duas", "hadith", "checker", "guide", "radio", "hifz", "kids"]
 
@@ -209,8 +227,19 @@ enum DebugScreen {
         case "topics": TopicsView()
         case "juz": JuzListView()
         case "status": StatusSourceView()
-        case "home-mid": ScrollView { VStack(spacing: 32) { HomeProducts(); HomeSources(); HomeSteps() }.padding(16) }.brandScreen()
-        case "home-low": ScrollView { VStack(spacing: 32) { HomeFeatures(); HomeStats(); HomeClosing() }.padding(16) }.brandScreen()
+        case "home-mid": ScrollView { VStack(spacing: 32) { HomeCreateBento(); HomeMediaGallery() }.padding(16) }.brandScreen()
+        case "home-low": ScrollView { VStack(spacing: 32) { HomeQuranContent(); PresetStrip(); HomeSteps() }.padding(16) }.brandScreen()
+        case "home-site": ScrollView { VStack(spacing: 32) { HomeFeatures(); HomeStats(); HomeClosing() }.padding(16) }.brandScreen()
+        case "media": MediaLibrarySheet(kinds: [.video, .image], initial: .video) { _ in }
+        case "media-image": MediaLibrarySheet(kinds: [.image]) { _ in }
+        case "clip-video": ClipMakerView(media: MediaLibrary.Ref(provider: "pixabay", mediaId: "128406", type: .video))
+        case "card-photo": AyahCardView(media: MediaLibrary.Ref(provider: "pixabay", mediaId: "6604492", type: .image))
+        case "text-card":
+            // A dua from the content pack (never typed in), on the text card editor.
+            if let c = ContentLibrary.shared.duas?.needs.first?.chapters.first, let it = c.items.first {
+                TextCardView(title: "حالة", text: it.text, reference: c.name, initialRatio: .story)
+            } else { DuasView() }
+        case "reader-playing": DebugPlayingReader()
         case "topic": if let t = ContentLibrary.shared.topics.first { TopicView(topic: t) } else { TopicsView() }
         case "now-playing": NowPlayingSheet()
         default: ToolsView()

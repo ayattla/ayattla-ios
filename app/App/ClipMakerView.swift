@@ -16,6 +16,8 @@ struct ClipJob {
     var settings: EditorSettings? = nil
     /// Animated background or a photo with the slow zoom; nil = still background drawn in each frame.
     var motion: MotionBackground? = nil
+    /// A real video from the site's library: its temporary file and a poster; read frame by frame at export.
+    var video: (url: URL, poster: UIImage?)? = nil
     /// Word highlighting with Quran.com timings (chapter recitation id and color), as on the site.
     var highlight: (qfID: Int, color: UInt32)? = nil
 }
@@ -33,17 +35,20 @@ enum HighlightColor: UInt32, CaseIterable, Identifiable {
     }
 }
 
-/// Background choices for clips: the site's six still and four animated backgrounds, or a photo.
+/// Background choices for clips: the site's six still and four animated backgrounds, a photo from
+/// the device, or a real photo or video from the site's library (Pixabay/Pexels).
 enum ClipBackground: Hashable {
     case still(CardOptions.Background)
     case motion(MotionStyle)
     case photo
+    case media
 
     var id: String {
         switch self {
         case .still(let b): b.id
         case .motion(let m): m.rawValue
         case .photo: "photo"
+        case .media: "media"
         }
     }
 
@@ -55,8 +60,23 @@ enum ClipBackground: Hashable {
 }
 
 /// Ayah clip maker (Studio → مقطع قرآني), the on-device version of the site's clip maker.
+/// v3 layout: the preview stays in view on top; the options are the site's numbered steps;
+/// «أنشئ المقطع» stays fixed under them.
 struct ClipMakerView: View {
     static let maxAyat = 30   // max_ayat on the site
+
+    enum BgTab: String, CaseIterable, Identifiable {
+        case video, image, motion, still
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .video: "فيديو"
+            case .image: "صور"
+            case .motion: "متحركة"
+            case .still: "ألوان"
+            }
+        }
+    }
 
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     @State private var surah: Int
@@ -69,16 +89,27 @@ struct ClipMakerView: View {
     @State private var name: String
     @State private var photoItem: PhotosPickerItem?
     @State private var photo: UIImage?
+    @State private var media: PickedMedia?
+    @State private var pendingRef: MediaLibrary.Ref?
+    @State private var bgTab: BgTab
     @State private var slowZoom = true
     @State private var highlight = true
     @State private var hiColor = HighlightColor.gold
+    @State private var jumping = false
     private let lib = ContentLibrary.shared
 
     init(surah: Int = 1, from: Int = 1, to: Int = 7, ratio: CardOptions.Ratio = .story, backgroundID: String = "emerald",
-         fontScale: Double = 1, templateID: String = "", name: String = "") {
+         fontScale: Double = 1, templateID: String = "", name: String = "", media: MediaLibrary.Ref? = nil) {
         _surah = State(initialValue: surah); _from = State(initialValue: from); _to = State(initialValue: max(from, to))
         _ratio = State(initialValue: ratio)
-        _background = State(initialValue: ClipBackground.from(id: backgroundID == "photo" ? "emerald" : backgroundID))
+        let ref = media ?? (backgroundID.hasPrefix("media:") ? MediaLibrary.Ref(key: String(backgroundID.dropFirst(6))) : nil)
+        _pendingRef = State(initialValue: ref)
+        let bg = ClipBackground.from(id: backgroundID == "photo" || ref != nil ? "emerald" : backgroundID)
+        _background = State(initialValue: bg)
+        switch bg {
+        case .motion: _bgTab = State(initialValue: .motion)
+        default: _bgTab = State(initialValue: ref?.type == .image ? .image : ref != nil ? .video : .still)
+        }
         _fontScale = State(initialValue: fontScale)
         _template = State(initialValue: CardOptions.templates.first { $0.id == templateID } ?? CardOptions.templates[0])
         _name = State(initialValue: name)
@@ -91,83 +122,177 @@ struct ClipMakerView: View {
     }
 
     var body: some View {
-        EditorLayout(preview: preview) {
-            Section {
-                Picker("السورة", selection: $surah) {
-                    ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
+        DesignEditorLayout(preview: preview) {
+            EditorStep(1, "الآيات", detail: "حتى \(Num.int(Self.maxAyat)) آية في المقطع، كما في الموقع") {
+                FlowLayout(spacing: 8) {
+                    ForEach(AyahCardView.quickPicks.indices, id: \.self) { i in
+                        let q = AyahCardView.quickPicks[i]
+                        let on = surah == q.1 && from == q.2 && to == q.3
+                        Button {
+                            jumping = surah != q.1
+                            surah = q.1; from = q.2; to = q.3
+                        } label: {
+                            Text(q.0).font(.ui(.footnote, .medium))
+                                .foregroundStyle(on ? Color.white : Brand.ink)
+                                .padding(.horizontal, 14).frame(minHeight: 38)
+                                .background { if on { Capsule().fill(Brand.siteGradient) } else { Capsule().fill(Brand.surface) } }
+                                .overlay(Capsule().strokeBorder(on ? Color.clear : Brand.lineStrong, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
                 }
-                Stepper("من آية \(Num.int(from))", value: $from, in: 1...ayahCount)
-                Stepper("إلى آية \(Num.int(to))", value: $to, in: from...min(ayahCount, from + Self.maxAyat - 1))
-            } header: { Text("الآيات") } footer: { Text("حتى \(Num.int(Self.maxAyat)) آية في المقطع، كما في الموقع.") }
+                EditorField("السورة") {
+                    Picker("السورة", selection: $surah) {
+                        ForEach(lib.surahs) { Text("\(Num.int($0.id)). \($0.shortName)").tag($0.id) }
+                    }
+                    .labelsHidden().tint(Brand.ink)
+                }
+                HStack(spacing: 10) {
+                    EditorField("من آية") {
+                        Stepper(Num.int(from), value: $from, in: 1...ayahCount).font(.ui(.subheadline, .semibold))
+                    }
+                    EditorField("إلى آية") {
+                        Stepper(Num.int(to), value: $to, in: from...min(ayahCount, from + Self.maxAyat - 1)).font(.ui(.subheadline, .semibold))
+                    }
+                }
+            }
 
-            Section {
-                // Full name under the label (a menu value is cut in the middle on small iPhones);
-                // the list opens on its own screen with ★ for word highlighting, as on the site.
+            EditorStep(2, "القارئ", detail: qfID != nil ? "تظليل الكلمات بتوقيتات Quran.com" : "★ القراء الذين يدعمون تظليل الكلمات") {
+                // Full name on its own line (a menu value is cut in the middle on small iPhones).
                 NavigationLink {
                     ReciterChoice(selection: $reciter)
                 } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("القارئ")
-                        Text(Catalog.reciter(reciter).map { $0.wordHighlight ? "\($0.name) ★" : $0.name } ?? "")
-                            .font(.ui(.footnote)).foregroundStyle(Brand.primaryInk)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                if qfID != nil {
-                    Toggle("تظليل الكلمة", isOn: $highlight)
-                    if highlight {
-                        Picker("لون التظليل", selection: $hiColor) {
-                            ForEach(HighlightColor.allCases) { Text($0.name).tag($0) }
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("القارئ").font(.ui(.caption, .semibold)).foregroundStyle(Brand.muted)
+                            Text(Catalog.reciter(reciter).map { $0.wordHighlight ? "\($0.name) ★" : $0.name } ?? "")
+                                .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .pickerStyle(.segmented)
+                        Spacer()
+                        Image(systemName: "chevron.left").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.muted)
+                    }
+                    .padding(12)
+                    .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+                }
+                .buttonStyle(.pressable)
+                if qfID != nil {
+                    Toggle("تظليل الكلمة مع التلاوة", isOn: $highlight).font(.ui(.subheadline)).tint(Brand.green)
+                    if highlight {
+                        SiteSegmented(HighlightColor.allCases.map { (id: $0, title: $0.name, detail: String?.none) }, selection: $hiColor)
                     }
                 }
-            } header: { Text("القارئ") } footer: {
-                Text(qfID != nil ? "تظليل الكلمات بتوقيتات Quran.com وتلاوة السورة منه، كما في الموقع." : "★ القراء الذين يدعمون تظليل الكلمات.")
             }
-            Section("الشكل") {
-                RatioPicker(ratio: $ratio)
-                Picker("حجم الخط", selection: $fontScale) {
-                    ForEach(CardOptions.fontScales, id: \.1) { Text($0.0).tag($0.1) }
+
+            EditorStep(3, "الخلفية", detail: "مقاطع وصور حقيقية من المكتبة، أو خلفيات الموقع") {
+                SiteSegmented(BgTab.allCases.map { (id: $0, title: $0.title, detail: String?.none) }, selection: $bgTab)
+                switch bgTab {
+                case .video:
+                    LibraryStrip(kind: .video, kinds: [.video, .image], categories: ["mosques", "sky"], selectedID: mediaID, onPick: picked)
+                case .image:
+                    LibraryStrip(kind: .image, kinds: [.image, .video], categories: ["mosques", "night"], selectedID: mediaID, onPick: picked)
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label(background == .photo ? "غير صورة الجهاز" : "أو صورة من جهازك", systemImage: "photo.badge.plus")
+                            .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5])).foregroundStyle(Brand.lineStrong))
+                    }
+                case .motion:
+                    backgroundRow(items: MotionStyle.allCases.map { .motion($0) })
+                case .still:
+                    backgroundRow(items: CardOptions.backgrounds.map { .still($0) })
                 }
-                .pickerStyle(.segmented)
+                if usesPhoto {
+                    Toggle("حركة هادئة للصورة", isOn: $slowZoom).font(.ui(.subheadline)).tint(Brand.green)
+                }
+            }
+
+            EditorStep(4, "الشكل", detail: "المقاس وحجم الخط والقالب") {
+                Text("المقاس").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
+                SiteSegmented([CardOptions.Ratio.story, .portrait, .square, .wide].map { (id: $0, title: $0.label, detail: Optional($0.useLabel)) },
+                              selection: $ratio)
+                Text("حجم خط الآية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                SiteSegmented(CardOptions.fontScales.map { (id: $0.1, title: $0.0, detail: String?.none) }, selection: $fontScale)
+                Divider().overlay(Brand.line)
                 TemplatePicker(template: $template)
-                if !template.id.isEmpty { TextField("الاسم أو سطر الإهداء (اختياري)", text: $name) }
-            }
-            Section("الخلفية") {
-                backgroundRow(title: "متحركة", items: MotionStyle.allCases.map { .motion($0) })
-                backgroundRow(title: "ثابتة", items: CardOptions.backgrounds.map { .still($0) })
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(background == .photo ? "تغيير الصورة" : "صورة من الجهاز", systemImage: "photo")
+                if !template.id.isEmpty {
+                    EditorField("الاسم أو سطر الإهداء (اختياري)") { TextField("مثال: إهداء إلى والدي", text: $name).font(.ui(.subheadline)) }
                 }
-                if background == .photo { Toggle("حركة هادئة للخلفية", isOn: $slowZoom) }
             }
-            Section {
-                if let folder {
-                    NavigationLink {
-                        ClipExportView(job: job(folder: folder))
-                    } label: {
-                        Label("أنشئ المقطع", systemImage: "film").font(.ui(.headline))
-                    }
-                } else {
-                    Text("لا يتوفر صوت لهذا القارئ").foregroundStyle(.secondary)
+
+            Text("يصنع المقطع على جهازك. تجلب التلاوة من EveryAyah والخلفية من مكتبة الموقع عند الإنشاء ثم تحذف. يحفظ المقطع في مكتبتي.")
+                .font(.ui(.caption)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+        } bar: {
+            if let folder {
+                NavigationLink {
+                    ClipExportView(job: job(folder: folder))
+                } label: {
+                    Label("أنشئ المقطع", systemImage: "film").frame(maxWidth: .infinity)
                 }
-            } footer: {
-                Text("يصنع المقطع على جهازك. تجلب التلاوة من EveryAyah عند الإنشاء ثم تحذف. يحفظ المقطع في مكتبتي.")
+                .buttonStyle(.brandGold)
+                .disabled(waitingForMedia)
+            } else {
+                Text("لا يتوفر صوت لهذا القارئ").font(.ui(.footnote)).foregroundStyle(Brand.muted).frame(maxWidth: .infinity, minHeight: 50)
             }
         }
-        .brandScreen()
-        .navigationTitle("مقطع قرآني")
+        .navigationTitle("صانع المقاطع القرآنية")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: surah) { old, s in if old != s { from = 1; to = min(lib.surah(s)?.ayahCount ?? 1, 7) } }
+        .onChange(of: surah) { old, s in
+            if jumping { jumping = false } else if old != s { from = 1; to = min(lib.surah(s)?.ayahCount ?? 1, 7) }
+        }
         .onChange(of: from) { _, f in if to < f || to > f + Self.maxAyat - 1 { to = f } }
         .onChange(of: photoItem) { _, item in
             Task {
                 if let data = try? await item?.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                     photo = img.uprightForVideo()
+                    media = nil
                     background = .photo
                 }
             }
+        }
+        .task {
+            // A saved clip or the home gallery: load that library item again (only its id was kept).
+            guard let r = pendingRef, let it = try? await MediaLibrary.item(r) else { pendingRef = nil; return }
+            switch it.type {
+            case .image: if let img = try? await MediaLibrary.image(it) { picked(.image(it, img)) }
+            case .video:
+                if let url = try? await MediaLibrary.video(it) {
+                    var poster: UIImage?
+                    if let t = it.thumbUrl, let d = try? await URLSession.shared.data(from: t).0 { poster = UIImage(data: d) }
+                    picked(.video(it, url, poster: poster))
+                }
+            }
+            pendingRef = nil
+        }
+    }
+
+    private func picked(_ m: PickedMedia) {
+        withAnimation(.snappy) {
+            media = m
+            background = .media
+            if case .image(_, let img) = m { photo = img } else { photo = nil }
+        }
+    }
+
+    private var mediaID: String? {
+        guard background == .media, let media else { return nil }
+        switch media {
+        case .image(let it, _), .video(let it, _, _): return it.id
+        }
+    }
+
+    private var waitingForMedia: Bool { pendingRef != nil }
+
+    private var usesPhoto: Bool {
+        switch background {
+        case .photo: photo != nil
+        case .media: if case .image? = media { true } else { false }
+        default: false
         }
     }
 
@@ -179,44 +304,59 @@ struct ClipMakerView: View {
                     .resizable()
             case .photo:
                 if let photo { Image(uiImage: photo).resizable().scaledToFill(); Color.black.opacity(0.45) }
+            case .media:
+                switch media {
+                case .video(_, let url, let poster)?:
+                    if let poster { Image(uiImage: poster).resizable().scaledToFill() }
+                    LoopingVideo(url: url)
+                    Color.black.opacity(0.42)
+                case .image(_, let img)?:
+                    Image(uiImage: img).resizable().scaledToFill(); Color.black.opacity(0.45)
+                case nil:
+                    Brand.primary
+                }
             case .still:
                 EmptyView()
             }
             CardCanvas(model: frames.first?.model ?? emptyModel, photo: nil)
+            if waitingForMedia { ProgressView().tint(.white) }
         }
         .aspectRatio(ratio.size.width / ratio.size.height, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityLabel("معاينة أول شاشة")
     }
 
-    private func backgroundRow(title: String, items: [ClipBackground]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.ui(.caption)).foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(items, id: \.self) { b in
-                        let on = background == b
-                        Button { background = b } label: {
+    private func backgroundRow(items: [ClipBackground]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(items, id: \.self) { b in
+                    let on = background == b
+                    Button { withAnimation(.snappy) { background = b } } label: {
+                        VStack(spacing: 6) {
                             swatch(b)
-                                .frame(width: 56, height: 56)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Brand.primary : .clear, lineWidth: 3))
+                                .frame(width: 72, height: 96)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(on ? Brand.green : Brand.line, lineWidth: on ? 3 : 1))
+                            Text(Self.name(b)).font(.ui(.caption2, on ? .semibold : .regular))
+                                .foregroundStyle(on ? Brand.primaryInk : Brand.muted).lineLimit(1)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Self.name(b))
-                        .accessibilityAddTraits(on ? .isSelected : [])
+                        .frame(width: 76)
                     }
+                    .buttonStyle(.pressable)
+                    .accessibilityLabel(Self.name(b))
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
-                .padding(.vertical, 2)
             }
+            .padding(.vertical, 2)
         }
     }
 
     @ViewBuilder private func swatch(_ b: ClipBackground) -> some View {
         switch b {
         case .still(let s): Rectangle().fill(s.gradient)
-        case .motion(let m): Image(uiImage: MotionBackground.style(m).still(size: CGSize(width: 112, height: 112))).resizable()
-        case .photo: Color.gray
+        case .motion(let m): Image(uiImage: MotionBackground.style(m).still(size: CGSize(width: 144, height: 192))).resizable()
+        case .photo, .media: Color.gray
         }
     }
 
@@ -225,6 +365,7 @@ struct ClipMakerView: View {
         case .still(let s): s.name
         case .motion(let m): m.name
         case .photo: "صورة"
+        case .media: "من المكتبة"
         }
     }
 
@@ -234,6 +375,13 @@ struct ClipMakerView: View {
     private var reference: String {
         let s = lib.surah(surah)?.shortName ?? ""
         return from == to ? "\(s) \(Num.int(from))" : "\(s) \(Num.int(from))–\(Num.int(to))"
+    }
+
+    private var mediaRefKey: String? {
+        switch media {
+        case .image(let it, _)?, .video(let it, _, _)?: it.ref.key
+        case nil: nil
+        }
     }
 
     private var stillBackground: CardOptions.Background {
@@ -247,6 +395,7 @@ struct ClipMakerView: View {
         case .still: false
         case .motion: true
         case .photo: photo != nil
+        case .media: media != nil
         }
     }
 
@@ -256,7 +405,8 @@ struct ClipMakerView: View {
     }
 
     var settings: EditorSettings {
-        EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue, background: background.id,
+        EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue,
+                       background: mediaID.flatMap { _ in mediaRefKey.map { "media:" + $0 } } ?? background.id,
                        fontScale: fontScale, template: template.id, name: name, reciter: reciter)
     }
 
@@ -265,9 +415,12 @@ struct ClipMakerView: View {
         switch background {
         case .motion(let m): motion = .style(m)
         case .photo: if let photo { motion = .photo(photo, slowZoom: slowZoom) }
+        case .media:
+            if case .image(_, let img)? = media { motion = .photo(img, slowZoom: slowZoom) }
         case .still: motion = nil
         }
         var job = ClipJob(items: frames, ratio: ratio, folder: folder, title: reference, settings: settings, motion: motion)
+        if case .video(_, let url, let poster)? = media, background == .media { job.video = (url, poster) }
         if highlight, let id = qfID { job.highlight = (id, hiColor.rawValue) }
         return job
     }
@@ -302,6 +455,7 @@ struct ClipExportView: View {
     enum Phase: Equatable { case working(String, Double), done(URL), failed(String) }
     @State private var phase = Phase.working("تجهيز", 0)
     @State private var task: Task<Void, Never>?
+    @State private var motion: MotionBackground?
     @State private var saved = false
 
     var body: some View {
@@ -356,13 +510,19 @@ struct ClipExportView: View {
     private func start() {
         phase = .working("جلب التلاوة", 0)
         task = Task { @MainActor in
+            motion = job.motion
+            if let v = job.video {
+                phase = .working("تجهيز الخلفية", 0)
+                if let frames = await VideoFrames(url: v.url) { motion = .video(frames, poster: v.poster) }
+                else if let p = v.poster { motion = .photo(p, slowZoom: true) }
+            }
             let fetcher = RecitationFetcher(folder: job.folder)
             defer { fetcher.cleanUp() }
             do {
                 if let hi = job.highlight {
                     let out = try await renderHighlighted(qfID: hi.qfID, color: hi.color)
-                    let thumb = Self.thumbnail(first: CardCanvas.render(job.items.last!.model, photo: job.motion == nil ? job.photo : nil),
-                                               motion: job.motion, size: job.ratio.size)
+                    let thumb = Self.thumbnail(first: CardCanvas.render(job.items.last!.model, photo: motion == nil ? job.photo : nil),
+                                               motion: motion, size: job.ratio.size)
                     try? ProjectStore.shared.add(kind: .clip, title: job.title, file: out, thumbnail: thumb,
                                                  ratio: job.ratio.rawValue, settings: job.settings)
                     phase = .done(out)
@@ -374,16 +534,16 @@ struct ClipExportView: View {
                 try Task.checkCancellation()
                 phase = .working("رسم الشاشات", 0.3)
                 var segments: [VideoEngine.Segment] = []
-                let photo = job.motion == nil ? job.photo : nil
+                let photo = motion == nil ? job.photo : nil
                 for (i, item) in job.items.enumerated() {
                     guard let img = CardCanvas.render(item.model, photo: photo) else { throw VideoEngine.Failure.writer("frame") }
                     segments.append(.init(frame: img, audio: audio[i]))
                 }
                 let out = FileManager.default.temporaryDirectory.appendingPathComponent("آيات-تتلى-\(UUID().uuidString.prefix(6)).mp4")
-                try await VideoEngine.render(segments, size: job.ratio.size, to: out, background: job.motion) { p in
+                try await VideoEngine.render(segments, size: job.ratio.size, to: out, background: motion) { p in
                     Task { @MainActor in phase = .working("إنشاء المقطع", 0.35 + 0.65 * p) }
                 }
-                let thumb = Self.thumbnail(first: segments.first?.frame, motion: job.motion, size: job.ratio.size)
+                let thumb = Self.thumbnail(first: segments.first?.frame, motion: motion, size: job.ratio.size)
                 try? ProjectStore.shared.add(kind: .clip, title: job.title, file: out, thumbnail: thumb,
                                              ratio: job.ratio.rawValue, settings: job.settings)
                 phase = .done(out)
@@ -417,7 +577,7 @@ struct ClipExportView: View {
         try Task.checkCancellation()
 
         let start = Double(first.timestamp_from) / 1000, end = Double(last.timestamp_to) / 1000
-        let photo = job.motion == nil ? job.photo : nil
+        let photo = motion == nil ? job.photo : nil
         var keys: [VideoEngine.Keyframe] = []
         for item in clip {
             guard let st = stamps["\(surah):\(item.ayah)"] else { continue }
@@ -441,7 +601,7 @@ struct ClipExportView: View {
         try await VideoEngine.renderTimeline(audio: audio,
                                              range: CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600),
                                                                 end: CMTime(seconds: end, preferredTimescale: 600)),
-                                             keyframes: keys, size: job.ratio.size, to: out, background: job.motion) { p in
+                                             keyframes: keys, size: job.ratio.size, to: out, background: motion) { p in
             Task { @MainActor in phase = .working("إنشاء المقطع", 0.1 + 0.9 * p) }
         }
         return out

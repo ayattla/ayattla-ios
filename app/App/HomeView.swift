@@ -28,15 +28,17 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: Brand.Space.xxl) {
                 hero
+                HomeCreateBento()
+                HomeMediaGallery()
                 if lib.isReady { ayahCard }
-                today
-                HomeProducts()
                 PresetStrip()
-                HomeSources()
+                today
+                HomeQuranContent()
                 RecentProjectsStrip()
+                allTools
+                HomeSources()
                 HomeSteps()
                 HomeFeatures()
-                toolDirectory
                 HomeStats()
                 HomeFAQ()
                 HomeClosing()
@@ -92,7 +94,7 @@ struct HomeView: View {
                 Text("آيات تتلى كلمة كلمة").foregroundStyle(Brand.ink)
                 Text("في مقطع جاهز للنشر").foregroundStyle(Brand.siteGradient)
             }
-            .font(.ui(.largeTitle, .bold))
+            .font(.ui(.title, .bold))
             .multilineTextAlignment(.center)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
@@ -102,17 +104,6 @@ struct HomeView: View {
                 .multilineTextAlignment(.center).lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 10) {
-                NavigationLink { ClipMakerView() } label: {
-                    Label("ابدأ مجانا الآن", systemImage: "play.rectangle").frame(maxWidth: 320)
-                }
-                .buttonStyle(.brandPrimary)
-                NavigationLink { StatusSourceView() } label: {
-                    Label("صمم حالة واتساب", systemImage: "photo").frame(maxWidth: 320)
-                }
-                .buttonStyle(.brandSecondary)
-            }
-            .padding(.top, 4)
             Text(Num.hijri(Date())).font(.ui(.caption, .medium)).foregroundStyle(Brand.muted)
         }
         .padding(.top, Brand.Space.s)
@@ -132,6 +123,14 @@ struct HomeView: View {
                     .environment(\.colorScheme, .dark)
                 Spacer()
                 Text(AyahOfTheDay.reference(p)).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.onDeepAccent)
+                ShareLink(item: "﴿\(text)﴾ [\(AyahOfTheDay.reference(p))]") {
+                    Image(systemName: "square.and.arrow.up").frame(width: Brand.minTap, height: Brand.minTap)
+                }
+                .accessibilityLabel("مشاركة")
+                Button { favorites = Favorites.toggled(favorites, first) } label: {
+                    Image(systemName: isFav ? "heart.fill" : "heart").frame(width: Brand.minTap, height: Brand.minTap)
+                }
+                .accessibilityLabel(isFav ? "أزل من المفضلة" : "أضف للمفضلة")
             }
             Text(text)
                 .font(.custom(ContentLibrary.mushafFont, size: 24, relativeTo: .title3))
@@ -143,27 +142,18 @@ struct HomeView: View {
             HStack(spacing: 8) {
                 NavigationLink { MushafReader(startPage: ayat.first?.page ?? 1, focus: first) } label: {
                     Label("اقرأ في المصحف", systemImage: "book").font(.ui(.footnote, .semibold))
-                        .lineLimit(1).fixedSize()
+                        .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
                         .foregroundStyle(Brand.primary)
                         .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
                         .background(Brand.onDeepAccent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 NavigationLink { ClipMakerView(surah: p.surah, from: p.from, to: p.to) } label: {
                     Label("اصنع مقطعا", systemImage: "play.rectangle").font(.ui(.footnote, .semibold))
-                        .lineLimit(1).fixedSize()
+                        .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
                         .padding(.horizontal, 12).frame(minHeight: Brand.minTap)
                         .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Brand.onDeepAccent.opacity(0.45), lineWidth: 1))
                 }
-                Spacer(minLength: 0)
-                ShareLink(item: "﴿\(text)﴾ [\(AyahOfTheDay.reference(p))]") {
-                    Image(systemName: "square.and.arrow.up").frame(width: Brand.minTap, height: Brand.minTap)
-                }
-                .accessibilityLabel("مشاركة")
-                Button { favorites = Favorites.toggled(favorites, first) } label: {
-                    Image(systemName: isFav ? "heart.fill" : "heart").frame(width: Brand.minTap, height: Brand.minTap)
-                }
-                .accessibilityLabel(isFav ? "أزل من المفضلة" : "أضف للمفضلة")
             }
         }
         .padding(22)
@@ -189,9 +179,11 @@ struct HomeView: View {
             .accessibilityHidden(true)
     }
 
-    /// Today's essentials as a bento: next prayer (wide), then reading and azkar side by side.
+    /// Today's essentials as a bento: next prayer (wide), then reading and azkar side by side,
+    /// then small chips for the other daily tools.
     private var today: some View {
-        VStack(spacing: Brand.Space.m) {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية", subtitle: "الصلاة والأذكار والورد في مكان واحد")
             NextPrayerCard()
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
@@ -208,7 +200,45 @@ struct HomeView: View {
                 }
                 .buttonStyle(.pressable)
             }
+            FlowLayout(spacing: 8) {
+                dailyChip("المسبحة", "circle.circle") { AnyView(TasbihView()) }
+                dailyChip("القبلة", "location.north.line") { AnyView(QiblaView()) }
+                dailyChip("الأدعية", "hands.sparkles") { AnyView(DuasView()) }
+                dailyChip("التقويم الهجري", "calendar") { AnyView(HijriView()) }
+                dailyChip("الختمة", "book.closed") { AnyView(KhatmaView()) }
+                dailyChip("الإذاعات", "dot.radiowaves.left.and.right") { AnyView(RadioView()) }
+            }
         }
+    }
+
+    private func dailyChip(_ title: String, _ symbol: String, open: @escaping () -> AnyView) -> some View {
+        NavigationLink { open() } label: {
+            Label(title, systemImage: symbol)
+                .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.ink)
+                .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
+                .background(Brand.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+        }
+        .buttonStyle(.pressable)
+    }
+
+    /// One wide card to the Tools tab (the full directory lives there, not repeated here).
+    private var allTools: some View {
+        NavigationLink { ToolsView() } label: {
+            HStack(spacing: Brand.Space.m) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("كل الأدوات").font(.ui(.title3, .bold)).foregroundStyle(.white)
+                    Text("\(Num.int(SiteTool.all.count)) أداة مجانية: صناعة المحتوى، القرآن، اليوميات، الحديث")
+                        .font(.ui(.footnote)).foregroundStyle(.white.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "square.grid.2x2.fill").font(.system(size: 26, weight: .semibold)).foregroundStyle(.white)
+            }
+            .padding(20)
+            .featureSurface()
+        }
+        .buttonStyle(.pressable)
     }
 
     /// The site's tool directory: four groups, each with its title between two green rules and a

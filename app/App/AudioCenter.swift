@@ -192,9 +192,9 @@ struct MiniPlayerBar: View {
                 Button { center.nowPlayingSheet = true } label: {
                     HStack(spacing: 10) {
                         Image(systemName: a.audioIsLive ? "antenna.radiowaves.left.and.right" : "waveform")
-                            .font(.ui(.body)).foregroundStyle(Brand.onDeepAccent)
+                            .font(.ui(.body)).foregroundStyle(.white)
                             .frame(width: 36, height: 36)
-                            .background(Brand.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .background(Brand.siteGradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         VStack(alignment: .leading, spacing: 1) {
                             Text(a.audioTitle).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.ink).lineLimit(1)
                             Text(a.audioSubtitle).font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(1)
@@ -219,6 +219,18 @@ struct MiniPlayerBar: View {
                 .accessibilityLabel("إغلاق المشغل")
             }
             .padding(.leading, 8).padding(.trailing, 4).padding(.vertical, 6)
+            .overlay(alignment: .bottom) {
+                if let rec = a as? RecitationPlayer, rec.duration > 0 {
+                    // Thin progress line for the current ayah.
+                    GeometryReader { g in
+                        Capsule().fill(Brand.green)
+                            .frame(width: g.size.width * min(rec.elapsed / rec.duration, 1), height: 3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(height: 3).padding(.horizontal, 14)
+                    .accessibilityHidden(true)
+                }
+            }
             .background(Brand.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Brand.line, lineWidth: 1))
             .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
@@ -241,33 +253,31 @@ struct NowPlayingSheet: View {
             if let a = center.active {
                 Image("LogoFull").resizable().scaledToFit().frame(width: 120, height: 120)
                     .padding(24)
-                    .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .background(Brand.siteGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(spacing: 6) {
                     Text(a.audioTitle).font(.ui(.title2, .semibold)).foregroundStyle(Brand.ink).multilineTextAlignment(.center)
                     Text(a.audioSubtitle).font(.ui(.subheadline)).foregroundStyle(Brand.muted)
                 }
-                HStack(spacing: 28) {
-                    if !a.audioIsLive {
-                        Button { a.audioPrevious(); center.changed() } label: {
-                            Image(systemName: "forward.end.fill").font(.ui(.title2)).frame(width: 56, height: 56)
-                        }
-                        .accessibilityLabel("الآية السابقة")
+                if let rec = a as? RecitationPlayer {
+                    // The same parts as the mushaf's player: progress, repeat, transport, speed.
+                    AyahProgress(player: rec).padding(.horizontal, 4)
+                    HStack {
+                        RepeatMenu(player: rec)
+                        Spacer(minLength: 0)
+                        PlayerTransport(player: rec, size: 72) { rec.current ?? .init(surah: 1, ayah: 1) }
+                        Spacer(minLength: 0)
+                        SpeedMenu(player: rec)
                     }
+                } else {
                     Button { center.toggle() } label: {
                         Image(systemName: a.audioIsPlaying ? "pause.fill" : "play.fill")
-                            .font(.ui(.title)).foregroundStyle(Brand.onPrimary)
-                            .frame(width: 76, height: 76).background(Brand.primary, in: Circle())
+                            .font(.ui(.title)).foregroundStyle(.white)
+                            .frame(width: 76, height: 76).background(Brand.siteGradient, in: Circle())
                     }
+                    .buttonStyle(.pressable)
                     .accessibilityLabel(a.audioIsPlaying ? "إيقاف مؤقت" : "تشغيل")
-                    if !a.audioIsLive {
-                        Button { a.audioNext(); center.changed() } label: {
-                            Image(systemName: "backward.end.fill").font(.ui(.title2)).frame(width: 56, height: 56)
-                        }
-                        .accessibilityLabel("الآية التالية")
-                    }
                 }
-                .foregroundStyle(Brand.primaryInk)
                 Button(role: .destructive) { center.stop(); dismiss() } label: {
                     Text("إيقاف التشغيل").font(.ui(.subheadline, .medium)).frame(minHeight: Brand.minTap)
                 }
@@ -279,6 +289,6 @@ struct NowPlayingSheet: View {
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
         .background(Brand.background.ignoresSafeArea())
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 }
