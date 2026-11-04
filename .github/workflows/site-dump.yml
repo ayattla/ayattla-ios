@@ -28,6 +28,15 @@ jobs:
               if st: open('css/inline-'+f.replace('.html','.css'),'w').write('\n/*---*/\n'.join(st))
           PY
           ls -la css
+      - name: Media library API samples (read only)
+        run: |
+          cd dump && mkdir -p api
+          curl -sSL -m 30 "https://ayattla.com/tools/bg-library.js?v=4" -o api/bg-library.js || true
+          for t in image video; do for c in mosques night nature quran sky; do
+            curl -sSL -m 30 "https://ayattla.com/api/media/search?type=$t&orientation=portrait&category=$c&page=1" -o "api/search-$t-$c.json" || true
+          done; done
+          curl -sSL -m 30 "https://ayattla.com/api/meta" -o api/meta.json || true
+          ls -la api; head -c 1500 api/search-image-mosques.json
       - name: Screenshots at phone width (Playwright)
         run: |
           cd dump && mkdir -p shots
