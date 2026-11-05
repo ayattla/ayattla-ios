@@ -228,8 +228,9 @@ enum DebugScreen {
         case "juz": JuzListView()
         case "status": StatusSourceView()
         case "home-mid": ScrollView { VStack(spacing: 32) { HomeCreateBento(); HomeMediaGallery() }.padding(16) }.brandScreen()
-        case "home-low": ScrollView { VStack(spacing: 32) { HomeQuranContent(); PresetStrip(); HomeSteps() }.padding(16) }.brandScreen()
-        case "home-site": ScrollView { VStack(spacing: 32) { HomeFeatures(); HomeStats(); HomeClosing() }.padding(16) }.brandScreen()
+        case "home-low": ScrollView { HomeToolLauncher().padding(16) }.brandScreen()
+        case "about": AboutAppView()
+        case "faq": FAQView()
         case "media": MediaLibrarySheet(kinds: [.video, .image], initial: .video) { _ in }
         case "media-image": MediaLibrarySheet(kinds: [.image]) { _ in }
         case "clip-video": ClipMakerView(media: MediaLibrary.Ref(provider: "pixabay", mediaId: "128406", type: .video))
