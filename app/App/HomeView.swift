@@ -15,9 +15,9 @@ enum AyahOfTheDay {
     }
 }
 
-/// Home (v3): ayattla.com's home page made native — hero with the site's headline and badges, the
-/// ayah of the day as the "phone" card, today's essentials as a bento row, then the site's sections
-/// (products, how it works, features, tool directory, numbers, questions, closing call).
+/// Home (v3.2): a place to use the tools — search, the content makers, today's essentials, every
+/// tool as a launcher by group, the ayah of the day, the media gallery, templates and recent work.
+/// The site's information sections live in «عن آيات تتلى» and «الأسئلة الشائعة».
 struct HomeView: View {
     @AppStorage("quran.lastPage") private var lastPage = 0
     @AppStorage(Favorites.key) private var favorites = ""
@@ -27,21 +27,15 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Brand.Space.xxl) {
-                hero
+                head
                 HomeCreateBento()
-                HomeMediaGallery()
-                if lib.isReady { ayahCard }
-                PresetStrip()
                 today
-                HomeQuranContent()
+                HomeToolLauncher()
+                if lib.isReady { ayahCard }
+                HomeMediaGallery()
+                PresetStrip()
                 RecentProjectsStrip()
-                allTools
-                HomeSources()
-                HomeSteps()
-                HomeFeatures()
-                HomeStats()
-                HomeFAQ()
-                HomeClosing()
+                HomeInfoLinks()
                 footer
             }
             .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.l)
@@ -70,6 +64,25 @@ struct HomeView: View {
                 NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
                     .accessibilityLabel("الإعدادات")
             }
+        }
+    }
+
+    /// Short head: greeting, hijri date and the tool search (the site's marketing hero moved to
+    /// «عن آيات تتلى»).
+    private var head: some View {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ماذا تريد اليوم؟").font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(Num.hijri(Date())).font(.ui(.footnote, .medium)).foregroundStyle(Brand.muted)
+                }
+                Spacer(minLength: 8)
+                Text("مجاني · بدون تسجيل").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Brand.tint, in: Capsule())
+            }
+            HomeToolSearch()
         }
     }
 
@@ -273,7 +286,7 @@ struct HomeView: View {
                 .padding(10).background(Brand.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .shadow(color: Color(hex: 0x0F1F17).opacity(0.08), radius: 12, y: 6)
                 .accessibilityHidden(true)
-            Text("صانع مقاطع وبطاقات قرآنية مجاني، صدقة جارية لكل من شارك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
+            Text("صدقة جارية لكل من شارك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
                 .multilineTextAlignment(.center)
             Text("© آيات تتلى — ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)
         }

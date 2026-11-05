@@ -103,11 +103,18 @@ struct ToolsView: View {
     enum Filter: Hashable { case all, group(SiteTool.Group), new }
 
     @State private var query = ""
-    @State private var filter = Filter.all
+    @State private var filter: Filter
+    private let autoFocus: Bool
     @State private var usageTick = 0
     @FocusState private var searching: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.horizontalSizeClass) private var size
+
+    /// `filter` opens one group (from the home's «عرض الكل»); `autoFocus` puts the cursor in the search box.
+    init(filter: Filter = .all, autoFocus: Bool = false) {
+        _filter = State(initialValue: filter)
+        self.autoFocus = autoFocus
+    }
 
     var body: some View {
         ScrollView {
@@ -149,6 +156,7 @@ struct ToolsView: View {
         .navigationTitle("المزيد")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { usageTick += 1 }
+        .task { if autoFocus { try? await Task.sleep(for: .milliseconds(450)); searching = true } }
     }
 
     private var browsing: Bool { query.trimmingCharacters(in: .whitespaces).isEmpty && filter == .all }
@@ -274,6 +282,12 @@ struct ToolsView: View {
             }
             NavigationLink { SettingsView() } label: {
                 ServiceCard("الإعدادات", subtitle: "القارئ والخط والتنبيهات", symbol: "gearshape", style: .soft, layout: .row)
+            }
+            NavigationLink { AboutAppView() } label: {
+                ServiceCard("عن آيات تتلى", subtitle: "طريقة العمل والمزايا والمصادر", symbol: "info.circle", style: .soft, layout: .row)
+            }
+            NavigationLink { FAQView() } label: {
+                ServiceCard("الأسئلة الشائعة", subtitle: "إجابات مختصرة عن الأدوات", symbol: "questionmark.circle", style: .soft, layout: .row)
             }
         }
         .buttonStyle(.pressable)
