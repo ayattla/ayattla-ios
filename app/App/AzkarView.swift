@@ -27,7 +27,10 @@ enum AzkarProgress {
 }
 
 /// Azkar from the content pack (chapters of Hisn al-Muslim), per design/Azkar.dc.html.
+/// «حصن المسلم» uses the same screen with every chapter and no daily shortcuts.
 struct AzkarView: View {
+    var title = "الأذكار"
+    var showsDaily = true
     @State private var query = ""
     private let categories: [ZikrCategory] = (try? ContentLibrary.shared.store?.azkarCategories()) ?? []
 
@@ -42,7 +45,7 @@ struct AzkarView: View {
             } else {
                 List {
 Group {
-                    if query.isEmpty {
+                    if query.isEmpty && showsDaily {
                         Section("اليومية") {
                             ForEach(pinnedCategories) { c in link(c, symbol: Self.symbol(c.title)) }
                         }
@@ -57,7 +60,7 @@ Group {
             }
         }
         .brandScreen()
-        .navigationTitle("الأذكار")
+        .navigationTitle(title)
         .searchable(text: $query, prompt: "ابحث في الأبواب")
     }
 
