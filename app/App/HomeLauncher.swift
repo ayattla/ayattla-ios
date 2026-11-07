@@ -115,25 +115,6 @@ struct HomeToolLauncher: View {
     }
 }
 
-/// Links at the end of the home to the pages that hold the site's information sections.
-struct HomeInfoLinks: View {
-    var body: some View {
-        HStack(spacing: Brand.Space.m) {
-            NavigationLink { AboutAppView() } label: { link("عن آيات تتلى", "info.circle") }
-            NavigationLink { FAQView() } label: { link("الأسئلة الشائعة", "questionmark.circle") }
-        }
-        .buttonStyle(.pressable)
-    }
-
-    private func link(_ title: String, _ symbol: String) -> some View {
-        Label(title, systemImage: symbol)
-            .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(Brand.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
-    }
-}
-
 /// «عن آيات تتلى»: the site's how it works, features, sources, numbers and closing call.
 struct AboutAppView: View {
     var body: some View {
