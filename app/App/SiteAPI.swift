@@ -61,7 +61,7 @@ enum SiteAPI {
     static func hadith(cat: String, page: Int, query: String) async throws -> HadithPage {
         var c = URLComponents(url: base.appendingPathComponent("api/hadith/browse"), resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "cat", value: cat), .init(name: "page", value: String(page)), .init(name: "q", value: query)]
-        return try await get(c.url!, cacheKey: "hadith-\(cat)-\(page)-\(query)")
+        return try await get(c.url!, cacheKey: "hadith-\(cat)-\(page)-\(query)", maxAge: 6 * 3600)
     }
 
     /// POST /api/hadith/check {"text": ...}  (as on /tools/hadith-checker)
@@ -78,16 +78,24 @@ enum SiteAPI {
 
     /// GET /api/radios (mp3quran.net streams, as on /tools/radio)
     static func radios() async throws -> [Radio] {
-        try await (get(base.appendingPathComponent("api/radios"), cacheKey: "radios") as Radios).radios
+        try await (get(base.appendingPathComponent("api/radios"), cacheKey: "radios", maxAge: 24 * 3600) as Radios).radios
     }
 
-    private static func get<T: Decodable>(_ url: URL, cacheKey: String) async throws -> T {
+    /// Cache first, then network, then stale cache:
+    /// 1. a copy younger than `maxAge` is used without touching the server (many users opening
+    ///    the same page no longer each cost a request, and the screen opens instantly);
+    /// 2. otherwise the server, with one retry after a short pause for timeouts and 5xx;
+    /// 3. if that fails, any older copy (works offline and while the server is busy).
+    private static func get<T: Decodable>(_ url: URL, cacheKey: String, maxAge: TimeInterval = 0) async throws -> T {
         let file = cacheDir.appendingPathComponent(cacheKey.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "x")
+        if maxAge > 0,
+           let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate,
+           Date().timeIntervalSince(modified) < maxAge,
+           let data = try? Data(contentsOf: file), let value = try? JSONDecoder().decode(T.self, from: data) {
+            return value
+        }
         do {
-            var r = URLRequest(url: url)
-            r.timeoutInterval = 20
-            let (data, resp) = try await URLSession.shared.data(for: r)
-            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+            let data = try await fetch(url)
             let value = try JSONDecoder().decode(T.self, from: data)
             try? data.write(to: file, options: .atomic)
             return value
@@ -95,6 +103,28 @@ enum SiteAPI {
             if let data = try? Data(contentsOf: file), let value = try? JSONDecoder().decode(T.self, from: data) { return value }
             throw error
         }
+    }
+
+    /// One GET with a single retry (after 1.5 s) when the failure is transient.
+    private static func fetch(_ url: URL) async throws -> Data {
+        var attempt = 0
+        while true {
+            do {
+                var r = URLRequest(url: url)
+                r.timeoutInterval = 20
+                let (data, resp) = try await URLSession.shared.data(for: r)
+                let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+                if code == 200 { return data }
+                throw URLError(code >= 500 || code == 429 ? .cannotConnectToHost : .badServerResponse)
+            } catch let e as URLError where attempt == 0 && Self.transient(e) {
+                attempt += 1
+                try await Task.sleep(nanoseconds: 1_500_000_000)
+            }
+        }
+    }
+
+    private static func transient(_ e: URLError) -> Bool {
+        [.timedOut, .cannotConnectToHost, .networkConnectionLost, .cannotFindHost, .dnsLookupFailed].contains(e.code)
     }
 
     private static let cacheDir: URL = {
