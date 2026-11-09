@@ -75,12 +75,16 @@ Group {
 
     private func link(_ c: ZikrCategory, symbol: String?) -> some View {
         NavigationLink { AzkarSession(category: c) } label: {
-            if let symbol {
-                Label { Text(c.title) } icon: { Image(systemName: symbol).foregroundStyle(Brand.primary) }
-                    .frame(minHeight: Brand.minTap)
-            } else {
-                Text(c.title).frame(minHeight: Brand.minTap)
+            HStack(spacing: Brand.Space.m) {
+                if let symbol {
+                    IconTile(symbol, style: .gradient(Self.pinned.firstIndex(of: c.title) ?? 0), size: 36)
+                } else {
+                    IconTile("text.book.closed", style: .soft, size: 36)
+                }
+                Text(c.title).font(.ui(.body, symbol == nil ? .regular : .semibold)).foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(minHeight: 52)
         }
     }
 
