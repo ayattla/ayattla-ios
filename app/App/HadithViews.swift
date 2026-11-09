@@ -15,26 +15,51 @@ struct HadithRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let match {
-                Text("التطابق \(Num.int(match))٪").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+            HStack(spacing: 6) {
+                if let match {
+                    Text("التطابق \(Num.int(match))٪").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+                        .padding(.horizontal, 8).padding(.vertical, 3).background(Brand.tint, in: Capsule())
+                }
+                if !grade.isEmpty {
+                    Text(grade).font(.ui(.caption, .semibold)).foregroundStyle(Brand.goldInk)
+                        .padding(.horizontal, 8).padding(.vertical, 3).background(Brand.goldSoft, in: Capsule())
+                        .accessibilityLabel("الحكم: \(grade)")
+                }
+                if let category, !category.isEmpty {
+                    Text(category).font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(1)
+                }
             }
             Text(text).font(.custom("Amiri", size: 18, relativeTo: .body)).lineSpacing(6).textSelection(.enabled)
-            Text([source, grade.isEmpty ? nil : "الحكم: \(grade)", category].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.ui(.caption)).foregroundStyle(Brand.muted)
-            HStack(spacing: 14) {
-                if let u = URL(string: url), !url.isEmpty {
-                    Link(destination: u) { Label("الشرح في الموسوعة", systemImage: "arrow.up.left.square") }
-                }
-                NavigationLink { TextCardView(title: "بطاقة حديث", text: text, reference: [source, grade].filter { !$0.isEmpty }.joined(separator: " · ")) } label: {
-                    Label("اصنع بطاقة", systemImage: "rectangle.portrait")
-                }
-                ShareLink(item: "\(text)\n\n\(source)") { Label("مشاركة", systemImage: "square.and.arrow.up") }
+                .foregroundStyle(Brand.ink)
+            if !source.isEmpty {
+                Text(source).font(.ui(.caption)).foregroundStyle(Brand.muted)
             }
-            .labelStyle(.iconOnly)
-            .font(.ui(.title3))
+            // Labeled actions (the icon-only row was flagged in the quality review).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { actions }
+                VStack(alignment: .leading, spacing: 8) { actions }
+            }
+            .font(.ui(.caption, .semibold))
             .buttonStyle(.borderless)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
+    }
+
+    @ViewBuilder private var actions: some View {
+        if let u = URL(string: url), !url.isEmpty {
+            Link(destination: u) { action("الشرح", "arrow.up.left.square") }
+        }
+        NavigationLink { TextCardView(title: "بطاقة حديث", text: text, reference: [source, grade].filter { !$0.isEmpty }.joined(separator: " · ")) } label: {
+            action("اصنع بطاقة", "rectangle.portrait")
+        }
+        ShareLink(item: "\(text)\n\n\(source)") { action("مشاركة", "square.and.arrow.up") }
+    }
+
+    private func action(_ title: String, _ symbol: String) -> some View {
+        Label(title, systemImage: symbol)
+            .foregroundStyle(Brand.primaryInk)
+            .padding(.horizontal, 12).frame(minHeight: Brand.minTap)
+            .background(Brand.tint, in: Capsule())
     }
 }
 
@@ -49,6 +74,9 @@ struct HadithView: View {
     @State private var total = 0
     @State private var loading = false
     @State private var failed = false
+    /// Only the latest request may write results (a quick category switch used to let an older
+    /// response overwrite a newer one).
+    @State private var request = 0
 
     var body: some View {
         List {
@@ -103,9 +131,9 @@ Group {
             cat = value
             Task { await load(more: false) }
         } label: {
-            Text(title).font(.ui(.footnote, .medium)).foregroundStyle(on ? .white : .primary)
-                .padding(.horizontal, 12).frame(minHeight: 36)
-                .background(on ? Brand.primary : Color.cardSurface, in: Capsule())
+            Text(title).font(.ui(.footnote, on ? .semibold : .medium)).foregroundStyle(on ? .white : Brand.ink)
+                .padding(.horizontal, 14).frame(minHeight: 38)
+                .background { if on { Capsule().fill(Brand.siteGradient) } else { Capsule().fill(Color.cardSurface) } }
                 .overlay(Capsule().stroke(on ? .clear : Brand.line, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -113,14 +141,18 @@ Group {
     }
 
     private func load(more: Bool) async {
+        request += 1
+        let mine = request
         loading = true; failed = false
         let p = more ? page + 1 : 1
         do {
             let r = try await SiteAPI.hadith(cat: cat, page: p, query: query.trimmingCharacters(in: .whitespaces))
+            guard mine == request else { return }
             if cats.isEmpty { cats = r.cats }
             items = more ? items + r.items : r.items
             total = r.total; page = p
         } catch {
+            guard mine == request else { return }
             failed = true
         }
         loading = false
