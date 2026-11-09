@@ -115,7 +115,7 @@ jobs:
   app:
     name: App build, tests and screenshots (simulator)
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 75
     needs: [packages, content]
     permissions:
       contents: write

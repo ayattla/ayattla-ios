@@ -80,10 +80,10 @@ struct HomeView: View {
                     .accessibilityHidden(true)
                 Text(Self.greeting(now)).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
                 Spacer(minLength: 8)
-                Text("مجاني · بدون تسجيل").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(Brand.tint, in: Capsule())
+                if !typeSize.isAccessibilitySize { freePill }
             }
+            // At accessibility sizes the pill takes its own line instead of squeezing the greeting.
+            if typeSize.isAccessibilitySize { freePill }
 
             Text("ماذا تريد اليوم؟").font(.ui(.title, .bold)).foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -101,6 +101,12 @@ struct HomeView: View {
         .padding(Brand.Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pageHeadSurface()
+    }
+
+    private var freePill: some View {
+        Text("مجاني · بدون تسجيل").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Brand.tint, in: Capsule())
     }
 
     @ViewBuilder private func dateChips(_ now: Date) -> some View {
