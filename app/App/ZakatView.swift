@@ -157,12 +157,17 @@ struct ZakatSummary {
     /// The site's `toLocaleString('en-US', {maximumFractionDigits: 2})` with Arabic-Indic digits:
     /// "٢,٤٩٠.٦٣".
     static func money(_ x: Double) -> String {
+        Num.digits(moneyFormatter.string(from: NSNumber(value: x)) ?? "0")
+    }
+
+    /// Built once; recalculating used to create a formatter for every figure on screen.
+    private static let moneyFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.locale = Locale(identifier: "en_US")
         f.numberStyle = .decimal
         f.maximumFractionDigits = 2
         f.roundingMode = .halfUp   // JS toLocaleString rounds half away from zero (2490.625 → .63)
         f.minimumFractionDigits = 0
-        return Num.digits(f.string(from: NSNumber(value: x)) ?? "0")
-    }
+        return f
+    }()
 }

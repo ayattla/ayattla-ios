@@ -465,8 +465,9 @@ Group {
                                 Text("خطة الختمة").font(.ui(.headline))
                                 Text(khatmaLine).font(.ui(.caption)).foregroundStyle(.secondary)
                             }
-                        } icon: { Image(systemName: "calendar").foregroundStyle(Brand.primary) }
-                        .frame(minHeight: Brand.minTap)
+                        } icon: { IconTile("calendar", style: .gradient(2), size: 36) }
+                        .labelStyle(SettingsRowLabelStyle())
+                        .frame(minHeight: 56)
                     }
                 
 }.listRowBackground(Brand.surface)
@@ -500,7 +501,7 @@ Group {
     private func stat(_ n: Int, _ label: String, _ symbol: String, _ s: Section) -> some View {
         Button { withAnimation(.snappy) { section = s } } label: {
             HStack(spacing: Brand.Space.s) {
-                IconTile(symbol, style: section == s ? .emerald : .gold, size: 34)
+                IconTile(symbol, style: section == s ? .gradient(0) : .soft, size: 34)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(Num.int(n)).font(.ui(.headline)).foregroundStyle(Brand.ink)
                     Text(label).font(.ui(.caption2)).foregroundStyle(Brand.muted).lineLimit(1)
@@ -508,7 +509,7 @@ Group {
                 Spacer(minLength: 0)
             }
             .padding(Brand.Space.s + 2)
-            .surface(section == s ? .gold : .raised, radius: 16)
+            .surface(section == s ? .tinted : .raised, radius: 16)
         }
         .buttonStyle(.pressable)
         .accessibilityLabel("\(Num.int(n)) \(label)")
@@ -516,6 +517,26 @@ Group {
 }
 
 // MARK: - Projects
+
+/// Decoded project images kept in memory, so grids don't read and decode files on every redraw.
+/// Keyed by path and modification date, so a re-saved project shows its new thumbnail.
+enum ThumbnailCache {
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.countLimit = 120
+        return c
+    }()
+
+    static func image(_ url: URL) -> UIImage? {
+        let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?
+            .timeIntervalSince1970 ?? 0
+        let key = "\(url.path)#\(date)" as NSString
+        if let hit = cache.object(forKey: key) { return hit }
+        guard let img = UIImage(contentsOfFile: url.path) else { return nil }
+        cache.setObject(img, forKey: key)
+        return img
+    }
+}
 
 struct ProjectTile: View {
     let project: Project
@@ -525,7 +546,7 @@ struct ProjectTile: View {
         let ratio = CardOptions.Ratio(rawValue: project.ratio) ?? .square
         let h = min(width * ratio.size.height / ratio.size.width, width * 1.6)
         ZStack(alignment: .bottomLeading) {
-            if let img = UIImage(contentsOfFile: ProjectStore.shared.thumbnailURL(project).path) {
+            if let img = ThumbnailCache.image(ProjectStore.shared.thumbnailURL(project)) {
                 Image(uiImage: img).resizable().scaledToFill()
             } else {
                 LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .top, endPoint: .bottom)
@@ -587,7 +608,7 @@ struct ProjectDetailView: View {
                 Group {
                     if project.kind == .clip {
                         VideoPlayer(player: AVPlayer(url: url))
-                    } else if let img = UIImage(contentsOfFile: url.path) {
+                    } else if let img = ThumbnailCache.image(url) {
                         Image(uiImage: img).resizable()
                     }
                 }

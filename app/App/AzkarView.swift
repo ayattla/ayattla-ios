@@ -32,7 +32,7 @@ struct AzkarView: View {
     var title = "الأذكار"
     var showsDaily = true
     @State private var query = ""
-    private let categories: [ZikrCategory] = (try? ContentLibrary.shared.store?.azkarCategories()) ?? []
+    private let categories: [ZikrCategory] = ContentLibrary.shared.azkarCategories
 
     /// Chapters shown first, matched by their exact titles in the source.
     static let pinned = ["أذكار الصباح", "أذكار المساء", "أذكار النوم", "أذكار الاستيقاظ من النوم", "الأذكار بعد السلام من الصلاة"]

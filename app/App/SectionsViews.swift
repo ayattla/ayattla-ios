@@ -68,7 +68,7 @@ struct AzkarHadithView: View {
 
     /// Shortcut tiles to the four daily chapters, opened straight into the counter.
     private var dailyAzkar: some View {
-        let cats = (try? ContentLibrary.shared.store?.azkarCategories()) ?? []
+        let cats = ContentLibrary.shared.azkarCategories
         let pinned = AzkarView.pinned.prefix(4).compactMap { t in cats.first { $0.title == t } }
         return VStack(alignment: .leading, spacing: 12) {
             SectionHeader("أذكار اليوم", subtitle: "يحفظ العداد تقدمك اليوم على جهازك")

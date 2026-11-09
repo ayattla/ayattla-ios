@@ -86,11 +86,11 @@ Group {
                 NavigationLink {
                     ReciterPicker(selection: $reciter)
                 } label: {
-                    LabeledContent("القارئ المفضل", value: Catalog.reciter(reciter)?.name ?? "")
+                    LabeledContent { Text(Catalog.reciter(reciter)?.name ?? "") } label: { row("القارئ المفضل", "headphones", 0) }
                 }
-                Picker("الترجمة", selection: $translation) {
+                Picker(selection: $translation) {
                     ForEach(Catalog.translations) { Text($0.name).tag($0.id) }
-                }
+                } label: { row("الترجمة", "character.book.closed", 1) }
                 .pickerStyle(.navigationLink)
                 fontScalePicker
             }
@@ -101,9 +101,9 @@ Group {
             }
 
             Section {
-                Toggle("أذكار الصباح والمساء", isOn: notify($notifyAzkar))
-                Toggle("آية اليوم", isOn: notify($notifyDailyAyah))
-                Toggle("ورد الختمة", isOn: notify($notifyKhatma))
+                Toggle(isOn: notify($notifyAzkar)) { row("أذكار الصباح والمساء", "sunrise", 2) }
+                Toggle(isOn: notify($notifyDailyAyah)) { row("آية اليوم", "book", 3) }
+                Toggle(isOn: notify($notifyKhatma)) { row("ورد الختمة", "checkmark.circle", 4) }
             } header: {
                 Text("التنبيهات")
             } footer: {
@@ -111,10 +111,10 @@ Group {
             }
 
             Section("عن التطبيق") {
-                NavigationLink("مصادر المحتوى والتراخيص") { LicensesView() }
-                NavigationLink("الخصوصية") { PrivacyView() }
-                LabeledContent("الإصدار", value: Self.versionText())
-                LabeledContent("حزمة المحتوى", value: Self.contentText(nil))
+                NavigationLink { LicensesView() } label: { row("مصادر المحتوى والتراخيص", "doc.text", 0) }
+                NavigationLink { PrivacyView() } label: { row("الخصوصية", "lock.shield", 1) }
+                LabeledContent { Text(Self.versionText()) } label: { row("الإصدار", "info.circle", 2) }
+                LabeledContent { Text(Self.contentText(nil)) } label: { row("حزمة المحتوى", "shippingbox", 3) }
             }
         
 }.listRowBackground(Brand.surface)
@@ -133,6 +133,16 @@ Group {
         } message: {
             Text("اسمح للتطبيق بإرسال التنبيهات من إعدادات الجهاز")
         }
+    }
+
+    /// A settings row label with a small gradient icon tile, as in the iOS Settings app (v3).
+    private func row(_ title: String, _ symbol: String, _ tile: Int) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            IconTile(symbol, style: .gradient(tile), size: 30)
+        }
+        .labelStyle(SettingsRowLabelStyle())
     }
 
     /// Turning a reminder on asks for notification permission first; if refused the toggle stays off.
@@ -344,6 +354,16 @@ private struct AdaptiveLabeledRow<L: View, C: View>: View {
                 Spacer(minLength: 12)
                 content.foregroundStyle(.secondary).multilineTextAlignment(.trailing)
             }
+        }
+    }
+}
+
+/// Icon and title side by side with the app's spacing (the system style squeezes larger tiles).
+struct SettingsRowLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 12) {
+            configuration.icon
+            configuration.title.foregroundStyle(Brand.ink)
         }
     }
 }
