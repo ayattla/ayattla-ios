@@ -508,6 +508,8 @@ struct ClipExportView: View {
     }
 
     private func start() {
+        // Every path below reads job.items.last; an empty job fails cleanly instead of crashing.
+        guard !job.items.isEmpty else { phase = .failed("اختر آية واحدة على الأقل"); return }
         phase = .working("جلب التلاوة", 0)
         task = Task { @MainActor in
             motion = job.motion
@@ -561,8 +563,9 @@ struct ClipExportView: View {
     /// cut to the chosen ayat; one text frame per word. Ayat whose word count differs from the timings
     /// are shown without highlighting.
     @MainActor private func renderHighlighted(qfID: Int, color: UInt32) async throws -> URL {
-        let clip = job.items.filter { $0.surah == job.items.last!.surah }
-        let surah = clip[0].surah
+        guard let lastSurah = job.items.last?.surah else { throw URLError(.cannotParseResponse) }
+        let clip = job.items.filter { $0.surah == lastSurah }
+        let surah = lastSurah
         phase = .working("جلب توقيتات الكلمات", 0.02)
         let rec = try await QF.recitation(qfID, chapter: surah)
         let stamps = Dictionary(rec.audio_file.timestamps.map { ($0.verse_key, $0) }, uniquingKeysWith: { a, _ in a })
