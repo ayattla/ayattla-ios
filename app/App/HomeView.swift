@@ -465,8 +465,9 @@ Group {
                                 Text("خطة الختمة").font(.ui(.headline))
                                 Text(khatmaLine).font(.ui(.caption)).foregroundStyle(.secondary)
                             }
-                        } icon: { Image(systemName: "calendar").foregroundStyle(Brand.primary) }
-                        .frame(minHeight: Brand.minTap)
+                        } icon: { IconTile("calendar", style: .gradient(2), size: 36) }
+                        .labelStyle(SettingsRowLabelStyle())
+                        .frame(minHeight: 56)
                     }
                 
 }.listRowBackground(Brand.surface)
@@ -500,7 +501,7 @@ Group {
     private func stat(_ n: Int, _ label: String, _ symbol: String, _ s: Section) -> some View {
         Button { withAnimation(.snappy) { section = s } } label: {
             HStack(spacing: Brand.Space.s) {
-                IconTile(symbol, style: section == s ? .emerald : .gold, size: 34)
+                IconTile(symbol, style: section == s ? .gradient(0) : .soft, size: 34)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(Num.int(n)).font(.ui(.headline)).foregroundStyle(Brand.ink)
                     Text(label).font(.ui(.caption2)).foregroundStyle(Brand.muted).lineLimit(1)
@@ -508,7 +509,7 @@ Group {
                 Spacer(minLength: 0)
             }
             .padding(Brand.Space.s + 2)
-            .surface(section == s ? .gold : .raised, radius: 16)
+            .surface(section == s ? .tinted : .raised, radius: 16)
         }
         .buttonStyle(.pressable)
         .accessibilityLabel("\(Num.int(n)) \(label)")
