@@ -153,7 +153,8 @@ jobs:
             -derivedDataPath build test | tee build.log | grep -E "error:|warning: |Test Suite|Executed|BUILD|TEST" || true
           test ${PIPESTATUS[0]} -eq 0
       - name: Screenshots on simulator
-        if: success()
+        # Screenshots only on main and manual runs; pull requests build and test only.
+        if: success() && github.event_name != 'pull_request'
         run: |
           UDID="${{ steps.sim.outputs.udid }}"
           BUNDLE=com.ayattla.AyatTutla
@@ -204,7 +205,7 @@ jobs:
             done
           fi
       - name: Screenshots on a small and a large iPhone
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         run: |
           BUNDLE=com.ayattla.AyatTutla
           APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
@@ -222,7 +223,7 @@ jobs:
             xcrun simctl shutdown "$DEV" || true
           done
       - name: Screenshots on the minimum iOS
-        if: success() && steps.sim.outputs.old != steps.sim.outputs.udid
+        if: success() && github.event_name != 'pull_request' && steps.sim.outputs.old != steps.sim.outputs.udid
         run: |
           OLD="${{ steps.sim.outputs.old }}"
           BUNDLE=com.ayattla.AyatTutla
@@ -252,7 +253,7 @@ jobs:
             -F "file=@AyatTutla-sim.zip" -F "platform=ios" -F "note=main ${GITHUB_SHA::7}" > appetize.json
           python3 -c "import json;d=json.load(open('appetize.json'));print('publicKey', d.get('publicKey'));print('url', d.get('publicURL') or 'https://appetize.io/app/'+d.get('publicKey',''))" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Publish screenshots to the ci-shots branch
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         run: |
           cd shots
           for f in *.png; do sips -Z 1400 "$f" >/dev/null; done
