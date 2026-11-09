@@ -85,7 +85,7 @@ enum QF {
         let (data, resp) = try await URLSession.shared.data(for: r)
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         let v = try JSONDecoder().decode(T.self, from: data)
-        try? data.write(to: file)
+        try? data.write(to: file, options: .atomic)
         return v
     }
 
