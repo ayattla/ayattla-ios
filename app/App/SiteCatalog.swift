@@ -40,6 +40,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "favorites", title: "آياتي المحفوظة", subtitle: "الآيات التي حفظتها لتعود إليها وتصنع منها", symbol: "star", group: .content, isNew: true),
         .init(id: "ayah-of-the-day", title: "آية اليوم", subtitle: "آية جديدة كل يوم للتدبر والمشاركة", symbol: "sun.max", group: .quran, isNew: false),
         .init(id: "azkar", title: "الأذكار", subtitle: "أذكار الصباح والمساء والنوم مع العداد", symbol: "sun.horizon", group: .daily, isNew: true),
+        .init(id: "hisn-almuslim", title: "حصن المسلم", subtitle: "أبواب الأذكار والأدعية كاملة مع العداد", symbol: "shield.lefthalf.filled", group: .daily, isNew: true),
         .init(id: "radio", title: "إذاعات القرآن", subtitle: "بث مباشر لإذاعات التلاوة", symbol: "radio", group: .quran, isNew: true),
         .init(id: "prayer-times", title: "مواقيت الصلاة", subtitle: "حسب مدينتك بطريقة الحساب المعتمدة", symbol: "clock", group: .daily, isNew: false),
         .init(id: "qibla", title: "اتجاه القبلة", subtitle: "زاوية القبلة من موقعك مع البوصلة", symbol: "safari", group: .daily, isNew: false),
@@ -83,6 +84,7 @@ struct SiteTool: Identifiable, Hashable {
         case "favorites": LibraryView(initial: .favorites)
         case "ayah-of-the-day": AyahOfTheDayView()
         case "azkar": AzkarView()
+        case "hisn-almuslim": AzkarView(title: "حصن المسلم", showsDaily: false)
         case "radio": RadioView()
         case "prayer-times": PrayerTimesView()
         case "qibla": QiblaView()

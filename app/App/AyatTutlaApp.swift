@@ -254,17 +254,23 @@ enum DebugScreen {
 struct FloatingTabBar: View {
     @Binding var selection: Tab
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Namespace private var pill
 
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
         HStack(spacing: 4) {
             ForEach(Tab.allCases) { t in
                 let on = t == selection
                 Button {
-                    withAnimation(.snappy(duration: 0.22)) { selection = t }
+                    guard t != selection else { return }
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.82)) { selection = t }
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: on ? t.symbol + ".fill" : t.symbol)
-                            .font(.system(size: 18, weight: .medium))
+                            .font(.system(size: 18, weight: on ? .semibold : .medium))
+                            .symbolEffect(.bounce, value: on && !reduceMotion)
                         if !typeSize.isAccessibilitySize {
                             Text(t.title).font(.ui(size: 11, on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.8)
                         }
@@ -272,7 +278,12 @@ struct FloatingTabBar: View {
                     .foregroundStyle(on ? Color.white : Brand.muted)
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background {
-                        if on { RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Brand.siteGradient) }
+                        if on {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Brand.siteGradient)
+                                .shadow(color: Color(hex: 0x1F8A62).opacity(0.35), radius: 8, y: 4)
+                                .matchedGeometryEffect(id: "selected", in: pill)
+                        }
                     }
                     .contentShape(Rectangle())
                 }
@@ -281,9 +292,16 @@ struct FloatingTabBar: View {
                 .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             }
         }
-        .padding(5)
-        .background(Brand.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+        .padding(6)
+        .background {
+            if reduceTransparency {
+                shape.fill(Brand.surface)
+            } else {
+                shape.fill(.regularMaterial)
+                shape.fill(Brand.surface.opacity(0.55))
+            }
+        }
+        .overlay(shape.strokeBorder(Brand.line, lineWidth: 1))
         .shadow(color: Color(hex: 0x0F1F17).opacity(0.14), radius: 18, y: 8)
         .padding(.horizontal, 12)
         .padding(.bottom, 2)

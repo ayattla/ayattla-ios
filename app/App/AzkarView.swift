@@ -27,7 +27,10 @@ enum AzkarProgress {
 }
 
 /// Azkar from the content pack (chapters of Hisn al-Muslim), per design/Azkar.dc.html.
+/// «حصن المسلم» uses the same screen with every chapter and no daily shortcuts.
 struct AzkarView: View {
+    var title = "الأذكار"
+    var showsDaily = true
     @State private var query = ""
     private let categories: [ZikrCategory] = (try? ContentLibrary.shared.store?.azkarCategories()) ?? []
 
@@ -42,7 +45,7 @@ struct AzkarView: View {
             } else {
                 List {
 Group {
-                    if query.isEmpty {
+                    if query.isEmpty && showsDaily {
                         Section("اليومية") {
                             ForEach(pinnedCategories) { c in link(c, symbol: Self.symbol(c.title)) }
                         }
@@ -57,7 +60,7 @@ Group {
             }
         }
         .brandScreen()
-        .navigationTitle("الأذكار")
+        .navigationTitle(title)
         .searchable(text: $query, prompt: "ابحث في الأبواب")
     }
 
@@ -72,12 +75,16 @@ Group {
 
     private func link(_ c: ZikrCategory, symbol: String?) -> some View {
         NavigationLink { AzkarSession(category: c) } label: {
-            if let symbol {
-                Label { Text(c.title) } icon: { Image(systemName: symbol).foregroundStyle(Brand.primary) }
-                    .frame(minHeight: Brand.minTap)
-            } else {
-                Text(c.title).frame(minHeight: Brand.minTap)
+            HStack(spacing: Brand.Space.m) {
+                if let symbol {
+                    IconTile(symbol, style: .gradient(Self.pinned.firstIndex(of: c.title) ?? 0), size: 36)
+                } else {
+                    IconTile("text.book.closed", style: .soft, size: 36)
+                }
+                Text(c.title).font(.ui(.body, symbol == nil ? .regular : .semibold)).foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(minHeight: 52)
         }
     }
 

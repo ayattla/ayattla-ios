@@ -35,7 +35,6 @@ struct HomeView: View {
                 HomeMediaGallery()
                 PresetStrip()
                 RecentProjectsStrip()
-                HomeInfoLinks()
                 footer
             }
             .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.l)
@@ -67,22 +66,68 @@ struct HomeView: View {
         }
     }
 
-    /// Short head: greeting, hijri date and the tool search (the site's marketing hero moved to
-    /// «عن آيات تتلى»).
+    /// Head (v4): a soft page-head card with the time of day greeting, today's hijri and
+    /// gregorian dates, the free pill, the question and the tool search.
     private var head: some View {
-        VStack(alignment: .leading, spacing: Brand.Space.m) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ماذا تريد اليوم؟").font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
-                        .accessibilityAddTraits(.isHeader)
-                    Text(Num.hijri(Date())).font(.ui(.footnote, .medium)).foregroundStyle(Brand.muted)
-                }
+        let now = Date()
+        return VStack(alignment: .leading, spacing: Brand.Space.m) {
+            HStack(alignment: .center, spacing: Brand.Space.s) {
+                Image(systemName: Self.greetingSymbol(now))
+                    .font(.ui(.subheadline, .semibold))
+                    .foregroundStyle(Brand.goldInk)
+                    .frame(width: 30, height: 30)
+                    .background(Brand.goldSoft, in: Circle())
+                    .accessibilityHidden(true)
+                Text(Self.greeting(now)).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
                 Spacer(minLength: 8)
-                Text("مجاني · بدون تسجيل").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(Brand.tint, in: Capsule())
+                if !typeSize.isAccessibilitySize { freePill }
             }
+            // At accessibility sizes the pill takes its own line instead of squeezing the greeting.
+            if typeSize.isAccessibilitySize { freePill }
+
+            Text("ماذا تريد اليوم؟").font(.ui(.title, .bold)).foregroundStyle(Brand.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Brand.Space.s) { dateChips(now) }
+                VStack(alignment: .leading, spacing: 6) { dateChips(now) }
+            }
+            .font(.ui(.footnote, .medium))
+            .foregroundStyle(Brand.muted)
+
             HomeToolSearch()
+        }
+        .padding(Brand.Space.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pageHeadSurface()
+    }
+
+    private var freePill: some View {
+        Text("مجاني · بدون تسجيل").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Brand.tint, in: Capsule())
+    }
+
+    @ViewBuilder private func dateChips(_ now: Date) -> some View {
+        Label(Num.hijri(now), systemImage: "moon.stars")
+        Label(now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Num.locale)), systemImage: "calendar")
+    }
+
+    /// Greeting by the time of day (no religious text).
+    static func greeting(_ date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 4..<12: "صباح الخير"
+        case 12..<17: "طاب يومك"
+        default: "مساء الخير"
+        }
+    }
+
+    static func greetingSymbol(_ date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 4..<12: "sunrise"
+        case 12..<17: "sun.max"
+        default: "moon"
         }
     }
 
@@ -280,18 +325,51 @@ struct HomeView: View {
         }
     }
 
+    /// Footer (v4): an app section rather than a website footer — grouped rows to the about page,
+    /// the questions, settings and sharing the app, then a quiet sign-off with the version.
     private var footer: some View {
-        VStack(spacing: 8) {
-            Image("LogoFull").resizable().scaledToFit().frame(width: 72, height: 72)
-                .padding(10).background(Brand.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .shadow(color: Color(hex: 0x0F1F17).opacity(0.08), radius: 12, y: 6)
-                .accessibilityHidden(true)
-            Text("صدقة جارية لكل من شارك").font(.ui(.footnote)).foregroundStyle(Brand.muted)
-                .multilineTextAlignment(.center)
-            Text("© آيات تتلى — ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)
+        VStack(spacing: Brand.Space.l) {
+            VStack(spacing: 0) {
+                NavigationLink { AboutAppView() } label: { footerRow("عن آيات تتلى", "info.circle", 0) }
+                Divider().padding(.leading, 64)
+                NavigationLink { FAQView() } label: { footerRow("الأسئلة الشائعة", "questionmark.circle", 2) }
+                Divider().padding(.leading, 64)
+                NavigationLink { SettingsView() } label: { footerRow("الإعدادات", "gearshape", 4) }
+                Divider().padding(.leading, 64)
+                ShareLink(item: URL(string: "https://ayattla.com")!,
+                          message: Text("آيات تتلى: مقاطع وبطاقات قرآنية وأدوات يومية، مجانا وبلا تسجيل")) {
+                    footerRow("شارك التطبيق", "square.and.arrow.up", 6, chevron: false)
+                }
+            }
+            .buttonStyle(.pressable)
+            .surface(.raised)
+
+            VStack(spacing: 6) {
+                Image("LogoFull").resizable().scaledToFit().frame(width: 52, height: 52)
+                    .accessibilityHidden(true)
+                Text("صدقة جارية لكل من شارك").font(.ui(.footnote, .medium)).foregroundStyle(Brand.ink)
+                    .multilineTextAlignment(.center)
+                Text("الإصدار \(SettingsView.versionText()) · ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, Brand.Space.s)
+            .accessibilityElement(children: .combine)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Brand.Space.l)
+    }
+
+    private func footerRow(_ title: String, _ symbol: String, _ tile: Int, chevron: Bool = true) -> some View {
+        HStack(spacing: Brand.Space.m) {
+            IconTile(symbol, style: .gradient(tile), size: 36)
+            Text(title).font(.ui(.body, .medium)).foregroundStyle(Brand.ink)
+            Spacer(minLength: 8)
+            if chevron {
+                Image(systemName: "chevron.forward").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.lineStrong)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, Brand.Space.l)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
     }
 
     private var continueReading: some View {
