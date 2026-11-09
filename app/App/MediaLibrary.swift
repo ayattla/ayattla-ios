@@ -126,7 +126,8 @@ enum MediaLibrary {
     static func rawURL(_ ref: Ref, width: Int) -> URL {
         var c = URLComponents(url: base.appendingPathComponent("raw"), resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "rm", value: ref.key), .init(name: "w", value: String(width))]
-        return c.url!
+        // Query items are percent-encoded by URLComponents; the fallback keeps a bad key from crashing.
+        return c.url ?? base.appendingPathComponent("raw")
     }
 
     /// Full photo for a card or a clip (1080 px wide, as the site), kept in memory only.
