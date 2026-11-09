@@ -1,0 +1,68 @@
+name: Uptime
+
+# Free monitoring with no extra account: every 15 minutes GitHub checks the site and the API
+# the app reads. If both checks fail three times in a row, it opens an issue titled
+# «الموقع لا يستجيب» — GitHub emails the repository owner about new issues. When the site
+# answers again, it comments with the downtime and closes the issue. One issue per outage.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check site and API
+        id: probe
+        run: |
+          check() {
+            for i in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -A "AyatTutla-Uptime/1.0" "$1" || echo 000)
+              [ "$code" = "200" ] && { echo 200; return; }
+              sleep 20
+            done
+            echo "$code"
+          }
+          home=$(check https://ayattla.com/)
+          api=$(check https://ayattla.com/api/radios)
+          echo "home=$home api=$api"
+          echo "home=$home" >> "$GITHUB_OUTPUT"
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          if [ "$home" = "200" ] && [ "$api" = "200" ]; then echo "up=true" >> "$GITHUB_OUTPUT"; else echo "up=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Open or close the outage issue
+        uses: actions/github-script@v7
+        env:
+          UP: ${{ steps.probe.outputs.up }}
+          HOME_CODE: ${{ steps.probe.outputs.home }}
+          API_CODE: ${{ steps.probe.outputs.api }}
+        with:
+          script: |
+            const title = 'الموقع لا يستجيب';
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100 });
+            const issue = open.find(i => i.title === title && !i.pull_request);
+            const now = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+            const detail = `الصفحة الرئيسية: ${process.env.HOME_CODE} · واجهة الإذاعات: ${process.env.API_CODE} (000 = لا رد)`;
+            if (process.env.UP !== 'true') {
+              if (!issue) {
+                await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title,
+                  body: `منذ ${now} لا يرد ayattla.com بعد ثلاث محاولات.\n\n${detail}\n\nالتطبيق يعرض آخر نسخة محفوظة للأحاديث والإذاعات، لكن المحتوى الجديد ومكتبة الوسائط وفاحص الحديث متوقفة. افحص الخادم من hPanel.\n\nتُغلق هذه المسألة تلقائيا عند عودة الموقع.` });
+              }
+            } else if (issue) {
+              const mins = Math.round((Date.now() - new Date(issue.created_at)) / 60000);
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, body: `عاد الموقع للعمل ${now}. مدة الانقطاع نحو ${mins} دقيقة.` });
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: 'closed' });
+            }
