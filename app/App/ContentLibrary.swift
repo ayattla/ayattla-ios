@@ -13,6 +13,8 @@ final class ContentLibrary: @unchecked Sendable {
     let basmala: String?
     let surahs: [Surah]
     let pageCount: Int
+    /// Reciter id → EveryAyah folder, read once (several screens asked on every redraw).
+    let reciterFolders: [String: String]
     /// Chapters of Hisn al-Muslim, read once (screens used to query them on every redraw).
     let azkarCategories: [ZikrCategory]
     /// Tasbih phrases from the pack (meta "tasbih_phrases", a JSON list); empty until the source is added.
@@ -53,11 +55,29 @@ final class ContentLibrary: @unchecked Sendable {
         self.surahs = (try? store?.surahs()) ?? []
         self.pageCount = (try? store?.pageCount()) ?? 0
         self.azkarCategories = (try? store?.azkarCategories()) ?? []
+        self.reciterFolders = (try? store?.reciterFolders()) ?? [:]
         let raw = ((try? store?.meta("tasbih_phrases")) ?? nil) ?? "[]"
         self.tasbihPhrases = (try? JSONDecoder().decode([String].self, from: Data(raw.utf8))) ?? []
     }
 
     var isReady: Bool { store != nil }
+
+    /// Ayat of one mushaf page. Pages redraw often (the highlight moves with each verse during
+    /// playback, font size, rotation), so recent pages are kept instead of queried every time.
+    func page(_ n: Int) -> [Ayah] {
+        let key = NSNumber(value: n)
+        if let hit = pageCache.object(forKey: key) { return hit.ayat }
+        let ayat = (try? store?.page(n)) ?? []
+        if !ayat.isEmpty { pageCache.setObject(PageBox(ayat), forKey: key) }
+        return ayat
+    }
+
+    private final class PageBox { let ayat: [Ayah]; init(_ a: [Ayah]) { ayat = a } }
+    private let pageCache: NSCache<NSNumber, PageBox> = {
+        let c = NSCache<NSNumber, PageBox>()
+        c.countLimit = 40
+        return c
+    }()
 
     private static let verifiedKey = "content.verifiedBuild"
 

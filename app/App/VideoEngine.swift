@@ -144,11 +144,12 @@ enum VideoEngine {
         let rect = CGRect(x: 0, y: 0, width: w, height: h)
         let end = total.seconds
         let sorted = keyframes.sorted { $0.time < $1.time }
+        let space = CGColorSpaceCreateDeviceRGB()   // once, not per frame
 
         func draw(_ overlay: CGImage?, t: Double, into buffer: CVPixelBuffer, still: Bool) {
             CVPixelBufferLockBaseAddress(buffer, [])
             if let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: w, height: h, bitsPerComponent: 8,
-                                   bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
+                                   bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: space,
                                    bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue) {
                 if let background, !still { background.draw(in: ctx, size: rect.size, t: t, total: end) }
                 if let overlay { ctx.draw(overlay, in: rect) }
@@ -175,9 +176,9 @@ enum VideoEngine {
             var last: CGImage?
             for (i, k) in sorted.enumerated() where k.time < end {
                 try Task.checkCancellation()
-                let img = await MainActor.run { k.make()?.cgImage }
+                let img = await MainActor.run { autoreleasepool { k.make()?.cgImage } }
                 last = img ?? last
-                let b = try buffer(); draw(last, t: k.time, into: b, still: true)
+                let b = try buffer(); autoreleasepool { draw(last, t: k.time, into: b, still: true) }
                 try await append(b, CMTime(seconds: max(0, k.time), preferredTimescale: 600))
                 if i % 10 == 0 { progress(0.05 + 0.45 * Double(i) / Double(sorted.count)) }
             }
@@ -198,9 +199,9 @@ enum VideoEngine {
                 while next + 1 < sorted.count && sorted[next + 1].time <= t { next += 1 }
                 if next != k, next >= 0 {
                     k = next
-                    overlay = await MainActor.run { sorted[k].make()?.cgImage } ?? overlay
+                    overlay = await MainActor.run { autoreleasepool { sorted[k].make()?.cgImage } } ?? overlay
                 }
-                let b = try buffer(); draw(overlay, t: t, into: b, still: false)
+                let b = try buffer(); autoreleasepool { draw(overlay, t: t, into: b, still: false) }
                 try await append(b, CMTime(value: CMTimeValue(i), timescale: fps))
                 if i % 15 == 0 { progress(0.05 + 0.45 * Double(i) / Double(frames)) }
             }

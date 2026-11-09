@@ -100,7 +100,8 @@ enum MediaLibrary {
                         .init(name: "category", value: query.isEmpty ? category : ""),
                         .init(name: "page", value: String(min(max(page, 1), 10))),
                         .init(name: "orientation", value: orientation)]
-        let data = try await get(c.url!)
+        guard let url = c.url else { throw URLError(.badURL) }
+        let data = try await get(url)
         return try JSONDecoder().decode(Page.self, from: data).items.filter { !$0.mediaId.isEmpty }
     }
 
@@ -117,14 +118,16 @@ enum MediaLibrary {
         var c = URLComponents(url: base.appendingPathComponent("item"), resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "provider", value: ref.provider), .init(name: "id", value: ref.mediaId),
                         .init(name: "type", value: ref.type.rawValue)]
-        return try JSONDecoder().decode(Item.self, from: try await get(c.url!))
+        guard let url = c.url else { throw URLError(.badURL) }
+        return try JSONDecoder().decode(Item.self, from: try await get(url))
     }
 
     /// /api/media/raw?rm=provider:id:type&w=  (the full file, fetched by the site's server).
     static func rawURL(_ ref: Ref, width: Int) -> URL {
         var c = URLComponents(url: base.appendingPathComponent("raw"), resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "rm", value: ref.key), .init(name: "w", value: String(width))]
-        return c.url!
+        // Query items are percent-encoded by URLComponents; the fallback keeps a bad key from crashing.
+        return c.url ?? base.appendingPathComponent("raw")
     }
 
     /// Full photo for a card or a clip (1080 px wide, as the site), kept in memory only.
@@ -445,6 +448,13 @@ struct LoopingVideo: UIViewRepresentable {
         var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
         var looper: AVPlayerLooper?
         var current: URL?
+
+        /// Plays only while on screen: a pushed screen or another tab no longer keeps decoding
+        /// the preview in the background.
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window == nil { playerLayer.player?.pause() } else { playerLayer.player?.play() }
+        }
     }
 
     func makeUIView(context: Context) -> PlayerView {

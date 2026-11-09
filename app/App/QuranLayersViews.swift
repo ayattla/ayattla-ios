@@ -16,7 +16,7 @@ struct LayerPage: View {
     private let lib = ContentLibrary.shared
 
     var body: some View {
-        let ayat = (try? lib.store?.page(number)) ?? []
+        let ayat = lib.page(number)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 if layer == .tajweed { TajweedLegend() }
@@ -267,7 +267,7 @@ Group {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 }
 
 /// The 99 names as listed on /tools/asma-ul-husna, each can become a card.

@@ -77,7 +77,7 @@ final class ProjectStore {
         let thumb = "\(id.uuidString)-thumb.jpg"
         if let data = thumbnail?.preparingThumbnail(of: CGSize(width: 360, height: 640))?.jpegData(compressionQuality: 0.8)
             ?? thumbnail?.jpegData(compressionQuality: 0.6) {
-            try? data.write(to: dir.appendingPathComponent(thumb))
+            try? data.write(to: dir.appendingPathComponent(thumb), options: .atomic)
         }
         let p = Project(id: id, kind: kind, title: title, createdAt: Date(), ratio: ratio, file: name, thumbnail: thumb, settings: settings)
         projects.insert(p, at: 0)

@@ -9,6 +9,9 @@ struct AyatTutlaApp: App {
     init() {
         _ = ContentLibrary.shared      // registers the bundled fonts before the first frame
         BrandAppearance.apply()
+        // Media library previews and site reads go through URLSession.shared; the default cache
+        // (a few MB) let thumbnails reload on every visit. Respects the servers' cache headers.
+        URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024, diskCapacity: 200 * 1024 * 1024)
     }
 
     var body: some Scene {
@@ -174,7 +177,7 @@ struct DebugPlayingReader: View {
             .onAppear {
                 let lib = ContentLibrary.shared
                 let p = RecitationPlayer()
-                p.folder = (try? lib.store?.reciterFolders())?[Prefs.defaultReciter]
+                p.folder = lib.reciterFolders[Prefs.defaultReciter]
                 p.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
                 p.repeatEach = 3
                 p.speed = 1.25

@@ -92,7 +92,7 @@ struct DownloadsView: View {
     private let lib = ContentLibrary.shared
 
     var body: some View {
-        let folders = (try? lib.store?.reciterFolders()) ?? [:]
+        let folders = lib.reciterFolders
         let inv = dl.inventory { lib.surah($0)?.ayahCount ?? 0 }
         List {
 Group {

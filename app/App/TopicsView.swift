@@ -184,5 +184,5 @@ struct TopicView: View {
         player.isPlaying && player.current.map { $0.surah == q.s && (q.a...q.b).contains($0.ayah) } == true
     }
 
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 }

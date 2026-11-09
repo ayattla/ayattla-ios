@@ -41,6 +41,9 @@ final class RecitationPlayer {
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     @ObservationIgnored private var statusObserver: NSKeyValueObservation?
     @ObservationIgnored private var timeObserver: Any?
+    /// The next ayah, prepared while the current one plays (connection and headers), so moving on
+    /// doesn't wait for the network.
+    @ObservationIgnored private var prefetched: (position: Position, asset: AVURLAsset)?
     @ObservationIgnored var folder: String?
     @ObservationIgnored var ayahCount: (Int) -> Int = { _ in 0 }
 
@@ -76,7 +79,14 @@ final class RecitationPlayer {
         playedThisAyah = 0
         elapsed = 0; duration = 0
         // A downloaded copy (Library → التنزيلات) plays without internet.
-        let item = AVPlayerItem(url: RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah) ?? url)
+        let local = RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah)
+        let item: AVPlayerItem
+        if local == nil, let pre = prefetched, pre.position == p, pre.asset.url == url {
+            item = AVPlayerItem(asset: pre.asset)
+        } else {
+            item = AVPlayerItem(url: local ?? url)
+        }
+        prefetched = nil
         statusObserver = item.observe(\.status) { [weak self] item, _ in
             if item.status == .failed {
                 DispatchQueue.main.async { self?.failed = true; self?.isPlaying = false; AudioCenter.shared.changed() }
@@ -86,6 +96,24 @@ final class RecitationPlayer {
         player.playImmediately(atRate: speed)
         isPlaying = true
         AudioCenter.shared.changed()
+        prefetchNext()
+    }
+
+    /// Where `next()` would go after `c`, or nil when playback would stop there.
+    private func upcoming(after c: Position) -> Position? {
+        if c == stopAt { return nil }
+        if c.ayah < ayahCount(c.surah) { return .init(surah: c.surah, ayah: c.ayah + 1) }
+        if stopsAtSurahEnd || c.surah >= 114 { return nil }
+        return .init(surah: c.surah + 1, ayah: 1)
+    }
+
+    private func prefetchNext() {
+        guard let folder, let c = current, let n = upcoming(after: c),
+              RecitationDownloads.shared.local(folder: folder, surah: n.surah, ayah: n.ayah) == nil,
+              let url = Self.url(folder: folder, surah: n.surah, ayah: n.ayah) else { prefetched = nil; return }
+        let asset = AVURLAsset(url: url)
+        prefetched = (n, asset)
+        Task { _ = try? await asset.load(.isPlayable, .duration) }
     }
 
     func toggle(startAt p: Position) {
@@ -121,6 +149,7 @@ final class RecitationPlayer {
     }
 
     func stop() {
+        prefetched = nil
         player.pause()
         player.replaceCurrentItem(with: nil)
         isPlaying = false
@@ -131,7 +160,7 @@ final class RecitationPlayer {
     /// Reciter name for the lock screen, from the folder (content pack reciter table).
     var reciterName: String {
         guard let folder else { return "" }
-        let id = ((try? ContentLibrary.shared.store?.reciterFolders()) ?? [:]).first { $0.value == folder }?.key
+        let id = ContentLibrary.shared.reciterFolders.first { $0.value == folder }?.key
         return id.flatMap { Catalog.reciter($0)?.name } ?? ""
     }
 

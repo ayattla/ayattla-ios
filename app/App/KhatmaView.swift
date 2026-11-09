@@ -17,7 +17,7 @@ enum KhatmaStore {
 
     static func surahName(atPage page: Int) -> String {
         let lib = ContentLibrary.shared
-        return (try? lib.store?.page(page))?.first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
+        return lib.page(page).first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
     }
 }
 

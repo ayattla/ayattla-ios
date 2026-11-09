@@ -374,7 +374,7 @@ struct HomeView: View {
 
     private var continueReading: some View {
         let page = max(lastPage, 1)
-        let first = (try? lib.store?.page(page))?.first
+        let first = lib.page(page).first
         let name = first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
         return NavigationLink { MushafReader(startPage: page) } label: {
             VStack(alignment: .leading, spacing: 10) {

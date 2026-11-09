@@ -148,9 +148,9 @@ struct MushafReader: View {
         .background(Color(light: 0xFBF9F2, dark: 0x121512))
     }
 
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 
-    private var firstOnPage: Ayah? { (try? lib.store?.page(page))?.first }
+    private var firstOnPage: Ayah? { lib.page(page).first }
     private var title: String { firstOnPage.flatMap { lib.surah($0.surah)?.namePlain } ?? "المصحف" }
     private var subtitle: String {
         "الجزء \(Num.int(firstOnPage?.juz ?? 1)) · صفحة \(Num.int(page))"
@@ -202,7 +202,7 @@ struct MushafPage: View {
     private let lib = ContentLibrary.shared
 
     var body: some View {
-        let ayat = (try? lib.store?.page(number)) ?? []
+        let ayat = lib.page(number)
         // Text grows with the page width (iPad, landscape spread) so a page fills the screen as on
         // a phone; the reader's own size setting multiplies on top.
         GeometryReader { geo in
