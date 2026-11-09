@@ -371,7 +371,7 @@ struct ClipMakerView: View {
 
     private var ayahCount: Int { lib.surah(surah)?.ayahCount ?? 1 }
     private var qfID: Int? { (try? lib.store?.reciterQuranComIDs())?[reciter] }
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
     private var reference: String {
         let s = lib.surah(surah)?.shortName ?? ""
         return from == to ? "\(s) \(Num.int(from))" : "\(s) \(Num.int(from))–\(Num.int(to))"

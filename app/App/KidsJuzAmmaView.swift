@@ -134,7 +134,7 @@ struct KidsSurahView: View {
 
     private var title: String { "سورة \(lib.surah(surah)?.shortName ?? Num.int(surah))" }
     private var done: Bool { progress.done.contains(surah) }
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 
     var body: some View {
         List {

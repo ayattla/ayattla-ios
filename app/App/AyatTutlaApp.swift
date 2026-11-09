@@ -177,7 +177,7 @@ struct DebugPlayingReader: View {
             .onAppear {
                 let lib = ContentLibrary.shared
                 let p = RecitationPlayer()
-                p.folder = (try? lib.store?.reciterFolders())?[Prefs.defaultReciter]
+                p.folder = lib.reciterFolders[Prefs.defaultReciter]
                 p.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
                 p.repeatEach = 3
                 p.speed = 1.25

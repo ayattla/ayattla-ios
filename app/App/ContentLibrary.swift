@@ -13,6 +13,8 @@ final class ContentLibrary: @unchecked Sendable {
     let basmala: String?
     let surahs: [Surah]
     let pageCount: Int
+    /// Reciter id → EveryAyah folder, read once (several screens asked on every redraw).
+    let reciterFolders: [String: String]
     /// Chapters of Hisn al-Muslim, read once (screens used to query them on every redraw).
     let azkarCategories: [ZikrCategory]
     /// Tasbih phrases from the pack (meta "tasbih_phrases", a JSON list); empty until the source is added.
@@ -53,6 +55,7 @@ final class ContentLibrary: @unchecked Sendable {
         self.surahs = (try? store?.surahs()) ?? []
         self.pageCount = (try? store?.pageCount()) ?? 0
         self.azkarCategories = (try? store?.azkarCategories()) ?? []
+        self.reciterFolders = (try? store?.reciterFolders()) ?? [:]
         let raw = ((try? store?.meta("tasbih_phrases")) ?? nil) ?? "[]"
         self.tasbihPhrases = (try? JSONDecoder().decode([String].self, from: Data(raw.utf8))) ?? []
     }

@@ -267,7 +267,7 @@ Group {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 }
 
 /// The 99 names as listed on /tools/asma-ul-husna, each can become a card.

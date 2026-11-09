@@ -148,7 +148,7 @@ struct MushafReader: View {
         .background(Color(light: 0xFBF9F2, dark: 0x121512))
     }
 
-    private var folder: String? { (try? lib.store?.reciterFolders())?[reciter] }
+    private var folder: String? { lib.reciterFolders[reciter] }
 
     private var firstOnPage: Ayah? { lib.page(page).first }
     private var title: String { firstOnPage.flatMap { lib.surah($0.surah)?.namePlain } ?? "المصحف" }

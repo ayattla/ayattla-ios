@@ -197,7 +197,7 @@ struct AyahCardView: View {
             }
 
             EditorStep(5, "فيديو وحركة", detail: "البطاقة نفسها مقطعا بالتلاوة أو بنص متحرك") {
-                if let folder = (try? lib.store?.reciterFolders())?[reciter] {
+                if let folder = lib.reciterFolders[reciter] {
                     NavigationLink {
                         ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
                                                     ratio: ratio, folder: folder, title: model.reference, photo: photo,
