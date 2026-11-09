@@ -16,7 +16,7 @@ struct LayerPage: View {
     private let lib = ContentLibrary.shared
 
     var body: some View {
-        let ayat = (try? lib.store?.page(number)) ?? []
+        let ayat = lib.page(number)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 if layer == .tajweed { TajweedLegend() }

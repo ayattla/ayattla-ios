@@ -59,6 +59,23 @@ final class ContentLibrary: @unchecked Sendable {
 
     var isReady: Bool { store != nil }
 
+    /// Ayat of one mushaf page. Pages redraw often (the highlight moves with each verse during
+    /// playback, font size, rotation), so recent pages are kept instead of queried every time.
+    func page(_ n: Int) -> [Ayah] {
+        let key = NSNumber(value: n)
+        if let hit = pageCache.object(forKey: key) { return hit.ayat }
+        let ayat = (try? store?.page(n)) ?? []
+        if !ayat.isEmpty { pageCache.setObject(PageBox(ayat), forKey: key) }
+        return ayat
+    }
+
+    private final class PageBox { let ayat: [Ayah]; init(_ a: [Ayah]) { ayat = a } }
+    private let pageCache: NSCache<NSNumber, PageBox> = {
+        let c = NSCache<NSNumber, PageBox>()
+        c.countLimit = 40
+        return c
+    }()
+
     private static let verifiedKey = "content.verifiedBuild"
 
     /// Version, build and pack size: a new build or a different pack is hashed again.

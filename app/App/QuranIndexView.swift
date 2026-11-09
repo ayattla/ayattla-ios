@@ -138,7 +138,7 @@ Group {
     }
 
     private func pageTitle(_ page: Int) -> String {
-        let first = (try? lib.store?.page(page))?.first
+        let first = lib.page(page).first
         let name = first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
         return "\(name) · صفحة \(Num.int(page))"
     }
