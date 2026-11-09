@@ -518,6 +518,26 @@ Group {
 
 // MARK: - Projects
 
+/// Decoded project images kept in memory, so grids don't read and decode files on every redraw.
+/// Keyed by path and modification date, so a re-saved project shows its new thumbnail.
+enum ThumbnailCache {
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.countLimit = 120
+        return c
+    }()
+
+    static func image(_ url: URL) -> UIImage? {
+        let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?
+            .timeIntervalSince1970 ?? 0
+        let key = "\(url.path)#\(date)" as NSString
+        if let hit = cache.object(forKey: key) { return hit }
+        guard let img = UIImage(contentsOfFile: url.path) else { return nil }
+        cache.setObject(img, forKey: key)
+        return img
+    }
+}
+
 struct ProjectTile: View {
     let project: Project
     var width: CGFloat = 104
@@ -526,7 +546,7 @@ struct ProjectTile: View {
         let ratio = CardOptions.Ratio(rawValue: project.ratio) ?? .square
         let h = min(width * ratio.size.height / ratio.size.width, width * 1.6)
         ZStack(alignment: .bottomLeading) {
-            if let img = UIImage(contentsOfFile: ProjectStore.shared.thumbnailURL(project).path) {
+            if let img = ThumbnailCache.image(ProjectStore.shared.thumbnailURL(project)) {
                 Image(uiImage: img).resizable().scaledToFill()
             } else {
                 LinearGradient(colors: [Brand.g0, Brand.primary], startPoint: .top, endPoint: .bottom)
@@ -588,7 +608,7 @@ struct ProjectDetailView: View {
                 Group {
                     if project.kind == .clip {
                         VideoPlayer(player: AVPlayer(url: url))
-                    } else if let img = UIImage(contentsOfFile: url.path) {
+                    } else if let img = ThumbnailCache.image(url) {
                         Image(uiImage: img).resizable()
                     }
                 }

@@ -202,7 +202,7 @@ enum DebugScreen {
         case "reader": MushafReader(startPage: 2)
         case "azkar": AzkarView()
         case "azkar-session":
-            if let c = (try? ContentLibrary.shared.store?.azkarCategories())?.first { AzkarSession(category: c) }
+            if let c = ContentLibrary.shared.azkarCategories.first { AzkarSession(category: c) }
         case "tasbih": TasbihView()
         case "library": LibraryView()
         case "home-feed": HomeView()

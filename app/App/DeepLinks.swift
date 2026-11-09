@@ -80,7 +80,7 @@ enum Route: Equatable, Identifiable {
         case .newCard(let s, let a, let b): AyahCardView(surah: s, from: a, to: b)
         case .tool(let t): t.destination
         case .azkar(let title):
-            if let c = (try? ContentLibrary.shared.store?.azkarCategories())?.first(where: { $0.title == title }) {
+            if let c = ContentLibrary.shared.azkarCategories.first(where: { $0.title == title }) {
                 AzkarSession(category: c)
             } else {
                 AzkarView()

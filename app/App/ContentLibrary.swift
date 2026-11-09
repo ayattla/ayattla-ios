@@ -13,6 +13,8 @@ final class ContentLibrary: @unchecked Sendable {
     let basmala: String?
     let surahs: [Surah]
     let pageCount: Int
+    /// Chapters of Hisn al-Muslim, read once (screens used to query them on every redraw).
+    let azkarCategories: [ZikrCategory]
     /// Tasbih phrases from the pack (meta "tasbih_phrases", a JSON list); empty until the source is added.
     let tasbihPhrases: [String]
 
@@ -25,10 +27,15 @@ final class ContentLibrary: @unchecked Sendable {
         var problem: String?
         if let url = bundle.url(forResource: "content-v1", withExtension: "sqlite", subdirectory: "Content") {
             do {
-                if let shaURL = bundle.url(forResource: "content-v1.sqlite", withExtension: "sha256", subdirectory: "Content"),
+                // The pack sits in the signed app bundle, so it cannot change between launches of
+                // the same build: hash it once per build instead of on every launch.
+                let build = Self.buildStamp(bundle)
+                if UserDefaults.standard.string(forKey: Self.verifiedKey) != build,
+                   let shaURL = bundle.url(forResource: "content-v1.sqlite", withExtension: "sha256", subdirectory: "Content"),
                    let line = try? String(contentsOf: shaURL, encoding: .utf8),
                    let digest = line.split(separator: " ").first {
                     try ContentStore.verify(url: url, sha256: String(digest))
+                    UserDefaults.standard.set(build, forKey: Self.verifiedKey)
                 }
                 let s = try ContentStore(url: url)
                 try s.checkComplete()
@@ -45,11 +52,23 @@ final class ContentLibrary: @unchecked Sendable {
         self.basmala = (try? store?.basmala()) ?? nil
         self.surahs = (try? store?.surahs()) ?? []
         self.pageCount = (try? store?.pageCount()) ?? 0
+        self.azkarCategories = (try? store?.azkarCategories()) ?? []
         let raw = ((try? store?.meta("tasbih_phrases")) ?? nil) ?? "[]"
         self.tasbihPhrases = (try? JSONDecoder().decode([String].self, from: Data(raw.utf8))) ?? []
     }
 
     var isReady: Bool { store != nil }
+
+    private static let verifiedKey = "content.verifiedBuild"
+
+    /// Version, build and pack size: a new build or a different pack is hashed again.
+    private static func buildStamp(_ bundle: Bundle) -> String {
+        let v = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let b = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        let size = (bundle.url(forResource: "content-v1", withExtension: "sqlite", subdirectory: "Content"))
+            .flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize } ?? 0
+        return "\(v)-\(b)-\(size)"
+    }
 
     func surah(_ id: Int) -> Surah? { surahs.indices.contains(id - 1) ? surahs[id - 1] : nil }
 
