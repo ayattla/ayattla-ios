@@ -3,11 +3,11 @@
 الخادم هو من يسحب الشيفرة من GitHub كل يوم، فلا يوضع أي مفتاح سري في GitHub. المفتاح يُنشأ على الخادم ولا يغادره، ويُضاف نصفه العام فقط إلى GitHub بصلاحية قراءة.
 
 ما يُحفظ على الخادم:
-- `~/backups/ayattla-ios.git`: المستودع كاملا بكل الفروع والتاريخ (نحو ٦٢ ميغابايت).
-- `~/backups/bundles/ayattla-ios-main-YYYY-MM-DD.bundle`: نسخة يومية من main في ملف واحد (أقل من ميغابايت)، ويُحتفظ بآخر ٣٠.
-- `~/backups/backup.log`: سطر لكل نسخة ناجحة.
+- `~/backups/ayattla-ios-app/ayattla-ios.git`: المستودع كاملا بكل الفروع والتاريخ (نحو ٦٢ ميغابايت).
+- `~/backups/ayattla-ios-app/bundles/ayattla-ios-main-YYYY-MM-DD.bundle`: نسخة يومية من main في ملف واحد (أقل من ميغابايت)، ويُحتفظ بآخر ٣٠.
+- `~/backups/ayattla-ios-app/backup.log`: سطر لكل نسخة ناجحة.
 
-المجلد خارج مجلدات المواقع، فلا يمكن تنزيله من الإنترنت.
+مجلد خاص بالتطبيق داخل `~/backups`، فلا يختلط بنسخ الموقع الموجودة هناك، وهو خارج مجلدات المواقع فلا يمكن تنزيله من الإنترنت. الإعداد الأول (الملفات مباشرة في `~/backups`) ينقل إليه تلقائيا عند تشغيل السطر مرة أخرى.
 
 ## الإعداد مرة واحدة
 
@@ -25,11 +25,11 @@
 
 ## التحقق
 
-في الطرفية: `tail -3 ~/backups/backup.log` يعرض تاريخ آخر النسخ.
+في الطرفية: `tail -3 ~/backups/ayattla-ios-app/backup.log` يعرض تاريخ آخر النسخ.
 
 ## الاستعادة على أي جهاز
 
-نزّل أحدث ملف `.bundle` من `~/backups/bundles` (من File Manager أو SFTP)، ثم:
+نزّل أحدث ملف `.bundle` من `~/backups/ayattla-ios-app/bundles` (من File Manager أو SFTP)، ثم:
 
 ```
 git clone -b main ayattla-ios-main-YYYY-MM-DD.bundle ayattla-ios
@@ -37,4 +37,4 @@ git clone -b main ayattla-ios-main-YYYY-MM-DD.bundle ayattla-ios
 
 ## الإلغاء
 
-احذف مفتاح النشر من GitHub، وفي الطرفية: `crontab -l | grep -v backups/backup.sh | crontab -`.
+احذف مفتاح النشر من GitHub، وفي الطرفية: `crontab -l | grep -v ayattla-ios-app/backup.sh | crontab -`.
