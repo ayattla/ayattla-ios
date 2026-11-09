@@ -1,0 +1,106 @@
+name: Server backup
+
+# A private copy of the whole repository on the owner's own server, so the code never depends
+# on GitHub alone. After every merge to main (and weekly, and on demand) it:
+#   1. creates ~/backups/ayattla-ios.git on the server the first time (a bare Git repository),
+#   2. pushes every branch and its full history into it (git push --mirror),
+#   3. also uploads a dated single-file copy of main to ~/backups/bundles/ (keeps the last 30).
+# If the server has no git, step 3 still runs. Restore on any computer:
+#   git clone -b main ayattla-ios-main-YYYY-MM-DD.bundle ayattla-ios
+#
+# Repository secrets (Settings → Secrets and variables → Actions), added by the owner:
+#   BACKUP_SSH_KEY   the PRIVATE key (whole text) of a key authorized on the server
+#   BACKUP_HOST      server host name, e.g. ayattla.com
+#   BACKUP_USER      the hosting account's user name
+#   BACKUP_PORT      SSH port (often 22; some hosts use 21098 or 2222)
+# Without them the workflow only prints a notice and succeeds.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 2 * * 5"   # Fridays 05:17 Riyadh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check secrets
+        id: check
+        env:
+          KEY: ${{ secrets.BACKUP_SSH_KEY }}
+          HOST: ${{ secrets.BACKUP_HOST }}
+          USER_: ${{ secrets.BACKUP_USER }}
+        run: |
+          if [ -z "$KEY" ] || [ -z "$HOST" ] || [ -z "$USER_" ]; then
+            echo "::notice::Server backup is not set up yet (see docs/SERVER_BACKUP.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mirror of the repository
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          git clone --quiet --mirror "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" mirror.git
+          git -C mirror.git remote remove origin
+          d=$(date -u +%Y-%m-%d)
+          git -C mirror.git bundle create "../ayattla-ios-main-$d.bundle" main
+          echo "BUNDLE=ayattla-ios-main-$d.bundle" >> "$GITHUB_ENV"
+
+      - name: SSH key
+        if: steps.check.outputs.ready == 'true'
+        env:
+          KEY: ${{ secrets.BACKUP_SSH_KEY }}
+          HOST: ${{ secrets.BACKUP_HOST }}
+          PORT: ${{ secrets.BACKUP_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/backup_key
+          chmod 600 ~/.ssh/backup_key
+          P="${PORT:-22}"
+          ssh-keyscan -p "$P" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          {
+            echo "Host backup"
+            echo "  HostName $HOST"
+            echo "  Port $P"
+            echo "  User ${{ secrets.BACKUP_USER }}"
+            echo "  IdentityFile ~/.ssh/backup_key"
+            echo "  IdentitiesOnly yes"
+            echo "  StrictHostKeyChecking accept-new"
+          } > ~/.ssh/config
+          ssh backup 'echo connected as $(whoami)'
+
+      - name: Push full history to the server
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          if ssh backup 'command -v git >/dev/null'; then
+            ssh backup 'mkdir -p ~/backups && cd ~/backups && { [ -d ayattla-ios.git ] || git init --quiet --bare ayattla-ios.git; }'
+            # GitHub's read-only pull request refs are left out.
+            git -C mirror.git push --quiet --prune "backup:backups/ayattla-ios.git" \
+              '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
+            echo "Full repository mirrored to ~/backups/ayattla-ios.git"
+          else
+            echo "::warning::git is not installed on the server; only the bundle is uploaded."
+          fi
+
+      - name: Upload the dated copy
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          ssh backup 'mkdir -p ~/backups/bundles'
+          scp -q "$BUNDLE" "backup:backups/bundles/$BUNDLE"
+          # Keep the latest 30 dated copies.
+          ssh backup 'cd ~/backups/bundles && ls -1t ayattla-ios-main-*.bundle | tail -n +31 | xargs -r rm -f; ls -1 | wc -l'
+          echo "Uploaded ~/backups/bundles/$BUNDLE"
+
+      - name: Remove key
+        if: always()
+        run: rm -rf ~/.ssh/backup_key
