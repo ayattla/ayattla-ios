@@ -445,6 +445,13 @@ struct LoopingVideo: UIViewRepresentable {
         var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
         var looper: AVPlayerLooper?
         var current: URL?
+
+        /// Plays only while on screen: a pushed screen or another tab no longer keeps decoding
+        /// the preview in the background.
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window == nil { playerLayer.player?.pause() } else { playerLayer.player?.play() }
+        }
     }
 
     func makeUIView(context: Context) -> PlayerView {
