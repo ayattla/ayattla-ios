@@ -1,52 +1,40 @@
-# نسخة خاصة من المستودع على خادمك
+# نسخة خاصة من المستودع على خادمك (Hostinger VPS)
 
-بعد إعدادها مرة واحدة، يحفظ GitHub نسخة كاملة من الشيفرة على خادمك تلقائيا بعد كل دمج، وكل جمعة، ومتى شئت يدويا. لا تكتب أنت أي أمر.
+الخادم هو من يسحب الشيفرة من GitHub كل يوم، فلا يوضع أي مفتاح سري في GitHub. المفتاح يُنشأ على الخادم ولا يغادره، ويُضاف نصفه العام فقط إلى GitHub بصلاحية قراءة.
 
 ما يُحفظ على الخادم:
-- `~/backups/ayattla-ios.git`: المستودع كاملا بكل الفروع والتاريخ (يُنشأ تلقائيا أول مرة، ويُحدَّث بعد كل دمج).
-- `~/backups/bundles/ayattla-ios-main-YYYY-MM-DD.bundle`: نسخة مؤرخة في ملف واحد، ويُحتفظ بآخر ٣٠ منها.
+- `~/backups/ayattla-ios.git`: المستودع كاملا بكل الفروع والتاريخ (نحو ٦٢ ميغابايت).
+- `~/backups/bundles/ayattla-ios-main-YYYY-MM-DD.bundle`: نسخة يومية من main في ملف واحد (أقل من ميغابايت)، ويُحتفظ بآخر ٣٠.
+- `~/backups/backup.log`: سطر لكل نسخة ناجحة.
 
-المساحة: نحو ٦٥ ميغابايت للمستودع، وأقل من ميغابايت لكل نسخة مؤرخة.
-
-المجلد `~/backups` في المجلد الرئيسي لحسابك على الخادم، خارج `public_html`، فلا يمكن تنزيله من الإنترنت.
+المجلد خارج مجلدات المواقع، فلا يمكن تنزيله من الإنترنت.
 
 ## الإعداد مرة واحدة
 
-### ١. أنشئ المفتاح في لوحة الاستضافة (cPanel)
+1. في hPanel: **VPS ← وحدة تحكم الويب** (Web Terminal). تفتح طرفية في تبويب جديد.
+2. الصق هذا السطر واضغط Enter:
 
-1. افتح cPanel ← **SSH Access** (الوصول عبر SSH) ← **Manage SSH Keys**.
-   إن لم تجد SSH Access، فاطلب من دعم الاستضافة تفعيل SSH لحسابك.
-2. اضغط **Generate a New Key**. الاسم: `github_backup`. اترك كلمة مرور المفتاح فارغة (GitHub لا يستطيع إدخالها). النوع: RSA بحجم 4096 إن خُيِّرت. ثم **Generate Key**.
-3. ارجع إلى القائمة، وفي **Public Keys** اضغط **Manage** بجانب `github_backup` ثم **Authorize**.
-4. في **Private Keys** اضغط **View/Download** بجانب `github_backup`، وانسخ النص كله من سطر `-----BEGIN` إلى سطر `-----END`.
+   ```
+   curl -fsSL https://raw.githubusercontent.com/ayattla/ayattla-ios/main/tools/server/backup-setup.sh | sh
+   ```
 
-### ٢. ضع المفتاح في GitHub (لا ترسله لأحد)
+   يثبت git إن لم يكن موجودا، وينشئ المفتاح والمجلد، ويأخذ أول نسخة، ويجدول نسخة يومية الساعة 03:17 بتوقيت الخادم. وفي آخره يطبع سطرا يبدأ بـ `ssh-ed25519`.
+3. **ما دام المستودع عاما فهذا يكفي.** قبل أن تجعله خاصا: في GitHub ← المستودع ← **Settings ← Deploy keys ← Add deploy key**، الاسم `server-backup`، والصق سطر `ssh-ed25519` (المفتاح العام، آمن للمشاركة)، **واترك Allow write access مطفأ**، ثم Add key.
 
-في المستودع على GitHub: **Settings ← Secrets and variables ← Actions ← New repository secret**، وأضف أربعة أسرار:
+يمكن تشغيل السطر في الخطوة ٢ مرة أخرى بأمان؛ لا يكرر شيئا.
 
-| الاسم | القيمة |
-|---|---|
-| `BACKUP_SSH_KEY` | النص الذي نسخته في الخطوة ١-٤ كاملا |
-| `BACKUP_HOST` | اسم الخادم، مثل `ayattla.com` (أو ما يظهر في cPanel باسم Server/Shared IP) |
-| `BACKUP_USER` | اسم مستخدم cPanel |
-| `BACKUP_PORT` | منفذ SSH (يظهر في SSH Access أو لدى الدعم؛ كثيرا ما يكون 22 أو 21098 أو 2222) |
+## التحقق
 
-### ٣. التجربة
-
-**Actions ← Server backup ← Run workflow**. إن ظهرت علامة خضراء فالنسخة على خادمك. ويمكنك رؤيتها في cPanel ← **File Manager** ← مجلد `backups`.
+في الطرفية: `tail -3 ~/backups/backup.log` يعرض تاريخ آخر النسخ.
 
 ## الاستعادة على أي جهاز
 
-نزّل أحدث ملف `.bundle` من مجلد `backups/bundles`، ثم:
+نزّل أحدث ملف `.bundle` من `~/backups/bundles` (من File Manager أو SFTP)، ثم:
 
 ```
 git clone -b main ayattla-ios-main-YYYY-MM-DD.bundle ayattla-ios
 ```
 
-## إن فشل
+## الإلغاء
 
-- `Permission denied`: المفتاح غير مفعّل (خطوة ١-٣)، أو اسم المستخدم خطأ.
-- `Connection refused` أو انتهاء المهلة: المنفذ خطأ، أو SSH غير مفعّل لدى الاستضافة.
-- `git is not installed`: الاستضافة بلا git؛ تُرفع النسخة المؤرخة فقط، وهي تكفي للاستعادة.
-
-لإلغاء الوصول في أي وقت: احذف المفتاح `github_backup` من cPanel، أو احذف السر `BACKUP_SSH_KEY` من GitHub.
+احذف مفتاح النشر من GitHub، وفي الطرفية: `crontab -l | grep -v backups/backup.sh | crontab -`.
