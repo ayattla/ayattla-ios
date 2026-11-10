@@ -1,6 +1,6 @@
 # CONTINUE — نقطة الاستئناف (الفرع: main)
 
-آخر تحديث: 2026-11-10 — PR #25 إلى #35 مدموجة (عدا #29)؛ قاعدة Cloudflare منفذة؛ التالي إصلاح عنوان الزائر في nginx (`cloudflare-realip.sh`) يشغله المالك
+آخر تحديث: 2026-11-10 — PR #25 إلى #36 مدموجة (عدا #29)؛ قاعدة Cloudflare وإصلاح عنوان الزائر في nginx منفذان
 
 ## 0. قفل العمل الجاري (لتجنب التكرار بين الجلسات)
 
@@ -27,8 +27,8 @@
   - هذا الفرع: `URLSession.site` (٤ اتصالات لكل خادم، مهلة موارد ٥ دقائق) لطلبات الموقع وQuran.com؛ `docs/CLOUDFLARE_RULES.md`؛ `tools/server/inspect.sh` (قراءة فقط)؛ `tools/loadtest/hadith-browse.js` (k6، لم يشغّل).
   - **قياس الخادم 10 نوفمبر:** النطاق خلف Cloudflare فعلا والضغط brotli يعمل، لكن الواجهات لا تخزن (`DYNAMIC`؛ `/api/hadith/browse` ترسل `no-store`). الخادم FastAPI + Uvicorn خلف nginx (لا PHP).
   - **PR #34 مدموج. قاعدة Cloudflare منفذة 10 نوفمبر** بطلب المالك («نفذ كل شيء بالنيابة عني») من لوحة Cloudflare في متصفحه: `Cache app read APIs 2h` بالترتيب ٤ (GET على `/api/radios` و`/api/hadith/browse`، Edge TTL ساعتان، Browser TTL خمس دقائق). التحقق: MISS ثم HIT، والرئيسية لم تتأثر. حد الطلبات موجود من قبل (٤٠ كل ١٠ ثوان) ولم يغيَّر.
-  - **فحص الخادم (10 نوفمبر، من المالك):** نواتان، ٧٫٩ غيغابايت، Uvicorn بعامل واحد، nginx يثق بكل العناوين (`set_real_ip_from 0.0.0.0/0`) دون `real_ip_header`. الإصلاح `tools/server/cloudflare-realip.sh` (هذا الفرع `claude/nginx-realip`)، يشغله المالك. **لا ترفع عمال Uvicorn** (جدولة النشر التلقائي قد تتكرر)، ولا تفعّل `limit_req` في nginx. التفاصيل في الخطة §٣ البند ٥.
-  - **التالي:** بعد تشغيل المالك للسكربت، ثم بنود `NEXT_SESSION_PROMPT.md`. لوحة CloudPanel على `IP:8443` بشهادة ذاتية (تنبيه المتصفح متوقع)؛ اقتُرح على المالك `panel.ayattla.com` (سجل A بوضع DNS only + Custom Domain في CloudPanel)، لم ينفذ.
+  - **فحص الخادم (10 نوفمبر، من المالك):** نواتان، ٧٫٩ غيغابايت، Uvicorn بعامل واحد، nginx يثق بكل العناوين (`set_real_ip_from 0.0.0.0/0`) دون `real_ip_header`. الإصلاح `tools/server/cloudflare-realip.sh` (PR #36) **شغّله المالك 10 نوفمبر بنجاح**: `site 200`، نطاقات Cloudflare ١٥ IPv4 و٧ IPv6، النسخة في `/root/backups/nginx-realip-20261110-130308`. **لا ترفع عمال Uvicorn** (جدولة النشر التلقائي قد تتكرر)، ولا تفعّل `limit_req` في nginx. التفاصيل في الخطة §٣ البند ٥.
+  - **التالي:** بنود `NEXT_SESSION_PROMPT.md` (خطة التحمل اكتملت إلا اختبار الحمل، ولا يلزم إلا إن ظهر بطء). لوحة CloudPanel على `IP:8443` بشهادة ذاتية (تنبيه المتصفح متوقع)؛ اقتُرح على المالك `panel.ayattla.com` (سجل A بوضع DNS only + Custom Domain في CloudPanel)، لم ينفذ.
 
 - **نسخة احتياطية على خادم المالك (PR #28، ثم مجلد خاص 10 نوفمبر):** شغّلها المالك على VPS: `ok 91898d3` (مطابق main). الحجم الكلي لـ `~/backups` ١٫٤ غيغابايت لأن فيه نسخ الموقع السابقة (`full-20261109` ١٫٣ غيغابايت، قواعد ووردبريس، إعدادات nginx)؛ نسخة التطبيق ٦٢ ميغابايت فقط. فصارت في `~/backups/ayattla-ios-app/` (السكربت ينقل الإعداد الأول إليها، ولا يحذف إلا نسخه المؤرخة، ولا يمس مهام cron الأخرى). السكربت `tools/server/backup-setup.sh`، والدليل `docs/SERVER_BACKUP.md`. Deploy key مطلوب فقط عند جعل المستودع خاصا. PR #29 كان مكررا لـ #27 فأُغلق.
 
