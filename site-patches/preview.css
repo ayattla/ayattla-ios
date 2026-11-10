@@ -1,0 +1,49 @@
+/* azkar v2 (2026-11-10): x */
+main:has(#list.az-list){--az-acc:var(--c-primary);--az-soft:var(--c-primary-soft);--az-ink:var(--c-primary-ink);--az-on:#fff;--az-band:var(--c-surface)}
+main:has(#cats [data-i="0"][aria-pressed="true"]){--az-acc:#9A6516;--az-soft:#FCEFD6;--az-ink:#5E3B0C;--az-band:linear-gradient(180deg,#FFF1D6 0%,#FFFBF3 100%)}
+main:has(#cats [data-i="1"][aria-pressed="true"]){--az-acc:#1D6670;--az-soft:#DDEEF0;--az-ink:#0F3B41;--az-band:linear-gradient(180deg,#DCEBEE 0%,#F5FAFA 100%)}
+main:has(#cats [data-i="2"][aria-pressed="true"]),main:has(#cats [data-i="3"][aria-pressed="true"]){--az-acc:#2E4380;--az-soft:#E4E9F6;--az-ink:#1A2753;--az-band:linear-gradient(180deg,#E3E8F5 0%,#F6F8FC 100%)}
+[data-theme=dark] main:has(#list.az-list){--az-soft:color-mix(in srgb,var(--az-acc) 22%,var(--c-surface));--az-ink:var(--c-text);--az-band:color-mix(in srgb,var(--az-acc) 14%,var(--c-surface))}
+[data-theme=dark] main:has(#cats [data-i="0"][aria-pressed="true"]){--az-acc:#D9A441;--az-on:#2A1A04}
+[data-theme=dark] main:has(#cats [data-i="1"][aria-pressed="true"]){--az-acc:#5FB3BC;--az-on:#07282C}
+[data-theme=dark] main:has(#cats [data-i="2"][aria-pressed="true"]),[data-theme=dark] main:has(#cats [data-i="3"][aria-pressed="true"]){--az-acc:#93A6E0;--az-on:#121B3A}
+main:has(#list.az-list) .tool-ico{background:var(--az-soft);color:var(--az-acc);transition:background .25s,color .25s}
+main:has(#list.az-list)>.panel{background:var(--az-band);border-color:color-mix(in srgb,var(--az-acc) 28%,transparent);transition:background .3s}
+main:has(#list.az-list) #cats button[aria-pressed="true"]{background:var(--az-acc)!important;border-color:var(--az-acc)!important;color:var(--az-on)!important}
+main:has(#list.az-list) #cats button{min-height:44px}
+main:has(#list.az-list) .bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--az-acc) 16%,transparent)}
+main:has(#list.az-list) #prog{background:var(--az-acc);border-radius:99px;transition:width .35s cubic-bezier(.2,.7,.1,1)}
+main:has(#list.az-list) #msg{color:var(--az-ink);font-weight:600}
+main:has(#list.az-list) .zk{border-inline-start:4px solid var(--az-acc)}
+main:has(#list.az-list) .zk .r{color:var(--az-ink)}
+main:has(#list.az-list) .zk .cnt{min-width:64px;width:auto;height:64px;padding:0 12px;border-radius:32px;border:2px solid var(--az-acc);background:var(--az-soft);color:var(--az-ink);font-size:20px;font-weight:700}
+main:has(#list.az-list) .zk.done{opacity:.62}
+main:has(#list.az-list) .zk.done .cnt{background:var(--az-acc);border-color:var(--az-acc);color:var(--az-on)}
+main:has(#list.az-list) .zk .zplay{border-color:var(--az-acc);color:var(--az-ink);min-height:44px}
+@media (max-width:640px){main:has(#list.az-list) #cats{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin-inline:calc(-1 * var(--gutter,16px));padding:2px var(--gutter,16px) 8px}main:has(#list.az-list) #cats::-webkit-scrollbar{display:none}main:has(#list.az-list) #cats button{flex:0 0 auto;scroll-snap-align:start}}
+
+/* azkar v2.1 (2026-11-10): أيقونة لكل وقت، رأس الصفحة بلون الوقت، واحتفاء عند الإتمام */
+main:has(#list.az-list){--s-green:var(--az-acc);--s-soft:var(--az-soft)}
+main:has(#list.az-list) .page-head{background:var(--az-band);transition:background .3s}
+main:has(#list.az-list) #cats button:is([data-i="0"],[data-i="1"],[data-i="2"],[data-i="3"])::before{content:"";display:inline-block;width:18px;height:18px;margin-inline-end:6px;vertical-align:-4px;background:currentColor;-webkit-mask:var(--az-ic) center/contain no-repeat;mask:var(--az-ic) center/contain no-repeat}
+main:has(#list.az-list) #cats button[data-i="0"]{--az-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'/%3E%3C/svg%3E")}
+main:has(#list.az-list) #cats button[data-i="1"]{--az-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18M7 17a5 5 0 0 1 10 0M12 5v4M5.6 10.6l1.4 1.4M18.4 10.6 17 12M6 21h12'/%3E%3C/svg%3E")}
+main:has(#list.az-list) #cats button[data-i="2"]{--az-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/%3E%3C/svg%3E")}
+main:has(#list.az-list) #cats button[data-i="3"]{--az-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18M7 17a5 5 0 0 1 10 0M12 3v6M9 6l3-3 3 3M6 21h12'/%3E%3C/svg%3E")}
+main:has(#prog[style*="100%"]) #msg{font-size:1.15em;color:var(--az-acc)}
+main:has(#prog[style*="100%"])>.panel{box-shadow:0 0 0 3px color-mix(in srgb,var(--az-acc) 35%,transparent)}
+@media (prefers-reduced-motion:reduce){main:has(#list.az-list) .page-head{transition:none}}
+
+/* tool accents v1 (2026-11-10): لون من معنى كل أداة داخل main فقط. القرآن وصناعة المحتوى باللون الأساسي */
+html:has(link[rel="canonical"][href$="/tools/duas"]) main,html:has(link[rel="canonical"][href$="/tools/tasbih"]) main{--tacc:#9A6516;--s-green:#9A6516;--s-green-d:color-mix(in srgb,#9A6516 82%,#000);--s-soft:color-mix(in srgb,#9A6516 7%,#fff);--s-grad:linear-gradient(135deg,#9A6516 0%,color-mix(in srgb,#9A6516 72%,#000) 100%);--s-grad-soft:linear-gradient(135deg,color-mix(in srgb,#9A6516 11%,transparent),color-mix(in srgb,#9A6516 4%,transparent))}
+html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/duas"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/tasbih"]) main{--tacc:#D9A441;--s-green:#D9A441;--s-soft:color-mix(in srgb,#D9A441 14%,var(--c-surface))}
+html:has(link[rel="canonical"][href$="/tools/prayer-times"]) main,html:has(link[rel="canonical"][href$="/tools/qibla"]) main,html:has(link[rel="canonical"][href$="/tools/nearby-mosques"]) main,html:has(link[rel="canonical"][href$="/tools/prayer-guide"]) main{--tacc:#1D6670;--s-green:#1D6670;--s-green-d:color-mix(in srgb,#1D6670 82%,#000);--s-soft:color-mix(in srgb,#1D6670 7%,#fff);--s-grad:linear-gradient(135deg,#1D6670 0%,color-mix(in srgb,#1D6670 72%,#000) 100%);--s-grad-soft:linear-gradient(135deg,color-mix(in srgb,#1D6670 11%,transparent),color-mix(in srgb,#1D6670 4%,transparent))}
+html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/prayer-times"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/qibla"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/nearby-mosques"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/prayer-guide"]) main{--tacc:#5FB3BC;--s-green:#5FB3BC;--s-soft:color-mix(in srgb,#5FB3BC 14%,var(--c-surface))}
+html:has(link[rel="canonical"][href$="/tools/hijri"]) main,html:has(link[rel="canonical"][href$="/tools/occasions"]) main,html:has(link[rel="canonical"][href$="/tools/sawm-tracker"]) main{--tacc:#2E4380;--s-green:#2E4380;--s-green-d:color-mix(in srgb,#2E4380 82%,#000);--s-soft:color-mix(in srgb,#2E4380 7%,#fff);--s-grad:linear-gradient(135deg,#2E4380 0%,color-mix(in srgb,#2E4380 72%,#000) 100%);--s-grad-soft:linear-gradient(135deg,color-mix(in srgb,#2E4380 11%,transparent),color-mix(in srgb,#2E4380 4%,transparent))}
+html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/hijri"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/occasions"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/sawm-tracker"]) main{--tacc:#93A6E0;--s-green:#93A6E0;--s-soft:color-mix(in srgb,#93A6E0 14%,var(--c-surface))}
+html:has(link[rel="canonical"][href$="/tools/zakat"]) main,html:has(link[rel="canonical"][href$="/tools/qada-salah"]) main{--tacc:#7A5F28;--s-green:#7A5F28;--s-green-d:color-mix(in srgb,#7A5F28 82%,#000);--s-soft:color-mix(in srgb,#7A5F28 7%,#fff);--s-grad:linear-gradient(135deg,#7A5F28 0%,color-mix(in srgb,#7A5F28 72%,#000) 100%);--s-grad-soft:linear-gradient(135deg,color-mix(in srgb,#7A5F28 11%,transparent),color-mix(in srgb,#7A5F28 4%,transparent))}
+html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/zakat"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/qada-salah"]) main{--tacc:#CBB06E;--s-green:#CBB06E;--s-soft:color-mix(in srgb,#CBB06E 14%,var(--c-surface))}
+html:has(link[rel="canonical"][href$="/tools/hadith"]) main,html:has(link[rel="canonical"][href$="/tools/hadith-checker"]) main,html:has(link[rel="canonical"][href$="/tools/hadith-card"]) main{--tacc:#7A4E2D;--s-green:#7A4E2D;--s-green-d:color-mix(in srgb,#7A4E2D 82%,#000);--s-soft:color-mix(in srgb,#7A4E2D 7%,#fff);--s-grad:linear-gradient(135deg,#7A4E2D 0%,color-mix(in srgb,#7A4E2D 72%,#000) 100%);--s-grad-soft:linear-gradient(135deg,color-mix(in srgb,#7A4E2D 11%,transparent),color-mix(in srgb,#7A4E2D 4%,transparent))}
+html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/hadith"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/hadith-checker"]) main,html[data-theme=dark]:has(link[rel="canonical"][href$="/tools/hadith-card"]) main{--tacc:#C9935E;--s-green:#C9935E;--s-soft:color-mix(in srgb,#C9935E 14%,var(--c-surface))}
+html:has(link[rel="canonical"][href*="/tools/"]) main .page-head .tool-ico{background:var(--s-soft);color:var(--tacc,var(--s-green))}
+html:has(link[rel="canonical"][href*="/tools/"]) main .page-head{background-image:var(--s-grad-soft)}
