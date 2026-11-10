@@ -161,7 +161,7 @@ enum MediaLibrary {
             MediaCache.touch(cached)
             return out
         }
-        let (tmp, resp) = try await URLSession.shared.download(for: request(rawURL(item.ref, width: 540), timeout: 120))
+        let (tmp, resp) = try await URLSession.site.download(for: request(rawURL(item.ref, width: 540), timeout: 120))
         guard let h = resp as? HTTPURLResponse, h.statusCode == 200 else { throw URLError(.badServerResponse) }
         try FileManager.default.moveItem(at: tmp, to: out)
         try? FileManager.default.copyItem(at: out, to: cached)
@@ -177,7 +177,7 @@ enum MediaLibrary {
     }
 
     private static func get(_ url: URL, timeout: TimeInterval = 20) async throws -> Data {
-        let (data, resp) = try await URLSession.shared.data(for: request(url, timeout: timeout))
+        let (data, resp) = try await URLSession.site.data(for: request(url, timeout: timeout))
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return data
     }
