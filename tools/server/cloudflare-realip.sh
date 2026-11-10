@@ -1,4 +1,15 @@
 #!/bin/sh
+# DISABLED (10 Nov 2026). Running it took ayattla.com down: every visitor got nginx's
+# "403 Forbidden" until the backup was restored. The site's nginx config evidently allows only
+# certain addresses (most likely Cloudflare's ranges); while nginx saw every visitor as a
+# Cloudflare address they passed, and once it saw their real address they were refused. The
+# script's own check passed because it asked the site from the server, whose address is allowed.
+# Do not re-enable before reading the site's allow/deny rules (CloudPanel vhost) and changing
+# them together with real_ip in one step, verified from OUTSIDE the server. See CONTINUE.md.
+echo "!! This script is disabled: it blocked every visitor on 10 Nov 2026. Nothing was changed."
+exit 1
+
+# --- original script kept below for reference; never reached ---
 # Lets nginx see each visitor's real address behind Cloudflare, safely.
 #
 # Found 10 Nov 2026: nginx.conf trusts every address (set_real_ip_from 0.0.0.0/0) with no
