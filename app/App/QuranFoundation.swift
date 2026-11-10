@@ -80,13 +80,19 @@ enum QF {
            let data = try? Data(contentsOf: file), let v = try? JSONDecoder().decode(T.self, from: data) {
             return v
         }
-        var r = URLRequest(url: url)
-        r.timeoutInterval = 30
-        let (data, resp) = try await URLSession.shared.data(for: r)
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-        let v = try JSONDecoder().decode(T.self, from: data)
-        try? data.write(to: file, options: .atomic)
-        return v
+        do {
+            var r = URLRequest(url: url)
+            r.timeoutInterval = 30
+            let (data, resp) = try await URLSession.shared.data(for: r)
+            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+            let v = try JSONDecoder().decode(T.self, from: data)
+            try? data.write(to: file, options: .atomic)
+            return v
+        } catch {
+            // Offline or Quran.com busy: an older copy beats an empty screen.
+            if let data = try? Data(contentsOf: file), let v = try? JSONDecoder().decode(T.self, from: data) { return v }
+            throw error
+        }
     }
 
     /// Removes cached Quran.com data older than 6 days (called at launch).

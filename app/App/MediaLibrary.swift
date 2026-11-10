@@ -101,13 +101,14 @@ enum MediaLibrary {
                         .init(name: "page", value: String(min(max(page, 1), 10))),
                         .init(name: "orientation", value: orientation)]
         guard let url = c.url else { throw URLError(.badURL) }
-        let data = try await get(url)
+        let data = try await MediaCache.data(url, key: "search-\(url.query ?? "")", maxAge: 3600) { try await get(url) }
         return try JSONDecoder().decode(Page.self, from: data).items.filter { !$0.mediaId.isEmpty }
     }
 
     /// GET /api/media/collections (the chips on the site's library).
     static func collections() async -> [Collection] {
-        guard let data = try? await get(base.appendingPathComponent("collections")),
+        let url = base.appendingPathComponent("collections")
+        guard let data = try? await MediaCache.data(url, key: "collections", maxAge: 24 * 3600, { try await get(url) }),
               let list = try? JSONDecoder().decode(Collections.self, from: data).collections, !list.isEmpty
         else { return fallbackCollections }
         return list
@@ -132,7 +133,8 @@ enum MediaLibrary {
 
     /// Full photo for a card or a clip (1080 px wide, as the site), kept in memory only.
     static func image(_ item: Item) async throws -> UIImage {
-        let data = try await get(rawURL(item.ref, width: 1080), timeout: 60)
+        let raw = rawURL(item.ref, width: 1080)
+        let data = try await MediaCache.data(raw, key: "raw-\(item.ref.key)-1080", maxAge: .infinity) { try await get(raw, timeout: 60) }
         if let img = UIImage(data: data) { return img.uprightForVideo() }
         // The preview is good enough when the full file cannot be decoded.
         if let p = item.previewUrl, let img = UIImage(data: try await get(p, timeout: 30)) { return img.uprightForVideo() }
@@ -141,18 +143,29 @@ enum MediaLibrary {
 
     /// Full photo from a stored reference (home gallery, saved projects).
     static func image(_ ref: Ref) async throws -> UIImage {
-        guard let img = UIImage(data: try await get(rawURL(ref, width: 1080), timeout: 60)) else { throw URLError(.cannotDecodeContentData) }
+        let raw = rawURL(ref, width: 1080)
+        let data = try await MediaCache.data(raw, key: "raw-\(ref.key)-1080", maxAge: .infinity) { try await get(raw, timeout: 60) }
+        guard let img = UIImage(data: data) else { throw URLError(.cannotDecodeContentData) }
         return img.uprightForVideo()
     }
 
     /// Full video for a clip (540 px wide, as the site), written to a temporary file that the
     /// clip export deletes when it is done.
     static func video(_ item: Item) async throws -> URL {
-        let (tmp, resp) = try await URLSession.shared.download(for: request(rawURL(item.ref, width: 540), timeout: 120))
-        guard let h = resp as? HTTPURLResponse, h.statusCode == 200 else { throw URLError(.badServerResponse) }
         let out = FileManager.default.temporaryDirectory.appendingPathComponent("bg-\(item.provider)-\(item.mediaId).mp4")
         try? FileManager.default.removeItem(at: out)
+        // A video used before is copied from the phone's cache instead of downloaded again.
+        let cached = MediaCache.file("raw-\(item.ref.key)-540.mp4")
+        if FileManager.default.fileExists(atPath: cached.path) {
+            try FileManager.default.copyItem(at: cached, to: out)
+            MediaCache.touch(cached)
+            return out
+        }
+        let (tmp, resp) = try await URLSession.shared.download(for: request(rawURL(item.ref, width: 540), timeout: 120))
+        guard let h = resp as? HTTPURLResponse, h.statusCode == 200 else { throw URLError(.badServerResponse) }
         try FileManager.default.moveItem(at: tmp, to: out)
+        try? FileManager.default.copyItem(at: out, to: cached)
+        MediaCache.trim()
         return out
     }
 
@@ -550,5 +563,67 @@ final class VideoFrames {
         g.maximumSize = CGSize(width: 720, height: 720)
         guard let cg = try? await g.image(at: CMTime(seconds: 1, preferredTimescale: 600)).image else { return nil }
         return UIImage(cgImage: cg)
+    }
+}
+
+/// Media from ayattla.com kept on the phone (Caches, so iOS may clear it when space is low):
+/// full photos and videos are fetched through the site's server, so each re-use used to cost the
+/// server a full download. Capped at 300 MB, oldest used first out.
+enum MediaCache {
+    static let limit: Int64 = 300 * 1024 * 1024
+
+    private static let dir: URL = {
+        let d = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("media-library", isDirectory: true)
+        try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        return d
+    }()
+
+    static func file(_ key: String) -> URL {
+        dir.appendingPathComponent(key.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "x")
+    }
+
+    /// Cached bytes younger than `maxAge`, else `fetch` (stored on success), else any older copy.
+    static func data(_ url: URL, key: String, maxAge: TimeInterval, _ fetch: () async throws -> Data) async throws -> Data {
+        let f = file(key)
+        if let d = try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+           Date().timeIntervalSince(d) < maxAge, let data = try? Data(contentsOf: f) {
+            touch(f)
+            return data
+        }
+        do {
+            let data = try await fetch()
+            try? data.write(to: f, options: .atomic)
+            trim()
+            return data
+        } catch {
+            if let data = try? Data(contentsOf: f) { return data }
+            throw error
+        }
+    }
+
+    /// Marks a file as recently used (for the size cap), without changing its age for `maxAge`.
+    static func touch(_ f: URL) {
+        var v = URLResourceValues()
+        v.contentAccessDate = Date()
+        var u = f
+        try? u.setResourceValues(v)
+    }
+
+    /// Removes the least recently used files until the folder is under `limit`.
+    static func trim() {
+        let keys: [URLResourceKey] = [.fileSizeKey, .contentAccessDateKey, .contentModificationDateKey]
+        guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: keys) else { return }
+        var entries = files.compactMap { f -> (URL, Int64, Date)? in
+            guard let r = try? f.resourceValues(forKeys: Set(keys)) else { return nil }
+            return (f, Int64(r.fileSize ?? 0), r.contentAccessDate ?? r.contentModificationDate ?? .distantPast)
+        }
+        var total = entries.reduce(0) { $0 + $1.1 }
+        guard total > limit else { return }
+        entries.sort { $0.2 < $1.2 }
+        for (f, size, _) in entries where total > limit {
+            try? FileManager.default.removeItem(at: f)
+            total -= size
+        }
     }
 }
