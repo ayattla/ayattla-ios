@@ -71,7 +71,7 @@ enum SiteAPI {
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         r.httpBody = try JSONEncoder().encode(["text": text])
         r.timeoutInterval = 30
-        let (data, resp) = try await URLSession.shared.data(for: r)
+        let (data, resp) = try await URLSession.site.data(for: r)
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return try JSONDecoder().decode(HadithCheck.self, from: data)
     }
@@ -112,7 +112,7 @@ enum SiteAPI {
             do {
                 var r = URLRequest(url: url)
                 r.timeoutInterval = 20
-                let (data, resp) = try await URLSession.shared.data(for: r)
+                let (data, resp) = try await URLSession.site.data(for: r)
                 let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
                 if code == 200 { return data }
                 throw URLError(code >= 500 || code == 429 ? .cannotConnectToHost : .badServerResponse)
@@ -131,5 +131,19 @@ enum SiteAPI {
         let d = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("site-api", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
+    }()
+}
+
+extension URLSession {
+    /// One session for ayattla.com and Quran.com requests: at most 4 connections per host, so a
+    /// burst of taps queues on the phone instead of opening a connection each on the server, and
+    /// no request (a full video included) can hang longer than 5 minutes. Shares the app's
+    /// URLCache, so the servers' cache headers keep working.
+    static let site: URLSession = {
+        let c = URLSessionConfiguration.default
+        c.httpMaximumConnectionsPerHost = 4
+        c.timeoutIntervalForResource = 300
+        c.urlCache = .shared
+        return URLSession(configuration: c)
     }()
 }
