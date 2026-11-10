@@ -40,7 +40,7 @@
 **قياس 10 نوفمبر:** النطاق يمر عبر Cloudflare فعلا والضغط (brotli) يعمل، لكن Cloudflare لا يخزن الواجهات (`cf-cache-status: DYNAMIC`)، و`/api/hadith/browse` ترسل `no-store`. والخادم Python (FastAPI + Uvicorn) خلف nginx، لا PHP. فأغلب هذا البند ينفذ من لوحة Cloudflare دون لمس الخادم:
 
 1. **قاعدة تخزين في Cloudflare** لـ `/api/radios` و`/api/hadith/browse` لساعتين (أقل مدة في الخطة المجانية): ألف طلب = طلب واحد يصل الخادم. التفاصيل في `CLOUDFLARE_RULES.md`. (ينتظر الموافقة)
-2. **حد الطلبات في Cloudflare** على `/api/hadith/check` (أثقل مسار): ٥ كل ١٠ ثوان لكل عنوان. (ينتظر الموافقة)
+2. **حد الطلبات في Cloudflare:** موجود من قبل (`Limit API and login floods`: ٤٠ طلبا كل ١٠ ثوان لكل عنوان على `/api/`). لا تغيير.
 3. **الضغط:** يعمل (brotli من Cloudflare). لا شيء مطلوب.
 4. **مراقبة التوفر:** منفذة (PR #32): GitHub يفحص الموقع و`/api/radios` كل ١٥ دقيقة ويفتح مسألة ببريد للمالك عند التوقف.
 5. **نظرة على الخادم للقراءة فقط:** `tools/server/inspect.sh` (الأنوية، الذاكرة، عمال Uvicorn، إعدادات nginx). بعدها يتقرر هل يلزم شيء في الخادم: عدد عمال Uvicorn بحسب الأنوية، و`limit_req` في nginx كخط ثان.
@@ -63,6 +63,6 @@
 
 ## ما ينتظر قرار المالك
 
-- الموافقة على قاعدتي Cloudflare (`CLOUDFLARE_RULES.md`) واختبار الحمل (البند ٤).
+- الموافقة على قاعدة التخزين في Cloudflare (`CLOUDFLARE_RULES.md`) واختبار الحمل (البند ٤).
 - تشغيل `tools/server/inspect.sh` في طرفية الخادم وإرسال الناتج.
 - حساب Apple Developer لبدء مراحل TestFlight.
