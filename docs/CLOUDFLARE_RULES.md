@@ -61,3 +61,10 @@ Rate limiting (١ من ١، الخانة المجانية مستعملة): `Limi
 
 - `tools/server/inspect.sh`: نظرة للقراءة فقط على الخادم (الأنوية، الذاكرة، عدد عمال Uvicorn، إعدادات nginx) لتحديد هل يلزم تعديل في الخادم أصلا.
 - `tools/loadtest/hadith-browse.js`: اختبار الحمل (k6) بـ ٥٠ ثم ١٠٠ ثم ٢٠٠ مستخدم، انظر الملاحظة في خطة التحمل §٤: حد الطلبات (٤٠ كل ١٠ ثوان لكل عنوان) يحظر اختبارا من عنوان واحد، والمساران صارا يخدمان من Cloudflare.
+
+## القاعدة ٥: صوت الأذكار (منفذة 10 نوفمبر)
+
+- الاسم: `Cache azkar audio 7d`، الترتيب ٥ (بعد Bypass).
+- الشرط: `(http.host eq "ayattla.com" and http.request.method eq "GET" and starts_with(http.request.uri.path, "/api/azkar/audio/"))`
+- Eligible for cache، وEdge TTL من ترويسة الخادم (`public, max-age=604800`).
+- القياس من متصفح المالك: آية الكرسي (١٫٣ ميغابايت) كانت ٣ إلى ٩٫٦ ثوان من الخادم؛ بعدها MISS ثم HIT بنحو نصف ثانية، وجاهزة للتشغيل خلال ٠٫٤ ثانية.
