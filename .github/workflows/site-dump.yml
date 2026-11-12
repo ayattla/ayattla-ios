@@ -1,0 +1,84 @@
+name: Site dump
+# Temporary branch-only workflow: reads ayattla.com (read only) for the app's design reference.
+on:
+  push:
+    branches: [claude/site-dump-3]
+  workflow_dispatch:
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Fetch pages, CSS, sitemap
+        run: |
+          mkdir -p out/html out/css out/js out/shots out/api
+          curl -sSL -m 30 https://ayattla.com/sitemap.xml -o out/sitemap.xml || true
+          curl -sSL -m 30 https://ayattla.com/tools/ -o out/html/tools.html
+          python3 - <<'PY'
+          import re, pathlib
+          html = pathlib.Path('out/html/tools.html').read_text(errors='ignore')
+          sm = pathlib.Path('out/sitemap.xml').read_text(errors='ignore') if pathlib.Path('out/sitemap.xml').exists() else ''
+          paths = set(re.findall(r'href="(/[a-z0-9\-/]*)"', html)) | set(re.findall(r'https://ayattla\.com(/[a-z0-9\-/]*)<', sm))
+          paths = sorted(p for p in paths if not p.startswith(('/api', '/static', '/assets', '/pub', '/wp-')) and p.count('/') <= 4)
+          pathlib.Path('out/paths.txt').write_text('\n'.join(['/'] + [p for p in paths if p != '/']))
+          PY
+          wc -l out/paths.txt; cat out/paths.txt
+          while read p; do
+            n=$(echo "$p" | tr '/' '_'); [ "$n" = "_" ] && n=home
+            curl -sSL -m 30 "https://ayattla.com$p" -o "out/html/$n.html" || true
+          done < out/paths.txt
+          grep -hoE '(href|src)="/[^"]+\.(css|js)(\?[^"]*)?"' out/html/*.html | sed -E 's/^(href|src)="//; s/"$//' | sort -u > out/assets.txt
+          while read a; do
+            f=$(echo "$a" | sed 's/?.*//' | tr '/' '_')
+            case "$a" in *.css*) d=css ;; *) d=js ;; esac
+            curl -sSL -m 30 "https://ayattla.com$a" -o "out/$d/$f" || true
+          done < out/assets.txt
+          for e in meta tools collections; do curl -sSL -m 30 "https://ayattla.com/api/$e" -o "out/api/$e.json" || true; done
+          ls -la out/css out/js | head -60
+      - name: Screenshots (390pt phone, light and dark, full page)
+        run: |
+          npm i playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async () => {
+            const paths = fs.readFileSync('out/paths.txt', 'utf8').split('\n').filter(Boolean);
+            const b = await chromium.launch();
+            for (const scheme of ['light', 'dark']) {
+              const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: scheme, locale: 'ar-SA' });
+              const pg = await ctx.newPage();
+              for (const p of paths) {
+                const n = p === '/' ? 'home' : p.replace(/\//g, '_');
+                try {
+                  await pg.goto('https://ayattla.com' + p, { waitUntil: 'networkidle', timeout: 30000 });
+                  await pg.waitForTimeout(1200);
+                  await pg.screenshot({ path: `out/shots/${scheme}-${n}.png`, fullPage: true });
+                } catch (e) { console.log('fail', p, e.message); }
+              }
+              // desktop of the tools page and home for layout reference
+              await ctx.close();
+            }
+            const d = await b.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'light', locale: 'ar-SA' });
+            const dp = await d.newPage();
+            for (const p of ['/', '/tools/']) {
+              await dp.goto('https://ayattla.com' + p, { waitUntil: 'networkidle', timeout: 30000 });
+              await dp.screenshot({ path: `out/shots/desktop-${p === '/' ? 'home' : 'tools'}.png`, fullPage: true });
+            }
+            await b.close();
+          })();
+          JS
+          node shot.js
+          du -sh out
+      - name: Push to site-dump-3
+        run: |
+          cd out
+          git init -q -b site-dump-3
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          git add -A; git commit -qm "dump $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" site-dump-3
