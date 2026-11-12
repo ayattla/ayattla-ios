@@ -108,6 +108,7 @@ struct ToolsView: View {
     @State private var usageTick = 0
     @FocusState private var searching: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Namespace private var zoom
     @Environment(\.horizontalSizeClass) private var size
 
     /// `filter` opens one group (from the home's «عرض الكل»); `autoFocus` puts the cursor in the search box.
@@ -187,15 +188,16 @@ struct ToolsView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(ToolUsage.top(8)) { t in
-                        NavigationLink { open(t) } label: {
+                        NavigationLink { open(t, "f") } label: {
                             VStack(spacing: 6) {
-                                IconTile(t.symbol, style: .gradient(t.index), size: 50)
+                                IconTile(t.symbol, style: .solid(t.accent), size: 50)
                                 Text(t.title).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
                                     .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.85)
                                     .frame(width: 84)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(width: 88)
+                            .matchedTransitionSource(id: "f" + t.id, in: zoom)
                             .accessibilityElement(children: .combine)
                         }
                         .buttonStyle(.pressable)
@@ -213,7 +215,7 @@ struct ToolsView: View {
         let tools = ids.compactMap { id in SiteTool.all.first { $0.id == id } }
         return VStack(spacing: Brand.Space.m) {
             if let clip = tools.first {
-                NavigationLink { open(clip) } label: {
+                NavigationLink { open(clip, "c") } label: {
                     HStack(spacing: Brand.Space.m) {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 6) {
@@ -230,13 +232,14 @@ struct ToolsView: View {
                     }
                     .padding(20)
                     .featureSurface()
+                    .matchedTransitionSource(id: "c" + clip.id, in: zoom)
                 }
                 .buttonStyle(.pressable)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m, alignment: .top),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
                 ForEach(tools.dropFirst()) { t in
-                    NavigationLink { open(t) } label: { SiteToolCard(tool: t) }
+                    NavigationLink { open(t, "x") } label: { SiteToolCard(tool: t).matchedTransitionSource(id: "x" + t.id, in: zoom) }
                         .buttonStyle(.pressable)
                 }
             }
@@ -265,9 +268,10 @@ struct ToolsView: View {
     private func rows(_ tools: [SiteTool]) -> some View {
         LazyVGrid(columns: columns, spacing: 10) {
             ForEach(tools) { t in
-                NavigationLink { open(t) } label: {
+                NavigationLink { open(t, "r") } label: {
                     ServiceCard(t.title, subtitle: t.subtitle, symbol: t.symbol, badge: t.isNew ? "جديد" : nil,
-                                style: .gradient(t.index), layout: .row)
+                                style: .accent(t.accent), layout: .row)
+                        .matchedTransitionSource(id: "r" + t.id, in: zoom)
                 }
                 .buttonStyle(.pressable)
             }
@@ -294,8 +298,11 @@ struct ToolsView: View {
     }
 
     /// The tool's screen; opening it counts for «الأكثر استخداما».
-    private func open(_ t: SiteTool) -> some View {
-        t.destination.onAppear { ToolUsage.record(t.id) }
+    private func open(_ t: SiteTool, _ from: String) -> some View {
+        // The tool grows out of the card that was tapped (iOS 18 zoom transition).
+        t.destination
+            .onAppear { ToolUsage.record(t.id) }
+            .navigationTransition(.zoom(sourceID: from + t.id, in: zoom))
     }
 
     private var columns: [GridItem] {

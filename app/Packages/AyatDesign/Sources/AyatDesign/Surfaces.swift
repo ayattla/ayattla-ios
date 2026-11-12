@@ -156,7 +156,9 @@ public extension View {
 /// Icon tile. `.gradient(n)` follows the site's tile colours by position; `.gold`, `.soft` and
 /// `.emerald` are the quieter tiles of secondary lists.
 public struct IconTile: View {
-    public enum Style { case gradient(Int), gold, emerald, soft }
+    /// `accent`: the site's tools grid (soft wash of the tool colour, glyph in that colour, thin
+    /// border); `solid`: the tool page head (tool colour, white glyph).
+    public enum Style { case gradient(Int), gold, emerald, soft, accent(Color), solid(Color) }
     let symbol: String
     let style: Style
     let size: CGFloat
@@ -177,6 +179,9 @@ public struct IconTile: View {
                 case .emerald: shape.fill(Brand.gradient)
                 case .gold: shape.fill(Brand.goldSoft)
                 case .soft: shape.fill(Brand.tint)
+                case .accent(let c):
+                    shape.fill(c.opacity(0.11)).overlay(shape.strokeBorder(c.opacity(0.2), lineWidth: 1))
+                case .solid(let c): shape.fill(c)
                 }
             }
             .shadow(color: shadow, radius: 8, y: 6)
@@ -189,11 +194,14 @@ public struct IconTile: View {
         case .emerald: Brand.onDeepAccent
         case .gold: Brand.goldInk
         case .soft: Brand.primaryInk
+        case .accent(let c): c
+        case .solid: .white
         }
     }
 
     private var shadow: Color {
         if case .gradient(let i) = style { return Color(hex: Brand.tileGradients[((i % 5) + 5) % 5][0]).opacity(0.35) }
+        if case .solid(let c) = style { return c.opacity(0.35) }
         return .clear
     }
 }

@@ -138,6 +138,7 @@ struct TajweedView: View {
 
     var body: some View {
         List {
+            ToolHeadSection(id: "tajweed")
 Group {
             Section {
                 Picker("السورة", selection: $surah) {
@@ -183,6 +184,7 @@ struct WordByWordView: View {
 
     var body: some View {
         List {
+            ToolHeadSection(id: "word-by-word")
 Group {
             Section {
                 Picker("السورة", selection: $surah) {
@@ -237,6 +239,7 @@ struct RuqyaView: View {
         Group {
             if let d = data {
                 List {
+                    ToolHeadSection(id: "ruqya")
 Group {
                     Section { Text(d.title).font(.ui(.headline)) }
                     ForEach(d.items, id: \.self) { q in
@@ -277,6 +280,7 @@ struct AsmaView: View {
 
     var body: some View {
         ScrollView {
+            ToolPageHead(id: "asma-ul-husna").padding(.horizontal).padding(.top, 8)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 10)], spacing: 10) {
                 ForEach(filtered, id: \.n) { a in
                     NavigationLink {

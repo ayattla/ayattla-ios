@@ -29,6 +29,7 @@ struct HifzTestView: View {
 
     var body: some View {
         Form {
+            ToolHeadSection(id: "hifz-test")
 Group {
             Section("الآيات") {
                 Picker("السورة", selection: $surah) {

@@ -44,6 +44,7 @@ struct AzkarView: View {
                                        description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
             } else {
                 List {
+                    ToolHeadSection(id: showsDaily ? "azkar" : "hisn-almuslim")
 Group {
                     if query.isEmpty && showsDaily {
                         Section("اليومية") {

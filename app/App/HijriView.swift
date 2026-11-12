@@ -18,6 +18,7 @@ struct HijriView: View {
 
     var body: some View {
         Form {
+            ToolHeadSection(id: "hijri")
 Group {
             Section {
                 Text(Num.hijri(Date()))
@@ -89,7 +90,9 @@ Group {
 struct OccasionsView: View {
     var body: some View {
         TimelineView(.everyMinute) { ctx in
-            List(Occasion.upcoming(from: ctx.date), id: \.occasion) { u in
+            List {
+                ToolHeadSection(id: "occasions")
+                ForEach(Occasion.upcoming(from: ctx.date), id: \.occasion) { u in
 Group {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -105,6 +108,7 @@ Group {
                 .accessibilityElement(children: .combine)
             
 }.listRowBackground(Brand.surface)
+                }
 }
         }
         .brandScreen()

@@ -30,8 +30,11 @@ struct PrayerTimesView: View {
     var body: some View {
         TimelineView(.everyMinute) { ctx in
             ScrollView {
-                content(Day(place: place, now: ctx.date))
-                    .padding(16)
+                VStack(spacing: 16) {
+                    ToolPageHead(id: "prayer-times")
+                    content(Day(place: place, now: ctx.date))
+                }
+                .padding(16)
             }
         }
         .background(Brand.background)

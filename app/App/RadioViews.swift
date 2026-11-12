@@ -85,7 +85,9 @@ struct RadioView: View {
     @State private var player = RadioPlayer.shared
 
     var body: some View {
-        List(filtered) { r in
+        List {
+            ToolHeadSection(id: "radio")
+            ForEach(filtered) { r in
 Group {
             Button { player.toggle(r) } label: {
                 HStack {
@@ -106,6 +108,7 @@ Group {
             .accessibilityLabel(player.playing == r && player.isPlaying ? "إيقاف \(r.name)" : "تشغيل \(r.name)")
         
 }.listRowBackground(Brand.surface)
+            }
 }
         .overlay {
             if failed && radios.isEmpty {

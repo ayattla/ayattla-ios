@@ -14,6 +14,7 @@ struct DuasView: View {
         Group {
             if let d = data {
                 List {
+                    ToolHeadSection(id: "duas")
 Group {
                     Picker("القسم", selection: $section) {
                         Text("من القرآن").tag(0)

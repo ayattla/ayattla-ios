@@ -20,6 +20,7 @@ struct QiblaView: View {
 
         ScrollView {
             VStack(spacing: 16) {
+                ToolPageHead(id: "qibla")
                 Text("\(name) · \(Num.int(Int(km.rounded()))) كم إلى مكة")
                     .font(.ui(.subheadline)).foregroundStyle(.secondary)
                 Text("\(Num.decimal(bearing))°")

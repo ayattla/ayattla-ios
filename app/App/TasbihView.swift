@@ -28,6 +28,7 @@ struct TasbihView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                ToolPageHead(id: "tasbih")
                 phraseChips
                 if !phrase.isEmpty {
                     Text(phrase)
