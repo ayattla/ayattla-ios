@@ -152,9 +152,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM= \
             -derivedDataPath build test | tee build.log | grep -E "error:|warning: |Test Suite|Executed|BUILD|TEST" || true
           test ${PIPESTATUS[0]} -eq 0
+      - name: Live preview on Appetize (main only)
+        # The simulator build streamed in the browser: one link that always runs the latest main.
+        # Needs the repository secret APPETIZE_API_TOKEN. The app's public key (not a secret) is kept in
+        # app/appetize-public-key.txt after the first upload, so the link never changes.
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then echo "No APPETIZE_API_TOKEN secret; skipping"; exit 0; fi
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          (cd "$(dirname "$APP")" && zip -qry "$GITHUB_WORKSPACE/AyatTutla-sim.zip" AyatTutla.app)
+          URL=https://api.appetize.io/v1/apps
+          KEY=$(cat app/appetize-public-key.txt 2>/dev/null | tr -d '[:space:]')
+          [ -n "$KEY" ] && URL="$URL/$KEY"
+          curl -sS --fail-with-body -H "X-API-KEY: $APPETIZE_API_TOKEN" "$URL" \
+            -F "file=@AyatTutla-sim.zip" -F "platform=ios" -F "note=main ${GITHUB_SHA::7}" > appetize.json
+          python3 -c "import json;d=json.load(open('appetize.json'));print('publicKey', d.get('publicKey'));print('url', d.get('publicURL') or 'https://appetize.io/app/'+d.get('publicKey',''))" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Screenshots on simulator
         # Screenshots only on main and manual runs; pull requests build and test only.
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.event_name == 'workflow_dispatch'
         run: |
           UDID="${{ steps.sim.outputs.udid }}"
           BUNDLE=com.ayattla.AyatTutla
@@ -205,7 +222,7 @@ jobs:
             done
           fi
       - name: Screenshots on a small and a large iPhone
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.event_name == 'workflow_dispatch'
         run: |
           BUNDLE=com.ayattla.AyatTutla
           APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
@@ -223,7 +240,7 @@ jobs:
             xcrun simctl shutdown "$DEV" || true
           done
       - name: Screenshots on the minimum iOS
-        if: success() && github.event_name != 'pull_request' && steps.sim.outputs.old != steps.sim.outputs.udid
+        if: success() && github.event_name == 'workflow_dispatch' && steps.sim.outputs.old != steps.sim.outputs.udid
         run: |
           OLD="${{ steps.sim.outputs.old }}"
           BUNDLE=com.ayattla.AyatTutla
@@ -235,25 +252,8 @@ jobs:
             sleep 6
             xcrun simctl io "$OLD" screenshot "shots/min-ios-$s.png"
           done
-      - name: Live preview on Appetize (main only)
-        # The simulator build streamed in the browser: one link that always runs the latest main.
-        # Needs the repository secret APPETIZE_API_TOKEN. The app's public key (not a secret) is kept in
-        # app/appetize-public-key.txt after the first upload, so the link never changes.
-        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
-        env:
-          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
-        run: |
-          if [ -z "$APPETIZE_API_TOKEN" ]; then echo "No APPETIZE_API_TOKEN secret; skipping"; exit 0; fi
-          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
-          (cd "$(dirname "$APP")" && zip -qry "$GITHUB_WORKSPACE/AyatTutla-sim.zip" AyatTutla.app)
-          URL=https://api.appetize.io/v1/apps
-          KEY=$(cat app/appetize-public-key.txt 2>/dev/null | tr -d '[:space:]')
-          [ -n "$KEY" ] && URL="$URL/$KEY"
-          curl -sS --fail-with-body -H "X-API-KEY: $APPETIZE_API_TOKEN" "$URL" \
-            -F "file=@AyatTutla-sim.zip" -F "platform=ios" -F "note=main ${GITHUB_SHA::7}" > appetize.json
-          python3 -c "import json;d=json.load(open('appetize.json'));print('publicKey', d.get('publicKey'));print('url', d.get('publicURL') or 'https://appetize.io/app/'+d.get('publicKey',''))" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Publish screenshots to the ci-shots branch
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.event_name == 'workflow_dispatch'
         run: |
           cd shots
           for f in *.png; do sips -Z 1400 "$f" >/dev/null; done
