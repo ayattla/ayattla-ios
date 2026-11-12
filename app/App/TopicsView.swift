@@ -28,6 +28,7 @@ struct TopicsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                        ToolPageHead(id: "topics")
                         Text("آيات مختارة حسب الموضوع بالرسم العثماني مع التفسير الميسر، وتحويل أي آية إلى مقطع أو بطاقة.")
                             .font(.ui(.footnote)).foregroundStyle(Brand.muted)
                             .fixedSize(horizontal: false, vertical: true)

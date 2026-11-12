@@ -30,6 +30,7 @@ struct MosquesView: View {
 
     var body: some View {
         List {
+            ToolHeadSection(id: "nearby-mosques")
 Group {
             Section {
                 Picker("نصف القطر", selection: $radiusKm) {

@@ -38,6 +38,7 @@ struct KidsJuzAmmaView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                ToolPageHead(id: "kids-juz-amma")
                 VStack(alignment: .leading, spacing: 12) {
                     TextField("اسم الطفل", text: $progress.name)
                         .textContentType(.givenName)

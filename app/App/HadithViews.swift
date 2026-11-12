@@ -80,6 +80,7 @@ struct HadithView: View {
 
     var body: some View {
         List {
+            ToolHeadSection(id: "hadith")
 Group {
             Section {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -169,6 +170,7 @@ struct HadithCheckerView: View {
 
     var body: some View {
         Form {
+            ToolHeadSection(id: "hadith-checker")
 Group {
             Section {
                 TextField("الصق نص الحديث أو جزءا منه", text: $text, axis: .vertical)
@@ -217,6 +219,7 @@ struct PrayerGuideView: View {
         Group {
             if let g = guide {
                 List {
+                    ToolHeadSection(id: "prayer-guide")
 Group {
                     Section { Text(g.lead).font(.ui(.subheadline)).foregroundStyle(.secondary) }
                     ForEach(g.sections, id: \.title) { s in

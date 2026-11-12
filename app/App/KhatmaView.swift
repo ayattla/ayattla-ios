@@ -66,6 +66,7 @@ struct KhatmaSetup: View {
 
     var body: some View {
         Form {
+            ToolHeadSection(id: "khatma")
 Group {
             Section {
                 Picker("مدة الختمة", selection: $days) {
@@ -108,6 +109,7 @@ struct KhatmaProgressView: View {
         let today = min(max(plan.day(on: Date()), 1), plan.days)
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                ToolPageHead(id: "khatma")
                 summary(today)
                 if let r = plan.range(day: today) { wird(day: today, r) }
                 if let r = plan.range(day: today) { prayers(r) }

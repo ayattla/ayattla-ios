@@ -47,6 +47,7 @@ struct HomeToolSearch: View {
 /// are left out (they lead the home as large cards).
 struct HomeToolLauncher: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Namespace private var zoom
     private static let featured: Set<String> = ["clip", "ayah-card", "status"]
 
     var body: some View {
@@ -79,7 +80,11 @@ struct HomeToolLauncher: View {
             }
             LazyVGrid(columns: columns, alignment: .center, spacing: 18) {
                 ForEach(tools) { t in
-                    NavigationLink { t.destination.onAppear { ToolUsage.record(t.id) } } label: { tile(t) }
+                    NavigationLink {
+                        t.destination
+                            .onAppear { ToolUsage.record(t.id) }
+                            .navigationTransition(.zoom(sourceID: t.id, in: zoom))
+                    } label: { tile(t).matchedTransitionSource(id: t.id, in: zoom) }
                         .buttonStyle(.pressable)
                 }
             }
@@ -90,7 +95,7 @@ struct HomeToolLauncher: View {
 
     private func tile(_ t: SiteTool) -> some View {
         VStack(spacing: 7) {
-            IconTile(t.symbol, style: .gradient(t.index), size: 54)
+            IconTile(t.symbol, style: .accent(t.accent), size: 54)
                 .overlay(alignment: .topTrailing) {
                     if t.isNew {
                         Circle().fill(Brand.accent).frame(width: 11, height: 11)

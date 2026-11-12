@@ -128,10 +128,10 @@ struct SiteToolCard: View {
     var compact = false
     var body: some View {
         if compact {
-            LauncherTile(tool.title, symbol: tool.symbol, style: .gradient(tool.index))
+            LauncherTile(tool.title, symbol: tool.symbol, style: .accent(tool.accent))
         } else {
             ServiceCard(tool.title, subtitle: tool.subtitle, symbol: tool.symbol,
-                        badge: tool.isNew ? "جديد" : nil, style: .gradient(tool.index))
+                        badge: tool.isNew ? "جديد" : nil, style: .accent(tool.accent))
         }
     }
 }

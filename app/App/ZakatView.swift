@@ -14,6 +14,7 @@ struct ZakatView: View {
         let r = Zakat.calculate(form.input)
         let summary = ZakatSummary(form: form, result: r)
         Form {
+            ToolHeadSection(id: "zakat")
 Group {
             Section {
                 Picker("العملة", selection: $form.currency) {

@@ -77,6 +77,7 @@ struct QadaView: View {
     var body: some View {
         let s = state
         Form {
+            ToolHeadSection(id: "qada-salah")
 Group {
             Section {
                 LabeledContent("عدد الأيام الفائتة تقريبا") {
@@ -228,6 +229,7 @@ struct SawmView: View {
     var body: some View {
         let s = state
         Form {
+            ToolHeadSection(id: "sawm-tracker")
 Group {
             Section {
                 LabeledContent("عدد أيام القضاء المطلوبة") {

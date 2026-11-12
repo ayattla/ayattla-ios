@@ -22,6 +22,8 @@ struct HomeView: View {
     @AppStorage("quran.lastPage") private var lastPage = 0
     @AppStorage(Favorites.key) private var favorites = ""
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.colorScheme) private var scheme
+    @AppStorage(Prefs.appearance) private var appearance = Appearance.system.rawValue
     private let lib = ContentLibrary.shared
 
     var body: some View {
@@ -62,6 +64,18 @@ struct HomeView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
                     .accessibilityLabel("الإعدادات")
+            }
+            // The site header's light/dark switch (the full choice stays in Settings).
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        appearance = (scheme == .dark ? Appearance.light : Appearance.dark).rawValue
+                    }
+                } label: {
+                    Image(systemName: scheme == .dark ? "sun.max" : "moon")
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .accessibilityLabel(scheme == .dark ? "الوضع الفاتح" : "الوضع الداكن")
             }
         }
     }
@@ -344,18 +358,46 @@ struct HomeView: View {
             .buttonStyle(.pressable)
             .surface(.raised)
 
-            VStack(spacing: 6) {
-                Image("LogoFull").resizable().scaledToFit().frame(width: 52, height: 52)
+            // The site's footer: logo card, the line, «ابدأ مقطعك الآن», then the legal pages as pills.
+            VStack(spacing: 12) {
+                Image("LogoFull").resizable().scaledToFit().frame(width: 56, height: 56)
+                    .padding(10)
+                    .background(Brand.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
                     .accessibilityHidden(true)
-                Text("صدقة جارية لكل من شارك").font(.ui(.footnote, .medium)).foregroundStyle(Brand.ink)
+                Text("صانع مقاطع وبطاقات قرآنية مجاني، صدقة جارية لكل من شارك")
+                    .font(.ui(.footnote, .medium)).foregroundStyle(Brand.ink)
                     .multilineTextAlignment(.center)
-                Text("الإصدار \(SettingsView.versionText()) · ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)
+                NavigationLink { ClipMakerView() } label: {
+                    Label("ابدأ مقطعك الآن", systemImage: "play.rectangle.fill")
+                }
+                .buttonStyle(.brandPrimary)
+                FlowLayout(spacing: 8) {
+                    ForEach(Self.sitePages, id: \.1) { p in
+                        Link(destination: URL(string: "https://ayattla.com" + p.1)!) {
+                            Text(p.0).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
+                                .padding(.horizontal, 12).frame(minHeight: 34)
+                                .background(Brand.surface, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+                        }
+                        .accessibilityHint("يفتح في المتصفح")
+                    }
+                }
+                Text("© آيات تتلى · الإصدار \(SettingsView.versionText()) · ayattla.com")
+                    .font(.ui(.caption2)).foregroundStyle(Brand.muted)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .padding(.bottom, Brand.Space.s)
-            .accessibilityElement(children: .combine)
+            .padding(.vertical, Brand.Space.l).padding(.horizontal, Brand.Space.m)
+            .background(Brand.surface2, in: RoundedRectangle(cornerRadius: Brand.Radius.hero, style: .continuous))
         }
     }
+
+    /// The site's footer pages (opened in the browser: they are the site's own texts).
+    static let sitePages: [(String, String)] = [
+        ("دليل الاستخدام", "/guide"), ("المصادر والتراخيص", "/sources"), ("منهجية التوثيق", "/methodology"),
+        ("الخصوصية", "/privacy"), ("الشروط", "/terms"), ("تواصل معنا", "/contact"),
+    ]
 
     private func footerRow(_ title: String, _ symbol: String, _ tile: Int, chevron: Bool = true) -> some View {
         HStack(spacing: Brand.Space.m) {
