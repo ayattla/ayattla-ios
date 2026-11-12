@@ -45,7 +45,7 @@
   - السرعة دون تغيير الشكل: `ContentLibrary.azkarCategories` تقرأ مرة؛ بصمة الحزمة مرة لكل نسخة (`content.verifiedBuild`)؛ `ThumbnailCache` للصور المصغرة؛ منسق الزكاة ثابت.
   - الجاهزية للمختبرين: `PrivacyInfo.xcprivacy` للتطبيق والودجت، `app/ExportOptions.plist`، ومسار `.github/workflows/testflight.yml` (يدوي، يحتاج أسرار `APPLE_TEAM_ID` و`ASC_KEY_ID` و`ASC_ISSUER_ID` و`ASC_KEY_P8`؛ الخطوات في `docs/TESTFLIGHT.md`). لم يشغّل بعد لعدم وجود الأسرار.
   - الخطة: `docs/PERFORMANCE_AND_LAUNCH_PLAN.md`. نص التسليم المحدث: `NEXT_SESSION_PROMPT.md`.
-  - CI: `macos-15-intel` لأن مشغلات arm64 لم تلتقط المهمة ثلاث مرات.
+  - CI: `macos-15` (arm64) من 12 نوفمبر، لأن مشغلات `macos-15-intel` لم تلتقط المهمة ثلاث مرات (كانت intel سابقا للسبب المعاكس).
   - **PR #27 مدموج** (الفرع `claude/v3-hadith`): صف الحديث v3 (شارة الحكم الذهبية، أزرار بنص «الشرح» و«اصنع بطاقة» و«مشاركة» بدل الأيقونات وحدها، رقائق الأقسام بالتدرج) وحارس طلبات في `HadithView.load` يمنع رد طلب قديم من الكتابة فوق الأحدث. ويضم أيضا: ذاكرة صفحات المصحف (`ContentLibrary.page`)، تجهيز الآية التالية (`RecitationPlayer.prefetchNext`)، `ContentLibrary.reciterFolders` مرة واحدة، `autoreleasepool` لكل إطار في `VideoEngine`، كتابة ذرية للصور المصغرة وملفات الذاكرة المؤقتة، `URLCache` ٣٢/٢٠٠ ميغابايت (في `AyatTutlaApp.init`)، توقف `LoopingVideo` خارج الشاشة، وإزالة تفريغات قسرية قد تسقط التطبيق (`ClipMakerView` عند قائمة آيات فارغة، روابط `MediaLibrary`). مراجعة الشاشات: كل شاشات الشبكة لها حالة خطأ؛ `HeroHeader` و`GhostOnEmerald` صارا على سطح v3 من قبل، فتعميم v3 شبه مكتمل. ثم بقية الأدوات، ثم §2 من خطة السرعة.
 
 - **الافتتاحية والرأس والتذييل v4 (طلب المالك 7 نوفمبر، PR #25، الفرع `claude/opening-header-footer`):** بمراجعة مهارة Mobile App Design (iOS) `ios-screens`.
