@@ -215,7 +215,7 @@ struct ToolsView: View {
         let tools = ids.compactMap { id in SiteTool.all.first { $0.id == id } }
         return VStack(spacing: Brand.Space.m) {
             if let clip = tools.first {
-                NavigationLink { open(clip) } label: {
+                NavigationLink { open(clip, "c") } label: {
                     HStack(spacing: Brand.Space.m) {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 6) {
@@ -232,6 +232,7 @@ struct ToolsView: View {
                     }
                     .padding(20)
                     .featureSurface()
+                    .matchedTransitionSource(id: "c" + clip.id, in: zoom)
                 }
                 .buttonStyle(.pressable)
             }
