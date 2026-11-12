@@ -1,0 +1,2 @@
+/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js
+/tools/client-render.js?v=2
