@@ -395,13 +395,14 @@ struct NextPrayerCard: View {
             let t = d.next.isTomorrow ? d.tomorrow.fajr : d.today.hours(d.next.prayer)
             HStack(spacing: 12) {
                 NavigationLink { PrayerTimesView() } label: {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(spacing: 4) {
                         Text("الصلاة القادمة").font(.ui(.footnote, .medium)).opacity(0.85)
                         Text("\(d.next.prayer.name) · \(Num.time(t))").font(.ui(.title2, .bold))
                         Text("\(place.name) · بعد \(Num.duration(minutes: d.next.minutesUntil))")
                             .font(.ui(.footnote)).opacity(0.85)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

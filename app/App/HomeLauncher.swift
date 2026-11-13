@@ -17,7 +17,7 @@ extension SiteTool {
             "asma-ul-husna": "الأسماء الحسنى", "hadith": "الأحاديث", "hadith-checker": "تحقق من حديث",
             "prayer-guide": "الوضوء والصلاة", "kids-juz-amma": "تحفيظ الأطفال", "group-khatma": "الختمة الجماعية",
             "qada-salah": "قضاء الصلوات", "sawm-tracker": "متتبع الصيام", "nearby-mosques": "المساجد القريبة",
-            "azkar": "الأذكار",
+            "azkar": "الأذكار", "hisn-almuslim": "حصن المسلم",
         ][id] ?? title
     }
 }
@@ -30,9 +30,8 @@ struct HomeToolSearch: View {
                 Image(systemName: "magnifyingglass").foregroundStyle(Brand.primaryInk)
                 Text("ابحث عن أداة: الأذكار، القبلة، الزكاة…").font(.ui(.subheadline)).foregroundStyle(Brand.muted)
                     .lineLimit(1)
-                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(minHeight: 52)
+            .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 52)
             .background(Brand.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
             .shadow(color: Color(hex: 0x0F1F17).opacity(0.06), radius: 10, y: 4)
@@ -51,7 +50,7 @@ struct HomeToolLauncher: View {
     private static let featured: Set<String> = ["clip", "ayah-card", "status"]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Brand.Space.l) {
+        VStack(spacing: Brand.Space.l) {
             SiteSectionHead(eyebrow: "الأدوات", "كل الأدوات في مكان واحد",
                             subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية، اضغط أي أداة لتفتحها")
             ForEach(SiteTool.Group.allCases) { g in
@@ -62,22 +61,16 @@ struct HomeToolLauncher: View {
     }
 
     private func section(_ g: SiteTool.Group, _ tools: [SiteTool]) -> some View {
-        VStack(alignment: .leading, spacing: Brand.Space.m) {
+        VStack(spacing: Brand.Space.m) {
+            // Centred group head (owner, 13 Nov): the title and count in the middle, «عرض الكل» under the grid.
             HStack(spacing: 8) {
-                Capsule().fill(Brand.siteGradient).frame(width: 4, height: 18)
+                Capsule().fill(Brand.siteGradient).frame(width: 18, height: 4)
                 Text(g.title).font(.ui(.headline)).foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
                 Text(Num.int(tools.count)).font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
                     .padding(.horizontal, 8).padding(.vertical, 2).background(Brand.tint, in: Capsule())
-                Spacer()
-                NavigationLink { ToolsView(filter: .group(g)) } label: {
-                    HStack(spacing: 2) {
-                        Text("عرض الكل")
-                        Image(systemName: "chevron.left").font(.system(size: 11, weight: .bold))
-                    }
-                    .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
-                    .frame(minHeight: Brand.minTap)
-                }
+                Capsule().fill(Brand.siteGradient).frame(width: 18, height: 4)
             }
+            .frame(maxWidth: .infinity)
             LazyVGrid(columns: columns, alignment: .center, spacing: 18) {
                 ForEach(tools) { t in
                     NavigationLink {
@@ -88,6 +81,16 @@ struct HomeToolLauncher: View {
                         .buttonStyle(.pressable)
                 }
             }
+            NavigationLink { ToolsView(filter: .group(g)) } label: {
+                HStack(spacing: 4) {
+                    Text("عرض الكل")
+                    Image(systemName: "chevron.left").font(.system(size: 11, weight: .bold))
+                }
+                .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+                .padding(.horizontal, 16).frame(minHeight: Brand.minTap)
+                .background(Brand.tint, in: Capsule())
+            }
+            .accessibilityLabel("عرض كل أدوات \(g.title)")
         }
         .padding(Brand.Space.l)
         .surface(.raised)

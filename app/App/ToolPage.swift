@@ -55,6 +55,8 @@ extension SiteTool {
         "tajweed": ["mushaf", "listen", "word-by-word"], "tasbih": ["azkar", "duas", "prayer-times"],
         "word-by-word": ["mushaf", "listen", "tajweed"], "zakat": ["qada-salah", "sawm-tracker", "prayer-times"],
         "hisn-almuslim": ["azkar", "duas", "ruqya"], "topics": ["search", "favorites", "ayah-card"],
+        // Not listed on the site (its clip maker is the home page): the app's own choice.
+        "clip": ["ayah-card", "status", "listen"], "status": ["ayah-card", "clip", "hadith-card"],
     ]
 
     var relatedTools: [SiteTool] { (Self.related[id] ?? []).compactMap(SiteTool.tool) }
