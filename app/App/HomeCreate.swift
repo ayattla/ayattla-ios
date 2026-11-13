@@ -77,24 +77,24 @@ struct MediaShortcut: View {
                 }
             }
             .overlay { LinearGradient(colors: [.black.opacity(0.0), .black.opacity(0.62)], startPoint: .top, endPoint: .bottom) }
-            .overlay {
-                // Centred (owner, 13 Nov): the icon at the top, the title and line at the bottom.
-                VStack(spacing: big ? 8 : 6) {
-                    Image(systemName: symbol).font(.system(size: big ? 18 : 15, weight: .semibold)).foregroundStyle(.white)
-                        .frame(width: big ? 42 : 34, height: big ? 42 : 34)
-                        .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.35), lineWidth: 1))
+            .overlay(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: big ? 8 : 6) {
+                    HStack {
+                        Image(systemName: symbol).font(.system(size: big ? 18 : 15, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: big ? 42 : 34, height: big ? 42 : 34)
+                            .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                        Spacer()
+                        if let badge { Badge(badge, gold: true) }
+                    }
                     Spacer(minLength: 0)
                     Text(title).font(.ui(big ? .title2 : .headline, .bold)).foregroundStyle(.white)
-                        .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.85)
+                        .lineLimit(2).minimumScaleFactor(0.85)
                     Text(subtitle).font(.ui(big ? .subheadline : .caption)).foregroundStyle(.white.opacity(0.9))
-                        .multilineTextAlignment(.center).lineLimit(2)
+                        .lineLimit(2)
                 }
                 .padding(big ? 18 : 14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .overlay(alignment: .topTrailing) {
-                if let badge { Badge(badge, gold: true).padding(big ? 18 : 14) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         .clipShape(RoundedRectangle(cornerRadius: big ? Brand.Radius.hero : Brand.Radius.card, style: .continuous))
         .shadow(color: Color(hex: 0x0F1F17).opacity(0.16), radius: 14, y: 8)
@@ -111,7 +111,7 @@ struct HomeCreateBento: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        VStack(spacing: Brand.Space.m) {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "اصنع", "ابدأ صناعة المحتوى", subtitle: "مقاطع وبطاقات وحالات بخلفيات حقيقية، جاهزة للنشر")
             let v = media.videos.first
             NavigationLink { ClipMakerView(media: v?.ref) } label: {
@@ -135,17 +135,19 @@ struct HomeCreateBento: View {
             }
             .buttonStyle(.pressable)
             NavigationLink { HadithView() } label: {
-                VStack(spacing: 8) {
+                HStack(spacing: Brand.Space.m) {
                     IconTile("text.book.closed", style: .gold, size: 50)
-                    HStack(spacing: 6) {
-                        Text("بطاقة حديث").font(.ui(.headline)).foregroundStyle(Brand.ink)
-                        Badge("جديد", gold: true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("بطاقة حديث").font(.ui(.headline)).foregroundStyle(Brand.ink)
+                            Badge("جديد", gold: true)
+                        }
+                        Text("حديث صحيح أو حسن مع الراوي والمصدر والحكم").font(.ui(.footnote)).foregroundStyle(Brand.muted)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("حديث صحيح أو حسن مع الراوي والمصدر والحكم").font(.ui(.footnote)).foregroundStyle(Brand.muted)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.forward").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.lineStrong)
                 }
-                .frame(maxWidth: .infinity)
                 .padding(16)
                 .background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: Brand.Radius.card, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.card, style: .continuous).strokeBorder(Brand.accent.opacity(0.35), lineWidth: 1))
@@ -170,7 +172,7 @@ struct HomeMediaGallery: View {
     ]
 
     var body: some View {
-        VStack(spacing: Brand.Space.m) {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "المعرض", "خلفيات ومقاطع حقيقية",
                             subtitle: "من مكتبة الموقع (Pixabay وPexels). اضغط أي خلفية لتبدأ بها")
             CategorySelector(categories, selection: $category)
@@ -220,7 +222,7 @@ struct HomeMediaGallery: View {
             .frame(width: video ? 132 : 118, height: video ? 236 : 158)
             .overlay { MediaThumb(url: it.thumbUrl) }
             .overlay { LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom) }
-            .overlay(alignment: .bottom) {
+            .overlay(alignment: .bottomLeading) {
                 HStack(spacing: 5) {
                     Image(systemName: video ? "play.fill" : "photo").font(.system(size: 10, weight: .bold))
                     Text(video ? (MediaLibrary.durationText(it.duration).map { "مقطع · \($0)" } ?? "مقطع") : "بطاقة")
@@ -257,7 +259,7 @@ struct HomeQuranContent: View {
     }
 
     var body: some View {
-        VStack(spacing: Brand.Space.m) {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "القرآن", "المحتوى القرآني", subtitle: "القراءة والاستماع والبحث والتدبر")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6, alignment: .top), count: typeSize.isAccessibilitySize ? 2 : 4),
                       spacing: Brand.Space.m) {
