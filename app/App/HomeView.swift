@@ -32,7 +32,6 @@ struct HomeView: View {
                 head
                 HomeCreateBento()
                 today
-                HomeServices()
                 HomeToolLauncher()
                 if lib.isReady { ayahCard }
                 HomeMediaGallery()
@@ -85,9 +84,8 @@ struct HomeView: View {
     /// gregorian dates, the free pill, the question and the tool search.
     private var head: some View {
         let now = Date()
-        return VStack(spacing: Brand.Space.m) {
-            // Centred head (owner, 13 Nov).
-            HStack(spacing: Brand.Space.s) {
+        return VStack(alignment: .leading, spacing: Brand.Space.m) {
+            HStack(alignment: .center, spacing: Brand.Space.s) {
                 Image(systemName: Self.greetingSymbol(now))
                     .font(.ui(.subheadline, .semibold))
                     .foregroundStyle(Brand.goldInk)
@@ -95,17 +93,19 @@ struct HomeView: View {
                     .background(Brand.goldSoft, in: Circle())
                     .accessibilityHidden(true)
                 Text(Self.greeting(now)).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
+                Spacer(minLength: 8)
+                if !typeSize.isAccessibilitySize { freePill }
             }
-            freePill
+            // At accessibility sizes the pill takes its own line instead of squeezing the greeting.
+            if typeSize.isAccessibilitySize { freePill }
 
             Text("ماذا تريد اليوم؟").font(.ui(.title, .bold)).foregroundStyle(Brand.ink)
-                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Brand.Space.s) { dateChips(now) }
-                VStack(spacing: 6) { dateChips(now) }
+                VStack(alignment: .leading, spacing: 6) { dateChips(now) }
             }
             .font(.ui(.footnote, .medium))
             .foregroundStyle(Brand.muted)
@@ -113,7 +113,7 @@ struct HomeView: View {
             HomeToolSearch()
         }
         .padding(Brand.Space.l)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .pageHeadSurface()
     }
 
@@ -254,26 +254,44 @@ struct HomeView: View {
     /// Today's essentials as a bento: next prayer (wide), then reading and azkar side by side,
     /// then small chips for the other daily tools.
     private var today: some View {
-        VStack(spacing: Brand.Space.m) {
+        VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية", subtitle: "الصلاة والأذكار والورد في مكان واحد")
             NextPrayerCard()
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
                 if lib.isReady { continueReading }
                 NavigationLink { AzkarView() } label: {
-                    VStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 10) {
                         IconTile("sun.horizon", style: .gradient(2), size: 44)
                         Text("أذكار اليوم").font(.ui(.headline)).foregroundStyle(Brand.ink)
                         Text("الصباح والمساء والنوم مع العداد").font(.ui(.caption)).foregroundStyle(Brand.muted)
-                            .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .top)
+                    .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
                     .surface(.raised)
                 }
                 .buttonStyle(.pressable)
             }
+            FlowLayout(spacing: 8) {
+                dailyChip("المسبحة", "circle.circle") { AnyView(TasbihView()) }
+                dailyChip("القبلة", "location.north.line") { AnyView(QiblaView()) }
+                dailyChip("الأدعية", "hands.sparkles") { AnyView(DuasView()) }
+                dailyChip("التقويم الهجري", "calendar") { AnyView(HijriView()) }
+                dailyChip("الختمة", "book.closed") { AnyView(KhatmaView()) }
+                dailyChip("الإذاعات", "dot.radiowaves.left.and.right") { AnyView(RadioView()) }
+            }
         }
+    }
+
+    private func dailyChip(_ title: String, _ symbol: String, open: @escaping () -> AnyView) -> some View {
+        NavigationLink { open() } label: {
+            Label(title, systemImage: symbol)
+                .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.ink)
+                .padding(.horizontal, 14).frame(minHeight: Brand.minTap)
+                .background(Brand.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+        }
+        .buttonStyle(.pressable)
     }
 
     /// One wide card to the Tools tab (the full directory lives there, not repeated here).
@@ -325,18 +343,20 @@ struct HomeView: View {
     /// the questions, settings and sharing the app, then a quiet sign-off with the version.
     private var footer: some View {
         VStack(spacing: Brand.Space.l) {
-            // Centred tiles (owner, 13 Nov) instead of side-aligned rows.
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
-                                     count: typeSize.isAccessibilitySize ? 2 : 4), spacing: Brand.Space.m) {
-                NavigationLink { AboutAppView() } label: { footerTile("عن التطبيق", "info.circle", 0) }
-                NavigationLink { FAQView() } label: { footerTile("الأسئلة", "questionmark.circle", 2) }
-                NavigationLink { SettingsView() } label: { footerTile("الإعدادات", "gearshape", 4) }
+            VStack(spacing: 0) {
+                NavigationLink { AboutAppView() } label: { footerRow("عن آيات تتلى", "info.circle", 0) }
+                Divider().padding(.leading, 64)
+                NavigationLink { FAQView() } label: { footerRow("الأسئلة الشائعة", "questionmark.circle", 2) }
+                Divider().padding(.leading, 64)
+                NavigationLink { SettingsView() } label: { footerRow("الإعدادات", "gearshape", 4) }
+                Divider().padding(.leading, 64)
                 ShareLink(item: URL(string: "https://ayattla.com")!,
                           message: Text("آيات تتلى: مقاطع وبطاقات قرآنية وأدوات يومية، مجانا وبلا تسجيل")) {
-                    footerTile("شارك", "square.and.arrow.up", 6)
+                    footerRow("شارك التطبيق", "square.and.arrow.up", 6, chevron: false)
                 }
             }
             .buttonStyle(.pressable)
+            .surface(.raised)
 
             // The site's footer: logo card, the line, «ابدأ مقطعك الآن», then the legal pages as pills.
             VStack(spacing: 12) {
@@ -379,15 +399,18 @@ struct HomeView: View {
         ("الخصوصية", "/privacy"), ("الشروط", "/terms"), ("تواصل معنا", "/contact"),
     ]
 
-    private func footerTile(_ title: String, _ symbol: String, _ tile: Int) -> some View {
-        VStack(spacing: 8) {
-            IconTile(symbol, style: .gradient(tile), size: 40)
-            Text(title).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
-                .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.85)
+    private func footerRow(_ title: String, _ symbol: String, _ tile: Int, chevron: Bool = true) -> some View {
+        HStack(spacing: Brand.Space.m) {
+            IconTile(symbol, style: .gradient(tile), size: 36)
+            Text(title).font(.ui(.body, .medium)).foregroundStyle(Brand.ink)
+            Spacer(minLength: 8)
+            if chevron {
+                Image(systemName: "chevron.forward").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.lineStrong)
+                    .accessibilityHidden(true)
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 92)
-        .padding(.vertical, 6)
-        .surface(.raised)
+        .padding(.horizontal, Brand.Space.l)
+        .frame(minHeight: 56)
         .contentShape(Rectangle())
     }
 
@@ -396,13 +419,13 @@ struct HomeView: View {
         let first = lib.page(page).first
         let name = first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
         return NavigationLink { MushafReader(startPage: page) } label: {
-            VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
                 IconTile("book.pages", style: .gradient(0), size: 44)
                 Text(lastPage > 0 ? "تابع القراءة" : "ابدأ القراءة").font(.ui(.headline)).foregroundStyle(Brand.ink)
                 Text("\(name) · صفحة \(Num.int(page))").font(.ui(.caption)).foregroundStyle(Brand.muted)
                 ProgressView(value: Double(page), total: Double(max(lib.pageCount, 1))).tint(Brand.green)
             }
-            .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .top)
+            .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
             .surface(.raised)
         }
         .buttonStyle(.pressable)

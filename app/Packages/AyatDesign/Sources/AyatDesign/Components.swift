@@ -15,20 +15,19 @@ public struct SectionHeader<Trailing: View>: View {
         self.title = title; self.subtitle = subtitle; self.trailing = trailing()
     }
 
-    // Centred (owner, 13 Nov): title, line, then any action under them, all in the middle.
     public var body: some View {
-        VStack(spacing: 6) {
-            Text(title).font(.ui(.title3, .semibold)).foregroundStyle(Brand.ink)
-                .multilineTextAlignment(.center)
-                .accessibilityAddTraits(.isHeader)
-            if let subtitle {
-                Text(subtitle).font(.ui(.footnote)).foregroundStyle(Brand.muted)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.ui(.title3, .semibold)).foregroundStyle(Brand.ink)
+                    .accessibilityAddTraits(.isHeader)
+                if let subtitle {
+                    Text(subtitle).font(.ui(.footnote)).foregroundStyle(Brand.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            Spacer(minLength: 8)
             trailing
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
