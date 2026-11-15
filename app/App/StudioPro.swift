@@ -227,9 +227,15 @@ struct MotionControls: View {
     @Binding var motion: ClipMotionSettings
     var highlightOn: Bool
 
+    private static let options: [(id: ClipAnimation, title: String, detail: String?)] =
+        ClipAnimation.allCases.map { (id: $0, title: $0.name, detail: nil) }
+    private var animationBinding: Binding<ClipAnimation> {
+        Binding(get: { motion.animation }, set: { motion.animation = $0 })
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SiteSegmented(ClipAnimation.allCases.map { (id: $0, title: $0.name, detail: String?.none) }, selection: $motion.animation)
+            SiteSegmented(Self.options, selection: animationBinding)
             if motion.animation == .fade || motion.animation == .slide || motion.animation == .zoom {
                 HStack {
                     Text("مدة الظهور").font(.ui(.subheadline)).foregroundStyle(Brand.ink)
@@ -355,20 +361,35 @@ struct PauseControls: View {
     let ayat: [(key: String, title: String)]
     @Binding var pauses: [String: Double]
 
+    private func binding(_ key: String) -> Binding<Double> {
+        Binding(
+            get: { pauses[key] ?? 0 },
+            set: { (newValue: Double) in
+                let r: Double = (newValue * 10).rounded() / 10
+                pauses[key] = r == 0 ? nil : r
+            }
+        )
+    }
+
+    private func label(_ v: Double) -> String { v == 0 ? "بدون" : String(format: "%.1f ث", v) }
+
+    @ViewBuilder private func row(key: String, title: String) -> some View {
+        let v: Double = pauses[key] ?? 0
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(title).font(.ui(.footnote)).foregroundStyle(Brand.ink)
+                Spacer()
+                Text(label(v)).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+            }
+            Slider(value: binding(key), in: 0...3).tint(Brand.green)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("وقفة بعد كل آية تضاف بعد انتهاء تلاوتها.").font(.ui(.caption)).foregroundStyle(Brand.muted)
             ForEach(ayat, id: \.key) { a in
-                let v = pauses[a.key] ?? 0
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text(a.title).font(.ui(.footnote)).foregroundStyle(Brand.ink)
-                        Spacer()
-                        Text(v == 0 ? "بدون" : String(format: "%.1f ث", v)).font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
-                    }
-                    Slider(value: Binding(get: { v }, set: { pauses[a.key] = ($0 * 10).rounded() / 10 == 0 ? nil : ($0 * 10).rounded() / 10 }), in: 0...3)
-                        .tint(Brand.green)
-                }
+                row(key: a.key, title: a.title)
             }
         }
     }
