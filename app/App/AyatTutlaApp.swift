@@ -133,7 +133,7 @@ struct PlaceholderScreen: View {
 /// Applies the appearance preference and shows onboarding on first launch.
 /// Debug builds accept `-screen <name>` (used by CI to screenshot each screen).
 struct StartView: View {
-    @AppStorage(Prefs.appearance) private var appearance = Appearance.system.rawValue
+    @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
     @AppStorage(Prefs.onboardingDone) private var onboardingDone = false
 
     var body: some View {

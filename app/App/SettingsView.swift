@@ -37,11 +37,11 @@ enum FontScale: String, CaseIterable, Identifiable {
 }
 
 enum Appearance: String, CaseIterable, Identifiable {
-    case system, light, dark
+    case light, system, dark
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .system: "تلقائي"
+        case .system: "حسب الجهاز"
         case .light: "فاتح"
         case .dark: "داكن"
         }
@@ -60,7 +60,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     @AppStorage(Prefs.translation) private var translation = ""
     @AppStorage(Prefs.fontScale) private var fontScale = FontScale.m.rawValue
-    @AppStorage(Prefs.appearance) private var appearance = Appearance.system.rawValue
+    @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
     @AppStorage(Prefs.notifyAzkar) private var notifyAzkar = false
     @AppStorage(Prefs.notifyDailyAyah) private var notifyDailyAyah = false
     @AppStorage(Prefs.notifyKhatma) private var notifyKhatma = false

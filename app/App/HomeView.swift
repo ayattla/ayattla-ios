@@ -23,7 +23,7 @@ struct HomeView: View {
     @AppStorage(Favorites.key) private var favorites = ""
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var scheme
-    @AppStorage(Prefs.appearance) private var appearance = Appearance.system.rawValue
+    @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
     private let lib = ContentLibrary.shared
 
     var body: some View {

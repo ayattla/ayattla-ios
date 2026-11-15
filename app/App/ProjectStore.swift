@@ -17,6 +17,12 @@ struct EditorSettings: Codable, Equatable, Hashable {
     /// Dragged text position (fraction of the canvas); nil in projects saved before it existed.
     var textX: Double? = nil
     var textY: Double? = nil
+    /// Studio v2 (nil in projects saved before it).
+    var layer: TextLayerStyle? = nil
+    var motion: ClipMotionSettings? = nil
+    var quality: ExportQuality? = nil
+    var extras: [ExtraRange]? = nil
+    var pauses: [String: Double]? = nil
 }
 
 struct Project: Codable, Identifiable, Equatable, Hashable {
