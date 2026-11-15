@@ -21,6 +21,8 @@ enum MotionBackground {
     case photo(UIImage, slowZoom: Bool)
     /// A real video from the site's library (Pixabay/Pexels), looped under the text.
     case video(VideoFrames, poster: UIImage?)
+    /// A still image drawn as it is (a colour background under animated text).
+    case plain(UIImage)
 
     /// Draws the background at time `t` (seconds) of a clip lasting `total` seconds.
     /// The context uses Core Graphics coordinates (origin at the bottom left).
@@ -33,6 +35,8 @@ enum MotionBackground {
             else if let cg = poster?.cgImage { Self.drawFill(cg, ctx, size, zoom: 1) }
             ctx.setFillColor(Self.rgb(0x000000, 0.42))
             ctx.fill(CGRect(origin: .zero, size: size))
+        case .plain(let img):
+            if let cg = img.cgImage { Self.drawFill(cg, ctx, size, zoom: 1) }
         }
     }
 

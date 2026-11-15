@@ -50,11 +50,12 @@ enum CardOptions {
 struct CardImage: Transferable {
     let model: CardCanvas.Model
     let photo: UIImage?
+    var scale: CGFloat = 1
 
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .png) { card in
             try await MainActor.run {
-                guard let data = CardCanvas.render(card.model, photo: card.photo)?.pngData() else { throw CocoaError(.fileWriteUnknown) }
+                guard let data = CardCanvas.render(card.model, photo: card.photo, scale: card.scale)?.pngData() else { throw CocoaError(.fileWriteUnknown) }
                 return data
             }
         }
@@ -78,6 +79,12 @@ struct AyahCardView: View {
     @State private var loadingMedia = false
     @State private var saved = false
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
+    // Studio v2.
+    @State private var layer = TextLayerStyle()
+    @State private var quality = ExportQuality.fhd1080
+    @State private var cardSet = false
+    @State private var perCard = 1
+    @State private var savedCount = 0
     private let lib = ContentLibrary.shared
 
     private var startMedia: MediaLibrary.Ref?
@@ -98,12 +105,14 @@ struct AyahCardView: View {
         _fontScale = State(initialValue: e.fontScale)
         _name = State(initialValue: e.name)
         _textOffset = State(initialValue: CGSize(width: e.textX ?? 0, height: e.textY ?? 0))
+        if let l = e.layer { _layer = State(initialValue: l) }
+        if let q = e.quality { _quality = State(initialValue: q) }
     }
 
     private var settings: EditorSettings {
         EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue, background: photo == nil ? background.id : "photo",
                        fontScale: fontScale, template: template.id, name: name, reciter: reciter,
-                       textX: textOffset.width, textY: textOffset.height)
+                       textX: textOffset.width, textY: textOffset.height, layer: layer, quality: quality)
     }
 
     /// Quick picks, as on the site's makers (الفاتحة، آية الكرسي، خواتيم البقرة …).
@@ -153,7 +162,7 @@ struct AyahCardView: View {
                         Stepper(Num.int(from), value: $from, in: 1...ayahCount).font(.ui(.subheadline, .semibold))
                     }
                     EditorField("إلى آية") {
-                        Stepper(Num.int(to), value: $to, in: from...min(ayahCount, from + CardOptions.maxAyat - 1)).font(.ui(.subheadline, .semibold))
+                        Stepper(Num.int(to), value: $to, in: from...min(ayahCount, from + rangeLimit - 1)).font(.ui(.subheadline, .semibold))
                     }
                 }
             }
@@ -196,7 +205,31 @@ struct AyahCardView: View {
                 TextPositionRow(offset: $textOffset)
             }
 
-            EditorStep(5, "فيديو وحركة", detail: "البطاقة نفسها مقطعا بالتلاوة أو بنص متحرك") {
+            EditorStep(5, "النص والطبقات", detail: "التباعد واللون والظل والمرجع والعلامة") {
+                LayerControls(layer: $layer)
+            }
+
+            EditorStep(6, "مجموعة بطاقات والجودة", detail: "بطاقة لكل آية أو مجموعة دفعة واحدة") {
+                Toggle("مجموعة بطاقات دفعة واحدة", isOn: $cardSet).font(.ui(.subheadline)).tint(Brand.green)
+                if cardSet {
+                    EditorField("آيات في كل بطاقة") {
+                        Stepper(Num.int(perCard), value: $perCard, in: 1...CardOptions.maxAyat).font(.ui(.subheadline, .semibold))
+                    }
+                    Text("\(Num.int(cardModels.count)) بطاقة من الآيات \(Num.int(from))–\(Num.int(to)) (حتى \(Num.int(rangeLimit)) آية).")
+                        .font(.ui(.caption)).foregroundStyle(Brand.muted)
+                }
+                Text("دقة الصورة").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                SiteSegmented([ExportQuality.fhd1080, .uhd2160].map { (id: $0, title: $0.name, detail: String?.none) }, selection: $quality)
+                MyTemplatesRow(current: StudioTemplate(name: "", fontScale: fontScale, background: background.id, layer: layer,
+                                                       motion: ClipMotionSettings(animation: .none))) { t in
+                    withAnimation(.snappy) {
+                        fontScale = t.fontScale; layer = t.layer
+                        if let b = CardOptions.backgrounds.first(where: { $0.id == t.background }) { background = b; photo = nil; photoItem = nil; mediaID = nil }
+                    }
+                }
+            }
+
+            EditorStep(7, "فيديو وحركة", detail: "البطاقة نفسها مقطعا بالتلاوة أو بنص متحرك") {
                 if let folder = lib.reciterFolders[reciter] {
                     NavigationLink {
                         ClipExportView(job: ClipJob(items: (from...to).map { .init(model: model, surah: surah, ayah: $0) },
@@ -211,18 +244,40 @@ struct AyahCardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         } bar: {
-            Button {
-                if let image = CardCanvas.render(model, photo: photo) {
-                    UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                    try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
-                    saved = true
+            if cardSet && cardModels.count > 1 {
+                Button {
+                    var n = 0
+                    for m in cardModels {
+                        if let image = CardCanvas.render(m, photo: photo, scale: quality.scale) {
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil); n += 1
+                        }
+                    }
+                    if let first = cardModels.first, let image = CardCanvas.render(first, photo: photo) {
+                        try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
+                    }
+                    savedCount = n; saved = true
+                } label: { Label("حفظ \(Num.int(cardModels.count)) بطاقات", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
+                .buttonStyle(.brandDark)
+                ShareLink(items: cardModels.map { CardImage(model: $0, photo: photo, scale: quality.scale) }) { m in
+                    SharePreview(m.model.reference)
+                } label: {
+                    Label("مشاركة الكل", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
                 }
-            } label: { Label("تحميل الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
-            .buttonStyle(.brandDark)
-            ShareLink(item: CardImage(model: model, photo: photo), preview: SharePreview(model.reference)) {
-                Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+                .buttonStyle(.brandSecondary)
+            } else {
+                Button {
+                    if let image = CardCanvas.render(model, photo: photo, scale: quality.scale) {
+                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        try? ProjectStore.shared.addImage(image, kind: .card, title: model.reference, ratio: ratio.rawValue, settings: settings)
+                        savedCount = 1; saved = true
+                    }
+                } label: { Label("تحميل الصورة", systemImage: "arrow.down.to.line").frame(maxWidth: .infinity) }
+                .buttonStyle(.brandDark)
+                ShareLink(item: CardImage(model: model, photo: photo, scale: quality.scale), preview: SharePreview(model.reference)) {
+                    Label("مشاركة", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.brandSecondary)
             }
-            .buttonStyle(.brandSecondary)
         }
         .navigationTitle("صانع بطاقات الآيات")
         .navigationBarTitleDisplayMode(.inline)
@@ -232,7 +287,8 @@ struct AyahCardView: View {
         .onChange(of: surah) { _, _ in
             if jumping { jumping = false } else { from = 1; to = 1 }
         }
-        .onChange(of: from) { _, f in if to < f || to > f + CardOptions.maxAyat - 1 { to = f } }
+        .onChange(of: from) { _, f in if to < f || to > f + rangeLimit - 1 { to = f } }
+        .onChange(of: cardSet) { _, on in if !on && to > from + CardOptions.maxAyat - 1 { to = from + CardOptions.maxAyat - 1 } }
         .task {
             // Opened from a photo in the home gallery: that photo is the background.
             guard let m = startMedia, photo == nil else { return }
@@ -240,19 +296,38 @@ struct AyahCardView: View {
             if let img = try? await MediaLibrary.image(m) { photo = img; mediaID = m.key }
             loadingMedia = false
         }
-        .alert("حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
+        .alert(savedCount > 1 ? "حفظت \(Num.int(savedCount)) بطاقات في الصور" : "حفظت البطاقة في الصور وفي مكتبتي", isPresented: $saved) { Button("حسنا", role: .cancel) {} }
     }
 
     private var ayahCount: Int { lib.surah(surah)?.ayahCount ?? 1 }
 
+    /// A card set may cover up to 50 ayat (split into cards of `perCard`); one card holds up to 10.
+    private var rangeLimit: Int { cardSet ? 50 : CardOptions.maxAyat }
+
+    /// The cards of a set, in order.
+    private var cardModels: [CardCanvas.Model] {
+        let ayat = (try? lib.store?.ayat(surah: surah, from: from, to: to)) ?? []
+        let s = lib.surah(surah)?.shortName ?? ""
+        return stride(from: 0, to: ayat.count, by: max(1, perCard)).map { i in
+            let g = Array(ayat[i..<min(ayat.count, i + max(1, perCard))])
+            let text = g.map { $0.textUthmani + " " + QuranText.marker($0.ayah) }.joined(separator: " ")
+            let a = g.first?.ayah ?? from, b = g.last?.ayah ?? from
+            let ref = a == b ? "[\(s): \(Num.int(a))]" : "[\(s): \(Num.int(a))–\(Num.int(b))]"
+            return CardCanvas.Model(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
+                         name: name.isEmpty ? nil : name, background: background, fontScale: fontScale,
+                         ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset, layer: layer)
+        }
+    }
+
     private var model: CardCanvas.Model {
+        if cardSet, let first = cardModels.first { return first }
         let ayat = (try? lib.store?.ayat(surah: surah, from: from, to: to)) ?? []
         let text = ayat.map { $0.textUthmani + " " + QuranText.marker($0.ayah) }.joined(separator: " ")
         let s = lib.surah(surah)?.shortName ?? ""
         let ref = from == to ? "[\(s): \(Num.int(from))]" : "[\(s): \(Num.int(from))–\(Num.int(to))]"
         return .init(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
                      name: name.isEmpty ? nil : name, background: background, fontScale: fontScale,
-                     ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset)
+                     ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset, layer: layer)
     }
 }
 
@@ -275,18 +350,24 @@ struct CardCanvas: View {
         var highlightColor: UInt32 = 0xF7CD6E
         /// Where the text sits, as a fraction of the canvas (0,0 = centred); set by dragging it.
         var textOffset: CGSize = .zero
+        /// Studio v2 layers (spacing, colours, shadow, reference, watermark).
+        var layer = TextLayerStyle()
+        /// Word by word: only the first `visibleWords` words are drawn; the rest keep their place.
+        var visibleWords: Int? = nil
+        /// Draws only the background (for animated clips the text is laid over it frame by frame).
+        var backgroundOnly = false
     }
 
     let model: Model
     let photo: UIImage?
 
-    /// Full-resolution image (1080 px on the short side), drawn on the device.
-    @MainActor static func render(_ model: Model, photo: UIImage?) -> UIImage? {
+    /// Full-resolution image (1080 px on the short side, × `scale` for 720p or 4K), drawn on the device.
+    @MainActor static func render(_ model: Model, photo: UIImage?, scale: CGFloat = 1) -> UIImage? {
         let size = model.ratio.size
         let r = ImageRenderer(content: CardCanvas(model: model, photo: photo)
             .frame(width: size.width / 3, height: size.height / 3)
             .environment(\.layoutDirection, .rightToLeft))
-        r.scale = 3
+        r.scale = 3 * scale
         return r.uiImage
     }
 
@@ -302,7 +383,8 @@ struct CardCanvas: View {
     var body: some View {
         GeometryReader { g in
             let unit = min(g.size.width, g.size.height) / 360
-            let ink: Color = (model.lightBackground && photo == nil && !model.clearBackground) ? Color(hex: 0x2B2418) : .white
+            let autoInk: Color = (model.lightBackground && photo == nil && !model.clearBackground) ? Color(hex: 0x2B2418) : .white
+            let ink: Color = model.layer.textColor.map { Color(hex: $0) } ?? autoInk
             ZStack {
                 if model.clearBackground {
                     Color.clear
@@ -313,6 +395,7 @@ struct CardCanvas: View {
                 } else {
                     model.background.gradient
                 }
+                if !model.backgroundOnly {
                 VStack(spacing: 14 * unit) {
                     if let t = model.template {
                         VStack(spacing: 2 * unit) {
@@ -323,21 +406,27 @@ struct CardCanvas: View {
                     }
                     Spacer(minLength: 0)
                     VStack(spacing: 14 * unit) {
-                        Text(QuranWords.highlighted(model.text, word: model.highlightWord, color: Color(hex: model.highlightColor)))
+                        Text(QuranWords.revealed(QuranWords.highlighted(model.text, word: model.highlightWord, color: Color(hex: model.highlightColor)),
+                                                 text: model.text, upTo: model.visibleWords))
                             .font(.custom(model.fontName, size: baseSize * unit * model.fontScale))
-                            .lineSpacing(baseSize * 0.36 * unit * model.fontScale)
+                            .lineSpacing(baseSize * model.layer.lineSpacing * unit * model.fontScale)
                             .multilineTextAlignment(.center)
                             .minimumScaleFactor(0.4)
-                        Text(model.reference).font(.ui(size: 12 * unit, .medium)).opacity(0.85)
+                            .shadow(color: model.layer.shadow ? .black.opacity(0.55) : .clear, radius: 4 * unit, y: 1.5 * unit)
+                        if model.layer.showReference && !model.reference.isEmpty {
+                            Text(model.reference).font(.ui(size: 12 * unit * model.layer.referenceScale, .medium)).opacity(0.85)
+                                .foregroundStyle(model.layer.referenceColor.map { Color(hex: $0) } ?? ink)
+                        }
                     }
                     .offset(x: model.textOffset.width * g.size.width, y: model.textOffset.height * g.size.height)
                     Spacer(minLength: 0)
-                    Text("ayattla.com").font(.ui(size: 10 * unit)).opacity(0.7)
+                    Text("ayattla.com").font(.ui(size: 10 * unit)).opacity(model.layer.watermark ? 0.7 : 0)
                         .environment(\.layoutDirection, .leftToRight)
                 }
                 .foregroundStyle(ink)
                 .padding(.horizontal, 26 * unit)
                 .padding(.vertical, 22 * unit)
+                }
             }
         }
     }
@@ -354,6 +443,29 @@ enum QuranWords {
 
     static func count(_ text: String) -> Int {
         text.split(separator: " ").filter { !isMark($0) && !isEndMarker($0) }.count
+    }
+
+    /// Word by word: tokens after the first `upTo` words are made transparent (they keep their place,
+    /// so lines do not move as words appear). Pause marks follow the word before them.
+    static func revealed(_ attributed: AttributedString, text: String, upTo: Int?) -> AttributedString {
+        guard let upTo else { return attributed }
+        var out = AttributedString()
+        var k = 0
+        let tokens = text.split(separator: " ", omittingEmptySubsequences: false)
+        for (i, t) in tokens.enumerated() {
+            var part = AttributedString(String(t))
+            if !isMark(t) && !t.isEmpty { k += 1 }
+            if k > upTo { part.foregroundColor = .clear }
+            out += part
+            if i < tokens.count - 1 { out += AttributedString(" ") }
+        }
+        // Keep the highlight colours of the original where words are visible.
+        return upTo >= tokens.count ? attributed : out
+    }
+
+    /// Words counted for word-by-word (every token but the pause marks; the ayah number counts as one).
+    static func revealCount(_ text: String) -> Int {
+        text.split(separator: " ").filter { !isMark($0) }.count
     }
 
     /// The text with word `word` colored; other text unchanged.

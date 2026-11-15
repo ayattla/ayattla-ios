@@ -236,12 +236,166 @@ enum VideoEngine {
         progress(1)
     }
 
+    // MARK: Studio v2: animated text, pauses, any size
+
+    /// One screen of an animated clip: its recitation, how many words it has (word by word), and
+    /// the text layer on a transparent background (`nil` = all words, a number = the first n words).
+    struct AnimatedSegment {
+        let audio: URL
+        let words: Int
+        let make: @MainActor (Int?) -> UIImage?
+    }
+
+    /// Renders text that moves over `background` (a video, a photo, an animated style or a plain colour
+    /// image): each segment lasts its recitation plus `pauses[i]` seconds of silence; the text comes in
+    /// with `motion` and leaves before the next segment.
+    static func renderAnimated(_ segments: [AnimatedSegment], pauses: [Double], motion: ClipMotionSettings,
+                               size: CGSize, to out: URL, background: MotionBackground,
+                               progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+        guard !segments.isEmpty else { throw Failure.noSegments }
+        try? FileManager.default.removeItem(at: out)
+
+        // 1. Audio, with silence after a segment where asked.
+        let comp = AVMutableComposition()
+        guard let audioTrack = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw Failure.writer("audio track")
+        }
+        var starts: [Double] = []
+        var durations: [Double] = []
+        var cursor = CMTime.zero
+        for (i, s) in segments.enumerated() {
+            let asset = AVURLAsset(url: s.audio)
+            let duration = try await asset.load(.duration)
+            guard let src = try await asset.loadTracks(withMediaType: .audio).first else { throw Failure.noAudioTrack(i) }
+            try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: src, at: cursor)
+            starts.append(cursor.seconds)
+            var d = duration
+            let pause = i < pauses.count ? max(0, min(pauses[i], 5)) : 0
+            if pause > 0 {
+                let p = CMTime(seconds: pause, preferredTimescale: 600)
+                audioTrack.insertEmptyTimeRange(CMTimeRange(start: cursor + duration, duration: p))
+                d = d + p
+            }
+            durations.append(d.seconds)
+            cursor = cursor + d
+        }
+        let total = cursor
+        let end = total.seconds
+        progress(0.05)
+
+        // 2. Every frame: background at t, then the text layer with its animation.
+        let silent = out.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + "-v.mp4")
+        defer { try? FileManager.default.removeItem(at: silent) }
+        let (writer, input, adaptor, w, h) = try makeWriter(url: silent, size: size)
+        let rect = CGRect(x: 0, y: 0, width: w, height: h)
+        let space = CGColorSpaceCreateDeviceRGB()
+        let frames = max(1, Int((end * Double(fps)).rounded(.up)))
+        var seg = 0
+        var layerKey = ""
+        var layer: CGImage?
+        for i in 0..<frames {
+            try Task.checkCancellation()
+            let t = Double(i) / Double(fps)
+            while seg + 1 < starts.count && starts[seg + 1] <= t { seg += 1 }
+            let local = t - starts[seg]
+            let dur = durations[seg]
+            let last = seg == segments.count - 1
+            var shown: Int? = nil
+            if motion.animation == .words {
+                let n = max(1, segments[seg].words)
+                let span = max(0.05, dur * motion.wordPace)
+                shown = min(n, Int(local / span * Double(n)) + 1)
+            }
+            let key = "\(seg)/\(shown ?? -1)"
+            if key != layerKey {
+                let s = segments[seg]
+                let wanted = shown
+                layer = await MainActor.run { autoreleasepool { s.make(wanted)?.cgImage } } ?? layer
+                layerKey = key
+            }
+            // Animation amounts.
+            let d = max(0.05, motion.duration)
+            let inP = min(max(local / d, 0), 1)
+            let ease = 1 - (1 - inP) * (1 - inP)
+            let outP: Double = (last || motion.animation == .none) ? 1 : min(max((dur - local) / (d * 0.6), 0), 1)
+            var alpha = 1.0, dy = 0.0, scale = 1.0
+            switch motion.animation {
+            case .none, .words: alpha = outP
+            case .fade: alpha = ease * outP
+            case .slide: alpha = ease * outP; dy = (1 - ease) * Double(h) * 0.05
+            case .zoom: alpha = ease * outP; scale = 0.9 + 0.1 * ease
+            }
+
+            while !input.isReadyForMoreMediaData { try await Task.sleep(nanoseconds: 5_000_000) }
+            var pb: CVPixelBuffer?
+            if let pool = adaptor.pixelBufferPool { CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) }
+            if pb == nil {
+                CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_32BGRA,
+                                    [kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary, &pb)
+            }
+            guard let buffer = pb else { throw Failure.writer("pixel buffer") }
+            CVPixelBufferLockBaseAddress(buffer, [])
+            if let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: w, height: h, bitsPerComponent: 8,
+                                   bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: space,
+                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue) {
+                autoreleasepool {
+                    background.draw(in: ctx, size: rect.size, t: t, total: end)
+                    if let layer, alpha > 0.001 {
+                        ctx.saveGState()
+                        ctx.setAlpha(CGFloat(alpha))
+                        // Core Graphics origin is at the bottom: moving down is a negative y.
+                        ctx.translateBy(x: CGFloat(w) / 2, y: CGFloat(h) / 2 - CGFloat(dy))
+                        ctx.scaleBy(x: CGFloat(scale), y: CGFloat(scale))
+                        ctx.translateBy(x: -CGFloat(w) / 2, y: -CGFloat(h) / 2)
+                        ctx.draw(layer, in: rect)
+                        ctx.restoreGState()
+                    }
+                }
+            }
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            guard adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(i), timescale: fps)) else {
+                throw Failure.writer(writer.error?.localizedDescription ?? "append")
+            }
+            if i % 15 == 0 { progress(0.05 + 0.5 * Double(i) / Double(frames)) }
+        }
+        input.markAsFinished()
+        writer.endSession(atSourceTime: total)
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw Failure.writer(writer.error?.localizedDescription ?? "finish") }
+
+        // 3. Mux.
+        let video = AVURLAsset(url: silent)
+        guard let vsrc = try await video.loadTracks(withMediaType: .video).first,
+              let vtrack = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw Failure.writer("video track")
+        }
+        let vdur = try await video.load(.duration)
+        try vtrack.insertTimeRange(CMTimeRange(start: .zero, duration: min(vdur, total)), of: vsrc, at: .zero)
+        guard let export = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else {
+            throw Failure.export("session")
+        }
+        export.outputURL = out
+        export.outputFileType = .mp4
+        export.shouldOptimizeForNetworkUse = true
+        let ticker = Task {
+            while !Task.isCancelled {
+                progress(0.55 + 0.45 * Double(export.progress))
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+        await export.export()
+        ticker.cancel()
+        guard export.status == .completed else { throw Failure.export(export.error?.localizedDescription ?? "\(export.status.rawValue)") }
+        progress(1)
+    }
+
     private static func makeWriter(url: URL, size: CGSize) throws -> (AVAssetWriter, AVAssetWriterInput, AVAssetWriterInputPixelBufferAdaptor, Int, Int) {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let w = Int(size.width) / 2 * 2, h = Int(size.height) / 2 * 2
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: w, AVVideoHeightKey: h,
-            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 8_000_000, AVVideoMaxKeyFrameIntervalKey: Int(fps) * 2],
+            // ~4 bits per pixel per second: 8 Mbps at 1080×1920, 32 Mbps at 4K, 3.7 Mbps at 720p.
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: max(3_000_000, w * h * 4), AVVideoMaxKeyFrameIntervalKey: Int(fps) * 2],
         ])
         input.expectsMediaDataInRealTime = false
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
