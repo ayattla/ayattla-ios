@@ -113,9 +113,12 @@ enum StudioTemplates {
 /// folder, so a project keeps its background after the app closes or updates.
 enum StudioFiles {
     static let dir: URL = {
-        let d = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var d = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("StudioMedia", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        // Imported videos can be large: kept on the device, left out of iCloud backups.
+        var v = URLResourceValues(); v.isExcludedFromBackup = true
+        try? d.setResourceValues(v)
         return d
     }()
 

@@ -281,6 +281,16 @@ struct AsmaView: View {
     var body: some View {
         ScrollView {
             ToolPageHead(id: "asma-ul-husna").padding(.horizontal).padding(.top, 8)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("عن هذه القائمة").font(.ui(.headline)).foregroundStyle(Brand.goldInk)
+                Text("الثابت في الصحيحين قوله ﷺ: «إن لله تسعة وتسعين اسما، مائة إلا واحدا، من أحصاها دخل الجنة» (البخاري 2736 و7392، ومسلم 2677). أما سرد الأسماء بهذا العدد والترتيب فورد في رواية الترمذي (3507)، وقد ذكر كثير من المحققين أن تعيينها فيها من إدراج بعض الرواة وليس من لفظ النبي ﷺ؛ ولذلك تختلف قوائم العلماء في بعض الأسماء. القائمة هنا كما هي في موقع آيات تتلى.")
+                    .font(.ui(.footnote)).foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .surface(.gold)
+            .padding(.horizontal, 16)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 10)], spacing: 10) {
                 ForEach(filtered, id: \.n) { a in
                     NavigationLink {

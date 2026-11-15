@@ -238,7 +238,9 @@ struct ZikrCard: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .textSelection(.enabled)
-                let meta = [zikr.reference, zikr.note].compactMap { $0?.isEmpty == false ? $0 : nil }
+                // The data's own reference; where it has none we say so, and never write one ourselves.
+                let ref = zikr.reference?.isEmpty == false ? zikr.reference! : "من حصن المسلم · المرجع التفصيلي غير مذكور في المصدر"
+                let meta = [ref, zikr.note].compactMap { $0?.isEmpty == false ? $0 : nil }
                 if !meta.isEmpty {
                     Divider().overlay(Brand.line)
                     Text(meta.joined(separator: " · "))
