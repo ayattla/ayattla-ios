@@ -1,6 +1,7 @@
 import SwiftUI
 import AyatDesign
 import AyatCalc
+import AyatContent
 
 /// Saved khatma plan (JSON in UserDefaults), shared with Library and the reminders.
 enum KhatmaStore {
@@ -63,6 +64,7 @@ struct KhatmaSetup: View {
     @State private var days = 30
     @State private var start = Date()
     @State private var startPage = 1
+    private var juzStarts: [JuzStart] { (try? ContentLibrary.shared.store?.juzStarts()) ?? [] }
 
     var body: some View {
         Form {
@@ -75,6 +77,13 @@ Group {
                 Stepper("أو حدد: \(Num.int(days)) يوما", value: $days, in: 1...365)
                 DatePicker("تاريخ البدء", selection: $start, displayedComponents: .date)
                 Stepper("أبدأ من صفحة \(Num.int(startPage))", value: $startPage, in: 1...KhatmaPlan.pages)
+                // Quicker than the stepper: start at the beginning of any juz.
+                Picker("أو ابدأ من جزء", selection: Binding(
+                    get: { juzStarts.last(where: { $0.page <= startPage })?.page == startPage ? juzStarts.last(where: { $0.page <= startPage })?.juz ?? 0 : 0 },
+                    set: { j in if let s = juzStarts.first(where: { $0.juz == j }) { startPage = s.page } })) {
+                    Text("—").tag(0)
+                    ForEach(juzStarts) { Text("الجزء \(Num.int($0.juz))").tag($0.juz) }
+                }
                 if startPage > 1 {
                     Text(KhatmaStore.surahName(atPage: startPage)).font(.ui(.footnote)).foregroundStyle(.secondary)
                 }
