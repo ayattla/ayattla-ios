@@ -1,3 +1,4 @@
+import ImageIO
 import SwiftUI
 import AVFoundation
 import CoreImage
@@ -625,5 +626,23 @@ enum MediaCache {
             try? FileManager.default.removeItem(at: f)
             total -= size
         }
+    }
+}
+
+extension UIImage {
+    /// A photo from the device decoded at most `maxPixel` on its longer side, upright. iPhone cameras
+    /// take 48 MP photos; decoding one whole needs ~190 MB and rendering cards from it can get the
+    /// app closed for memory, so a picked photo is never decoded larger than a 4K export needs.
+    static func downsampled(_ data: Data, maxPixel: Int = 3840) -> UIImage? {
+        let options = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let src = CGImageSourceCreateWithData(data as CFData, options) else { return UIImage(data: data) }
+        let thumb: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, thumb as CFDictionary) else { return UIImage(data: data) }
+        return UIImage(cgImage: cg)
     }
 }
