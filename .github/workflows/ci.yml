@@ -174,6 +174,7 @@ jobs:
           }
           run tajweed-fatiha 10 -screen tajweed -surah 1
           run tajweed-baqara 25 -screen tajweed -surah 2
+          run tajweed-kahf 15 -screen tajweed -surah 18
           run tajweed-nisa 20 -screen tajweed -surah 4
           run wbw-baqara 30 -screen wbw -surah 2
           run khatma 6 -screen khatma
@@ -196,13 +197,16 @@ jobs:
           after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
           echo "crash reports: $before → $after"
           if [ "$after" -gt "$before" ]; then ls -t $REP | grep -i ayattutla | head -3; for f in $(ls -t $REP | grep -i ayattutla | head -2); do head -c 3000 "$REP/$f"; done; exit 1; fi
-      - name: Upload tool screenshots
+      - name: Publish tool screenshots to the ci-tools-shots branch
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tools-shots
-          path: tools-shots
-          retention-days: 14
+        run: |
+          test -d tools-shots || exit 0
+          cd tools-shots
+          for f in *.png; do sips -Z 900 "$f" >/dev/null 2>&1 || true; done
+          git init -q && git checkout -q -b ci-tools-shots
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add -A && git commit -q -m "tool screens from run ${{ github.run_number }} (${{ github.sha }})"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-tools-shots
       - name: Live preview on Appetize (main only)
         # The simulator build streamed in the browser: one link that always runs the latest main.
         # Needs the repository secret APPETIZE_API_TOKEN. The app's public key (not a secret) is kept in
