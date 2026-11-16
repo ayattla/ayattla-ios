@@ -1,6 +1,7 @@
 import Foundation
 import UserNotifications
 import AyatCalc
+import AyatDesign
 
 // MARK: - Prayer calculation settings (used everywhere times are shown)
 
