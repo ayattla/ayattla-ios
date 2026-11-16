@@ -101,13 +101,12 @@ Group {
             }
 
             Section {
-                Toggle(isOn: notify($notifyAzkar)) { row("أذكار الصباح والمساء", "sunrise", 2) }
-                Toggle(isOn: notify($notifyDailyAyah)) { row("آية اليوم", "book", 3) }
-                Toggle(isOn: notify($notifyKhatma)) { row("ورد الختمة", "checkmark.circle", 4) }
+                NavigationLink { NotificationCenterView() } label: { row("مركز التنبيهات", "bell.badge", 2) }
+                NavigationLink { PrayerCalcView() } label: { row("حساب مواقيت الصلاة", "clock", 3) }
             } header: {
                 Text("التنبيهات")
             } footer: {
-                Text("أذكار الصباح بعد الفجر بنصف ساعة، والمساء بعد العصر بنصف ساعة، حسب مدينتك في المواقيت. آية اليوم الساعة ٩ صباحا، وورد الختمة الساعة ٨ مساء ما دامت لديك خطة.")
+                Text("الصلوات والأذكار والورد والختمة والحفظ والصيام وتذكيراتك، مع الهدوء الليلي والتأجيل.")
             }
 
             Section("عن التطبيق") {

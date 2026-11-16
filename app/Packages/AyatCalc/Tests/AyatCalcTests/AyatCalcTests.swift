@@ -75,3 +75,19 @@ final class AyatCalcTests: XCTestCase {
         }
     }
 }
+
+final class PrayerOptionsTests: XCTestCase {
+    func testHanafiAsrIsLaterAndOthersUnchanged() {
+        let s = PrayerTimes.compute(year: 2026, month: 11, day: 16, lat: 24.7136, lng: 46.6753, tzHours: 3, method: .ummAlQura)
+        let h = PrayerTimes.compute(year: 2026, month: 11, day: 16, lat: 24.7136, lng: 46.6753, tzHours: 3, method: .ummAlQura, asrFactor: 2)
+        XCTAssertGreaterThan(h.asr - s.asr, 0.5)
+        XCTAssertEqual(h.dhuhr, s.dhuhr, accuracy: 1e-9)
+    }
+
+    func testManualAdjustment() {
+        let t = PrayerTimes(fajr: 4 + 50 / 60, sunrise: 6, dhuhr: 12, asr: 15, maghrib: 17, isha: 18.5)
+        let a = t.adjusted([.isha: 5, .fajr: -2])
+        XCTAssertEqual(PrayerTimes.minute(a.isha), PrayerTimes.minute(t.isha) + 5)
+        XCTAssertEqual(PrayerTimes.minute(a.fajr), 4 * 60 + 48)
+    }
+}

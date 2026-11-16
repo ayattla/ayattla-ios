@@ -65,11 +65,10 @@ struct PrayerTimesView: View {
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = place.zone
             let ramadan = Hijri.isRamadan(now)
+            _ = ramadan
+            // The user's method, Asr school and minute adjustments (حساب المواقيت) apply everywhere.
             func times(_ d: Date) -> PrayerTimes {
-                let c = cal.dateComponents([.year, .month, .day], from: d)
-                return PrayerTimes.compute(year: c.year!, month: c.month!, day: c.day!, lat: place.lat, lng: place.lng,
-                                           tzHours: PrayerTimes.tzHours(place.zone, at: d), method: place.method,
-                                           ramadan: ramadan)
+                PrayerCalc.times(on: d, lat: place.lat, lng: place.lng, zone: place.zone, method: place.method)
             }
             today = times(now)
             tomorrow = times(cal.date(byAdding: .day, value: 1, to: now) ?? now)
@@ -123,11 +122,17 @@ struct PrayerTimesView: View {
             HStack {
                 Text("طريقة الحساب")
                 Spacer()
-                Text(methodLabel(d.place.method)).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
+                Text(methodLabel(PrayerCalc.method(default: d.place.method))).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
             }
             .padding(.horizontal, 18)
             .frame(minHeight: 58)
             .card()
+
+            HStack(spacing: 10) {
+                NavigationLink { NotificationCenterView() } label: { Label("تنبيهات الصلاة", systemImage: "bell.badge").frame(maxWidth: .infinity) }
+                NavigationLink { PrayerCalcView() } label: { Label("طريقة الحساب", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity) }
+            }
+            .buttonStyle(.bordered).tint(Brand.primaryInk)
 
             Text("تحسب على الجهاز دون إنترنت").font(.ui(.footnote)).foregroundStyle(.secondary)
         }
