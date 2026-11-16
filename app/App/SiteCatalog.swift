@@ -53,6 +53,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "tajweed", title: "المصحف الملون بالتجويد", subtitle: "أحكام التجويد بالألوان مع المفتاح", symbol: "paintpalette", group: .quran, isNew: true),
         .init(id: "word-by-word", title: "معاني الكلمات", subtitle: "كلمة بكلمة مع التفسير الميسر", symbol: "character.book.closed", group: .quran, isNew: true),
         .init(id: "hifz-test", title: "اختبار الحفظ", subtitle: "أخف الكلمات واختبر حفظك", symbol: "arrow.triangle.2.circlepath", group: .quran, isNew: true),
+        .init(id: "hifz-plan", title: "خطة الحفظ والمراجعة", subtitle: "مقطع جديد كل يوم ومراجعة متباعدة لما حفظت", symbol: "calendar.badge.clock", group: .quran, isNew: true),
         .init(id: "duas", title: "أدعية من القرآن والسنة", subtitle: "مصنفة حسب الحاجة مع المصدر", symbol: "hands.sparkles", group: .daily, isNew: true),
         .init(id: "mushaf", title: "المصحف بالصفحات", subtitle: "٦٠٤ صفحات بترقيم مصحف المدينة", symbol: "book.pages", group: .quran, isNew: true),
         .init(id: "ruqya", title: "الرقية الشرعية", subtitle: "آيات الرقية من القرآن تتلى متتابعة", symbol: "play.circle", group: .quran, isNew: true),
@@ -61,6 +62,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "hadith-checker", title: "التحقق من حديث", subtitle: "الصق حديثا وصلك لتعرف تخريجه وحكمه", symbol: "checkmark.seal", group: .hadith, isNew: true),
         .init(id: "prayer-guide", title: "صفة الوضوء والصلاة", subtitle: "من الأحاديث الصحيحة مع الشرح", symbol: "drop", group: .hadith, isNew: true),
         .init(id: "kids-juz-amma", title: "تحفيظ الأطفال جزء عم", subtitle: "استماع وتكرار ونجوم وشهادة باسم الطفل", symbol: "star.circle", group: .hadith, isNew: true),
+        .init(id: "kids-quiz", title: "مسابقة جزء عم للأطفال", subtitle: "أكمل الآية ومن أي سورة، من نص المصحف", symbol: "questionmark.bubble", group: .hadith, isNew: true),
         .init(id: "group-khatma", title: "الختمة الجماعية", subtitle: "وزع الأجزاء على المجموعة برابط واحد", symbol: "person.3", group: .quran, isNew: true),
         .init(id: "qada-salah", title: "متتبع قضاء الصلوات", subtitle: "عداد لكل صلاة وخطة يومية", symbol: "checklist", group: .daily, isNew: true),
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
@@ -103,6 +105,8 @@ struct SiteTool: Identifiable, Hashable {
         case "hadith-checker": HadithCheckerView()
         case "prayer-guide": PrayerGuideView()
         case "kids-juz-amma": KidsJuzAmmaView()
+        case "kids-quiz": KidsQuizView()
+        case "hifz-plan": HifzPlanView()
         case "qada-salah": QadaView()
         case "sawm-tracker": SawmView()
         case "nearby-mosques": MosquesView()

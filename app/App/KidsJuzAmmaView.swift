@@ -69,6 +69,14 @@ struct KidsJuzAmmaView: View {
                     }
                 }
 
+                NavigationLink { KidsQuizView() } label: {
+                    Label("مسابقة جزء عم", systemImage: "questionmark.bubble")
+                        .font(.ui(.headline)).foregroundStyle(Brand.primary)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(Brand.goldGradient, in: Capsule())
+                }
+                .buttonStyle(.plain)
+
                 ShareLink(item: KidsCertificate(name: progress.name, count: progress.done.count),
                           preview: SharePreview("شهادة تقدير")) {
                     Label("تحميل الشهادة", systemImage: "rosette")

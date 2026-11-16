@@ -75,3 +75,30 @@ final class ToolsParityTests: XCTestCase {
         XCTAssertEqual(ToolItem.kids.title, "تحفيظ الأطفال جزء عم")
     }
 }
+
+final class HifzPlanTests: XCTestCase {
+    func testReviewIntervalsGrowAndReset() {
+        XCTAssertEqual(HifzPlan.nextInterval(1, grade: 2), 3)
+        XCTAssertEqual(HifzPlan.nextInterval(3, grade: 2), 7)
+        XCTAssertEqual(HifzPlan.nextInterval(7, grade: 1), 10)
+        XCTAssertEqual(HifzPlan.nextInterval(30, grade: 0), 1)
+        XCTAssertEqual(HifzPlan.nextInterval(40, grade: 2), 60)
+    }
+
+    func testLearningMovesThePointerAndAddsAReview() {
+        var p = HifzPlan(forward: false, daily: 5, nextSurah: 114)
+        let counts: (Int) -> Int = { $0 == 114 ? 6 : 5 }
+        XCTAssertEqual(p.next(ayahCount: counts), .init(surah: 114, from: 1, to: 5))
+        p.learned(ayahCount: counts)
+        XCTAssertEqual(p.next(ayahCount: counts), .init(surah: 114, from: 6, to: 6))
+        p.learned(ayahCount: counts)
+        XCTAssertEqual(p.nextSurah, 113)
+        XCTAssertEqual(p.memorised, 6)
+        XCTAssertEqual(HifzPlan.decode(p.encoded()), p)
+    }
+
+    func testQuizCutSkipsPauseMarks() {
+        XCTAssertEqual(KidsQuizQuestion.cut(["قُلۡ", "هُوَ", "ٱللَّهُ", "أَحَدٌ"]), 2)
+        XCTAssertEqual(KidsQuizQuestion.cut(["أ", "ب", "ۖ", "ج", "د"]), 3)
+    }
+}
