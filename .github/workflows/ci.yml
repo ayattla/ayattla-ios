@@ -152,6 +152,57 @@ jobs:
             CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM= \
             -derivedDataPath build test | tee build.log | grep -E "error:|warning: |Test Suite|Executed|BUILD|TEST" || true
           test ${PIPESTATUS[0]} -eq 0
+      - name: Tool checks on simulator (every run)
+        # Opens the heavy tools with real data (long surahs, network) and fails on any crash report.
+        if: success()
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          BUNDLE=com.ayattla.AyatTutla
+          xcrun simctl boot "$UDID" || true
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl privacy "$UDID" grant location "$BUNDLE" || true
+          xcrun simctl location "$UDID" set 24.7136,46.6753 || true
+          mkdir -p tools-shots; REP=~/Library/Logs/DiagnosticReports
+          before=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
+          run() {  # $1 shot name, $2 wait seconds, rest: launch args
+            n=$1; w=$2; shift 2
+            xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" "$@" >/dev/null
+            sleep "$w"
+            xcrun simctl io "$UDID" screenshot "tools-shots/$n.png" >/dev/null 2>&1
+            if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BUNDLE"; then echo "✓ $n"; else echo "✗ $n (التطبيق لم يعد يعمل)"; fi
+          }
+          run tajweed-fatiha 10 -screen tajweed -surah 1
+          run tajweed-baqara 25 -screen tajweed -surah 2
+          run tajweed-nisa 20 -screen tajweed -surah 4
+          run wbw-baqara 30 -screen wbw -surah 2
+          run khatma 6 -screen khatma
+          run hifz 6 -screen hifz
+          run hifz-plan 6 -screen hifz-plan
+          run mosques 20 -screen mosques
+          run hadith 15 -screen hadith
+          run checker 6 -screen checker
+          run radio 12 -screen radio
+          run ruqya 6 -screen ruqya
+          run asma 6 -screen asma
+          run kids 6 -screen kids
+          run kids-quiz 6 -screen kids-quiz
+          run downloads 6 -screen downloads
+          run duas 6 -screen duas
+          run topics 6 -screen topics
+          run prayer 8 -screen prayer
+          run qibla 6 -screen qibla
+          xcrun simctl shutdown "$UDID" || true
+          after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
+          echo "crash reports: $before → $after"
+          if [ "$after" -gt "$before" ]; then ls -t $REP | grep -i ayattutla | head -3; for f in $(ls -t $REP | grep -i ayattutla | head -2); do head -c 3000 "$REP/$f"; done; exit 1; fi
+      - name: Upload tool screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tools-shots
+          path: tools-shots
+          retention-days: 14
       - name: Live preview on Appetize (main only)
         # The simulator build streamed in the browser: one link that always runs the latest main.
         # Needs the repository secret APPETIZE_API_TOKEN. The app's public key (not a secret) is kept in

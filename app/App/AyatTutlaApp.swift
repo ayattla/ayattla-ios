@@ -224,6 +224,8 @@ enum DebugScreen {
         case "tajweed": TajweedView()
         case "wbw": WordByWordView()
         case "ruqya": RuqyaView()
+        case "hifz-plan": HifzPlanView()
+        case "kids-quiz": KidsQuizView()
         case "asma": AsmaView()
         case "downloads": DownloadsView().navigationTitle("التنزيلات")
         case "azkar-hub": AzkarHadithView()

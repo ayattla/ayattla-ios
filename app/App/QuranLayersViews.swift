@@ -130,7 +130,7 @@ struct TajweedLegend: View {
 // MARK: - Tools: tajweed and word by word (/tools/tajweed, /tools/word-by-word)
 
 struct TajweedView: View {
-    @State private var surah = 1
+    @State private var surah = max(1, min(114, UserDefaults.standard.integer(forKey: "surah")))
     @State private var chunks: [AttributedString] = []
     @State private var failed = false
     @State private var size: Double = 26
@@ -189,7 +189,7 @@ Group {
 
 struct WordByWordView: View {
     @AppStorage("wbw.lang") private var lang = "en"
-    @State private var surah = 1
+    @State private var surah = max(1, min(114, UserDefaults.standard.integer(forKey: "surah")))
     @State private var verses: [QF.WordsChapter.Verse] = []
     @State private var failed = false
     private let lib = ContentLibrary.shared
