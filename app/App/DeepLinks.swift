@@ -12,6 +12,7 @@ enum Route: Equatable, Identifiable {
     case tool(ToolItem)
     case azkar(String)
     case khatma
+    case site(String)
 
     var id: String {
         switch self {
@@ -21,6 +22,7 @@ enum Route: Equatable, Identifiable {
         case .tool(let t): "tool-\(t.rawValue)"
         case .azkar(let c): "azkar-\(c)"
         case .khatma: "khatma"
+        case .site(let s): "site-\(s)"
         }
     }
 
@@ -54,8 +56,9 @@ enum Route: Equatable, Identifiable {
             default: return .newClip(surah: s, from: a, to: b)
             }
         case "tools":
-            guard let id = parts.first, let t = toolIDs[id] ?? ToolItem(rawValue: id) else { return nil }
-            return .tool(t)
+            guard let id = parts.first else { return nil }
+            if let t = toolIDs[id] ?? ToolItem(rawValue: id) { return .tool(t) }
+            return SiteTool.tool(id) != nil ? .site(id) : nil
         case "azkar":
             guard let title = parts.first, !title.isEmpty else { return .tool(.azkar) }
             return .azkar(title)
@@ -80,12 +83,14 @@ enum Route: Equatable, Identifiable {
         case .newCard(let s, let a, let b): AyahCardView(surah: s, from: a, to: b)
         case .tool(let t): t.destination
         case .azkar(let title):
-            if let c = ContentLibrary.shared.azkarCategories.first(where: { $0.title == title }) {
+            if let c = ContentLibrary.shared.azkarCategories.first(where: { $0.title == title })
+                ?? ContentLibrary.shared.azkarCategories.first(where: { $0.title.contains(title) }) {
                 AzkarSession(category: c)
             } else {
                 AzkarView()
             }
         case .khatma: KhatmaView()
+        case .site(let id): SiteTool.tool(id)?.destination
         }
     }
 }
@@ -115,6 +120,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        if response.actionIdentifier == "snooze" {
+            await Reminders.snooze(response.notification.request)
+            return
+        }
         if let s = response.notification.request.content.userInfo["link"] as? String, let url = URL(string: s) {
             await MainActor.run { Router.shared.open(url) }
         }
@@ -122,7 +131,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
         -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        Task { await NotifyLog.collect() }
+        return [.banner, .sound, .list]
     }
 }
 

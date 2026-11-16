@@ -5,6 +5,10 @@ import Foundation
 public struct PrayerTimes: Equatable, Sendable {
     public let fajr, sunrise, dhuhr, asr, maghrib, isha: Double   // local hours, may exceed 0..<24 before formatting
 
+    public init(fajr: Double, sunrise: Double, dhuhr: Double, asr: Double, maghrib: Double, isha: Double) {
+        self.fajr = fajr; self.sunrise = sunrise; self.dhuhr = dhuhr; self.asr = asr; self.maghrib = maghrib; self.isha = isha
+    }
+
     /// Calculation settings of one city on the site: Fajr angle, and Isha angle
     /// or (if > 30) minutes after Maghrib. `90` becomes `120` in Ramadan, as on the site.
     public struct Method: Hashable, Sendable {
@@ -15,6 +19,19 @@ public struct PrayerTimes: Equatable, Sendable {
         public static let ummAlQura = Method(fajrAngle: 18.5, isha: 90)
         /// Used on the site for "my location" outside Saudi Arabia.
         public static let defaultGeo = Method(fajrAngle: 18, isha: 17)
+
+        /// Methods the user can choose (id, name). "auto" keeps the site's choice per city.
+        public static let choices: [(id: String, name: String, method: Method)] = [
+            ("umm-al-qura", "أم القرى (مكة المكرمة)", Method(fajrAngle: 18.5, isha: 90)),
+            ("mwl", "رابطة العالم الإسلامي", Method(fajrAngle: 18, isha: 17)),
+            ("egypt", "الهيئة المصرية العامة للمساحة", Method(fajrAngle: 19.5, isha: 17.5)),
+            ("karachi", "جامعة العلوم الإسلامية بكراتشي", Method(fajrAngle: 18, isha: 18)),
+            ("isna", "أمريكا الشمالية (ISNA)", Method(fajrAngle: 15, isha: 15)),
+            ("dubai", "دبي", Method(fajrAngle: 18.2, isha: 18.2)),
+            ("kuwait", "الكويت", Method(fajrAngle: 18, isha: 17.5)),
+            ("qatar", "قطر", Method(fajrAngle: 18, isha: 90)),
+        ]
+        public static func byID(_ id: String) -> Method? { choices.first { $0.id == id }?.method }
 
         /// Same rule as the site's "موقعي" button.
         public static func forLocation(lat: Double, lng: Double) -> Method {
@@ -28,7 +45,7 @@ public struct PrayerTimes: Equatable, Sendable {
     ///   - tzHours: UTC offset of the zone on that date, in hours.
     ///   - ramadan: true during Ramadan (affects isha == 90 only).
     public static func compute(year: Int, month: Int, day: Int, lat: Double, lng: Double,
-                               tzHours: Double, method: Method, ramadan: Bool = false) -> PrayerTimes {
+                               tzHours: Double, method: Method, ramadan: Bool = false, asrFactor: Double = 1) -> PrayerTimes {
         let jd = Astro.julian(year, month, day) - lng / (15 * 24)
         func mid(_ t: Double) -> Double { Astro.fix(12 - Astro.sunPos(jd + t).eqt, 24) }
         func ang(_ a: Double, _ t: Double, ccw: Bool = false) -> Double {
@@ -38,7 +55,7 @@ public struct PrayerTimes: Equatable, Sendable {
         }
         func asr(_ t: Double) -> Double {
             let d = Astro.sunPos(jd + t).decl
-            return ang(-Astro.darccot(1 + Astro.dtan(abs(lat - d))), t)
+            return ang(-Astro.darccot(asrFactor + Astro.dtan(abs(lat - d))), t)
         }
         func adj(_ t: Double) -> Double { t + tzHours - lng / 15 }
 
@@ -55,6 +72,21 @@ public struct PrayerTimes: Equatable, Sendable {
             isha = adj(ang(method.isha, 18.0 / 24))
         }
         return PrayerTimes(fajr: fajr, sunrise: sunrise, dhuhr: dhuhr, asr: asrT, maghrib: maghrib, isha: isha)
+    }
+
+    /// Each prayer moved by the user's minutes (the "manual adjustment" setting).
+    public func adjusted(_ m: [Prayer: Int]) -> PrayerTimes {
+        if m.isEmpty { return self }
+        func a(_ p: Prayer, _ v: Double) -> Double { v + Double(m[p] ?? 0) / 60 }
+        return PrayerTimes(fajr: a(.fajr, fajr), sunrise: a(.sunrise, sunrise), dhuhr: a(.dhuhr, dhuhr),
+                           asr: a(.asr, asr), maghrib: a(.maghrib, maghrib), isha: a(.isha, isha))
+    }
+
+    /// Minute of the day as shown (half a minute rounding, as `hhmm`).
+    public static func minute(_ hours: Double) -> Int {
+        let h = Astro.fix(hours + 0.5 / 60, 24)
+        let H = Int(h.rounded(.down))
+        return H * 60 + Int(((h - Double(H)) * 60).rounded(.down))
     }
 
     /// "HH:mm" (24h), rounded the same way as the site's `fmt` (half a minute, then floor).

@@ -65,36 +65,94 @@ enum Reminders {
         return out.filter { $0.date > now }
     }
 
-    /// Replaces every pending reminder of ours with a fresh plan from the saved settings.
+    /// iOS keeps at most 64 pending notifications per app: the earliest 60 are set, and the plan is
+    /// renewed every time the app becomes active, a setting changes or a notification is tapped.
+    static let maxPending = 60
+    static let category = "ayat.alert"
+
+    /// What the notification center will schedule (also shown in its «المجدولة القادمة»).
+    static func upcoming(defaults d: UserDefaults = .standard, now: Date = Date()) -> [NotifyPlanner.Alert] {
+        let config = NotifyConfig.load(d)
+        guard config.anyOn else { return [] }
+        let city = PrayerCity.named(d.string(forKey: "prayer.city") ?? "") ?? PrayerCity.all[0]
+        let zone = TimeZone(identifier: city.zone) ?? .current
+        let khatma = KhatmaStore.load(d.string(forKey: KhatmaStore.key) ?? "")
+        let hifz = HifzPlan.decode(d.string(forKey: "hifz.plan") ?? "")
+        let store = ContentLibrary.shared.store
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = zone
+        let inputs = NotifyPlanner.Inputs(
+            place: city.name, zone: zone,
+            times: { day in PrayerCalc.times(on: day, lat: city.lat, lng: city.lng, zone: zone, method: city.method, d) },
+            ayahText: { day in
+                let p = AyahOfTheDay.pick(for: day)
+                let ref = AyahOfTheDay.reference(p)
+                return ((try? store?.ayat(surah: p.surah, from: p.from, to: p.from))?.first?.textUthmani).map { "\($0)\n\(ref)" } ?? ref
+            },
+            khatmaWird: { day in
+                guard let k = khatma else { return nil }
+                let n = k.day(on: day, calendar: cal)
+                guard !k.completedDays.contains(n), let r = k.range(day: n) else { return nil }
+                return "ورد اليوم: من صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound))"
+            },
+            hifzToday: { _ in hifz == nil ? nil : "مقطع اليوم ومراجعاتك في خطة الحفظ" },
+            hijriDay: { day in Hijri.fromGregorian(day).day }
+        )
+        return Array(NotifyPlanner.plan(config, now: now, days: 7, inputs).prefix(maxPending))
+    }
+
+    /// Replaces every pending notification of ours with a fresh plan from the saved settings.
     static func reschedule(defaults d: UserDefaults = .standard) async {
         let center = UNUserNotificationCenter.current()
+        await NotifyLog.collect()
         let pending = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(prefix) }
         center.removePendingNotificationRequests(withIdentifiers: pending)
-
-        let azkar = d.bool(forKey: Prefs.notifyAzkar), ayah = d.bool(forKey: Prefs.notifyDailyAyah)
-        let khatmaOn = d.bool(forKey: Prefs.notifyKhatma)
-        guard azkar || ayah || khatmaOn else { return }
         let status = await center.notificationSettings().authorizationStatus
         guard status == .authorized || status == .provisional || status == .ephemeral else { return }
+        let snooze = NotifyConfig.load(d).snooze
+        center.setNotificationCategories([UNNotificationCategory(
+            identifier: category,
+            actions: [UNNotificationAction(identifier: "snooze", title: "أجّل \(Num.int(snooze)) دقائق")],
+            intentIdentifiers: [])])
+        for item in upcoming(defaults: d) { try? await add(item, at: item.date) }
+    }
 
-        let city = PrayerCity.named(d.string(forKey: "prayer.city") ?? "") ?? PrayerCity.all[0]
-        let khatma = khatmaOn ? KhatmaStore.load(d.string(forKey: KhatmaStore.key) ?? "") : nil
-        let store = ContentLibrary.shared.store
-        let items = plan(now: Date(), azkar: azkar, dailyAyah: ayah, khatma: khatma, city: city) { p in
-            (try? store?.ayat(surah: p.surah, from: p.from, to: p.from))?.first?.textUthmani
-        }
-        for item in items {
-            let content = UNMutableNotificationContent()
-            content.title = item.title
-            content.body = item.body
-            content.sound = .default
-            if let link = item.link { content.userInfo = ["link": link] }
-            var cal = Calendar(identifier: .gregorian)
-            cal.timeZone = .current
-            let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)
-            let request = UNNotificationRequest(identifier: item.id, content: content,
-                                                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false))
-            try? await center.add(request)
-        }
+    static func add(_ item: NotifyPlanner.Alert, at date: Date, idSuffix: String = "") async throws {
+        let content = UNMutableNotificationContent()
+        content.title = item.title
+        content.body = item.body
+        content.sound = item.silent ? nil : .default
+        content.categoryIdentifier = category
+        content.threadIdentifier = item.isPrayer ? "prayer" : "other"
+        var info: [String: Any] = ["title": item.title, "body": item.body, "silent": item.silent, "prayer": item.isPrayer]
+        if let link = item.link { info["link"] = link }
+        content.userInfo = info
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .current
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        try await UNUserNotificationCenter.current().add(UNNotificationRequest(
+            identifier: item.id + idSuffix, content: content,
+            trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)))
+    }
+
+    /// «أجّل» on a notification: the same notification again after the chosen minutes.
+    static func snooze(_ request: UNNotificationRequest) async {
+        let info = request.content.userInfo
+        let mins = NotifyConfig.load().snooze
+        let item = NotifyPlanner.Alert(id: request.identifier, date: Date().addingTimeInterval(Double(mins) * 60),
+                                       title: info["title"] as? String ?? request.content.title, body: info["body"] as? String ?? request.content.body,
+                                       link: info["link"] as? String, silent: info["silent"] as? Bool ?? false, isPrayer: info["prayer"] as? Bool ?? false)
+        try? await add(item, at: item.date, idSuffix: ".snooze")
+    }
+
+    /// «تنبيه تجريبي»: arrives in five seconds.
+    static func test() async {
+        let content = UNMutableNotificationContent()
+        content.title = "تنبيه تجريبي"
+        content.body = "هكذا تصلك تنبيهات آيات تتلى."
+        content.sound = .default
+        content.categoryIdentifier = category
+        try? await UNUserNotificationCenter.current().add(UNNotificationRequest(
+            identifier: "\(prefix)test.\(Int(Date().timeIntervalSince1970))", content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)))
     }
 }

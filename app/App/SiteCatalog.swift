@@ -53,6 +53,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "tajweed", title: "المصحف الملون بالتجويد", subtitle: "أحكام التجويد بالألوان مع المفتاح", symbol: "paintpalette", group: .quran, isNew: true),
         .init(id: "word-by-word", title: "معاني الكلمات", subtitle: "كلمة بكلمة مع التفسير الميسر", symbol: "character.book.closed", group: .quran, isNew: true),
         .init(id: "hifz-test", title: "اختبار الحفظ", subtitle: "أخف الكلمات واختبر حفظك", symbol: "arrow.triangle.2.circlepath", group: .quran, isNew: true),
+        .init(id: "notifications", title: "مركز التنبيهات", subtitle: "الصلوات والأذكار والورد والصيام وتذكيراتك", symbol: "bell.badge", group: .daily, isNew: true),
         .init(id: "hifz-plan", title: "خطة الحفظ والمراجعة", subtitle: "مقطع جديد كل يوم ومراجعة متباعدة لما حفظت", symbol: "calendar.badge.clock", group: .quran, isNew: true),
         .init(id: "duas", title: "أدعية من القرآن والسنة", subtitle: "مصنفة حسب الحاجة مع المصدر", symbol: "hands.sparkles", group: .daily, isNew: true),
         .init(id: "mushaf", title: "المصحف بالصفحات", subtitle: "٦٠٤ صفحات بترقيم مصحف المدينة", symbol: "book.pages", group: .quran, isNew: true),
@@ -107,6 +108,8 @@ struct SiteTool: Identifiable, Hashable {
         case "kids-juz-amma": KidsJuzAmmaView()
         case "kids-quiz": KidsQuizView()
         case "hifz-plan": HifzPlanView()
+        case "notifications": NotificationCenterView()
+        case "prayer-calc": PrayerCalcView()
         case "qada-salah": QadaView()
         case "sawm-tracker": SawmView()
         case "nearby-mosques": MosquesView()
