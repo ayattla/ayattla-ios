@@ -312,7 +312,7 @@ struct ClipMakerView: View {
         .onChange(of: from) { _, f in if to < f || to > f + Self.maxAyat - 1 { to = f } }
         .onChange(of: photoItem) { _, item in
             Task {
-                if let data = try? await item?.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                if let data = try? await item?.loadTransferable(type: Data.self), let img = UIImage.downsampled(data) {
                     photo = img.uprightForVideo()
                     media = nil
                     background = .photo

@@ -282,7 +282,7 @@ struct AyahCardView: View {
         .navigationTitle("صانع بطاقات الآيات")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in
-            Task { if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage(data: data); mediaID = nil } }
+            Task { if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage.downsampled(data); mediaID = nil } }
         }
         .onChange(of: surah) { _, _ in
             if jumping { jumping = false } else { from = 1; to = 1 }
