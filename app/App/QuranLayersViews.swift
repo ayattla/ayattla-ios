@@ -224,6 +224,7 @@ Group {
         .navigationTitle("معاني الكلمات")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(surah)-\(lang)") {
+            if !QF.wordLanguages.contains(where: { $0.0 == lang }) { lang = "en" }
             verses = []; failed = false
             do { verses = try await QF.words(chapter: surah, lang: lang).verses } catch { failed = true }
         }
