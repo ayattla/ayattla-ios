@@ -40,7 +40,7 @@ enum QF {
 
     /// Word-meaning languages offered on /tools/word-by-word.
     static let wordLanguages: [(String, String)] = [("en", "English"), ("ur", "اردو"), ("id", "Indonesia"), ("tr", "Türkçe"),
-                                                    ("bn", "বাংলা"), ("fr", "Français")]
+                                                    ("bn", "বাংলা")]
 
     static func tajweed(chapter: Int) async throws -> TajweedChapter {
         try await get(SiteAPI.base.appendingPathComponent("api/qf/tajweed/\(chapter)"), key: "tj-\(chapter)")

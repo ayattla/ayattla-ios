@@ -130,8 +130,8 @@ struct TajweedLegend: View {
 // MARK: - Tools: tajweed and word by word (/tools/tajweed, /tools/word-by-word)
 
 struct TajweedView: View {
-    @State private var surah = 1
-    @State private var verses: [QF.TajweedChapter.Verse] = []
+    @State private var surah = max(1, min(114, UserDefaults.standard.integer(forKey: "surah")))
+    @State private var chunks: [AttributedString] = []
     @State private var failed = false
     @State private var size: Double = 26
     private let lib = ContentLibrary.shared
@@ -153,13 +153,17 @@ Group {
             Section {
                 if failed {
                     Text("تعذر تحميل السورة من Quran.com، حاول لاحقا.").foregroundStyle(.secondary)
-                } else if verses.isEmpty {
+                } else if chunks.isEmpty {
                     HStack { Spacer(); ProgressView(); Spacer() }
                 } else {
-                    let all = verses.reduce(into: AttributedString()) { $0 += Tajweed.attributed($1.html) + AttributedString(" ") }
-                    Text(all).font(.custom(ContentLibrary.mushafFont, size: size)).lineSpacing(size * 0.6)
-                        .multilineTextAlignment(.center).frame(maxWidth: .infinity)
-                        .textSelection(.enabled)
+                    // A few ayat per row: a long surah (Al-Baqara) is never one huge text, and rows
+                    // off screen are not laid out.
+                    ForEach(chunks.indices, id: \.self) { i in
+                        Text(chunks[i]).font(.custom(ContentLibrary.mushafFont, size: size)).lineSpacing(size * 0.6)
+                            .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                            .textSelection(.enabled)
+                            .listRowSeparator(.hidden)
+                    }
                 }
             } footer: { Text("نص ملون بأحكام التجويد من Quran.com (Quran Foundation).") }
         
@@ -169,15 +173,23 @@ Group {
         .navigationTitle("المصحف الملون بالتجويد")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: surah) {
-            verses = []; failed = false
-            do { verses = try await QF.tajweed(chapter: surah).verses } catch { failed = true }
+            chunks = []; failed = false
+            do {
+                let verses = try await QF.tajweed(chapter: surah).verses
+                // Colouring is done once per surah, off the main thread.
+                chunks = await Task.detached(priority: .userInitiated) {
+                    stride(from: 0, to: verses.count, by: 5).map { start in
+                        verses[start..<min(start + 5, verses.count)].reduce(into: AttributedString()) { $0 += Tajweed.attributed($1.html) + AttributedString(" ") }
+                    }
+                }.value
+            } catch { failed = true }
         }
     }
 }
 
 struct WordByWordView: View {
     @AppStorage("wbw.lang") private var lang = "en"
-    @State private var surah = 1
+    @State private var surah = max(1, min(114, UserDefaults.standard.integer(forKey: "surah")))
     @State private var verses: [QF.WordsChapter.Verse] = []
     @State private var failed = false
     private let lib = ContentLibrary.shared
@@ -212,6 +224,7 @@ Group {
         .navigationTitle("معاني الكلمات")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(surah)-\(lang)") {
+            if !QF.wordLanguages.contains(where: { $0.0 == lang }) { lang = "en" }
             verses = []; failed = false
             do { verses = try await QF.words(chapter: surah, lang: lang).verses } catch { failed = true }
         }
