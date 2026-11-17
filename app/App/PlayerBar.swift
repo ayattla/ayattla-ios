@@ -41,6 +41,7 @@ struct PlayerBar: View {
             AyahProgress(player: player)
             HStack(spacing: 4) {
                 RepeatMenu(player: player)
+                SleepMenu(player: player)
                 Spacer(minLength: 0)
                 PlayerTransport(player: player, size: 54, start: start)
                 Spacer(minLength: 0)
@@ -137,6 +138,30 @@ struct RepeatMenu: View {
                         on: player.repeatEach != 1)
         }
         .accessibilityLabel("تكرار كل آية: \(RecitationPlayer.repeatTitle(player.repeatEach))")
+    }
+}
+
+/// Sleep timer: 15, 30, 60 minutes or the end of the surah.
+struct SleepMenu: View {
+    @Bindable var player: RecitationPlayer
+
+    var body: some View {
+        Menu {
+            Button("إيقاف المؤقت") { player.setSleep(.off) }
+            ForEach([15, 30, 60], id: \.self) { m in Button("بعد \(Num.int(m)) دقيقة") { player.setSleep(.minutes(m)) } }
+            Button("عند نهاية السورة") { player.setSleep(.surahEnd) }
+        } label: {
+            ControlChip(symbol: "moon.zzz", text: label, on: player.sleep != .off)
+        }
+        .accessibilityLabel("مؤقت الإيقاف: \(label)")
+    }
+
+    private var label: String {
+        switch player.sleep {
+        case .off: "مؤقت"
+        case .surahEnd: "نهاية السورة"
+        case .minutes: "\(Num.int(player.sleepMinutesLeft)) د"
+        }
     }
 }
 

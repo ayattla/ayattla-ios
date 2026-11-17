@@ -183,7 +183,7 @@ Group {
                 .frame(maxWidth: .infinity, minHeight: Brand.minTap)
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).count < 5 || loading)
             } footer: {
-                Text("يبحث في موسوعة الأحاديث النبوية ويعرض أقرب الأحاديث مع تخريجها وحكمها. النتيجة بحث وليست حكما من التطبيق؛ راجع أهل العلم.")
+                Text("من موسوعة الأحاديث النبوية. النتيجة بحث وليست حكما من التطبيق.")
             }
             if failed {
                 Section { Text("تعذر التحقق الآن، تحقق من الاتصال").foregroundStyle(.secondary) }

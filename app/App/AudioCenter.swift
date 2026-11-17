@@ -264,6 +264,7 @@ struct NowPlayingSheet: View {
                     AyahProgress(player: rec).padding(.horizontal, 4)
                     HStack {
                         RepeatMenu(player: rec)
+                        SleepMenu(player: rec)
                         Spacer(minLength: 0)
                         PlayerTransport(player: rec, size: 72) { rec.current ?? .init(surah: 1, ayah: 1) }
                         Spacer(minLength: 0)

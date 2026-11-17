@@ -38,7 +38,7 @@ struct QiblaView: View {
                 }
                 Text(heading == nil
                      ? "البوصلة غير متاحة على هذا الجهاز. الزاوية مقيسة من الشمال باتجاه عقارب الساعة."
-                     : "أبعد الهاتف عن المعادن والمغناطيس، وضعه مستويا.")
+                     : "ضع الهاتف مستويا بعيدا عن المعادن.")
                     .font(.ui(.footnote)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(16)

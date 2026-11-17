@@ -74,75 +74,33 @@ struct ToolPageHead: View {
         }
     }
 
-    private func content(_ t: SiteTool) -> some View {
-        let a = t.accent
-        return VStack(spacing: 12) {
-            // «الرئيسية / الأدوات / …»
-            HStack(spacing: 6) {
-                Text("الرئيسية").foregroundStyle(a)
-                Text("/").foregroundStyle(Brand.muted)
-                Text("الأدوات").foregroundStyle(a)
-                Text("/").foregroundStyle(Brand.muted)
-                Text(t.shortTitle).foregroundStyle(Brand.ink).lineLimit(1)
-            }
-            .font(.ui(.caption, .semibold))
-            .padding(.horizontal, 14).padding(.vertical, 6)
-            .background(a.opacity(0.07), in: Capsule())
-            .overlay(Capsule().strokeBorder(a.opacity(0.18), lineWidth: 1))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("الأدوات، \(t.title)")
-
-            HStack(spacing: 12) {
-                Image(systemName: t.symbol)
-                    .font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(a, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    .shadow(color: a.opacity(0.45), radius: 10, y: 6)
-                    .accessibilityHidden(true)
-                Text(t.title).font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-            }
-
-            Text(subtitle ?? t.subtitle).font(.ui(.subheadline)).foregroundStyle(Brand.muted)
-                .multilineTextAlignment(.center).lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-
-            let rel = t.relatedTools
-            if !rel.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(rel) { r in
-                            NavigationLink { r.destination.onAppear { ToolUsage.record(r.id) } } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: r.symbol).font(.system(size: 12, weight: .semibold))
-                                        .foregroundStyle(r.accent)
-                                    Text(r.shortTitle).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
-                                }
-                                .padding(.horizontal, 12).frame(minHeight: 36)
-                                .background(Brand.surface, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+    /// Kept short (clean tool pages): the title is already in the navigation bar, so the head only
+    /// carries the related tools, as one row of shortcuts. `subtitle` is accepted and not shown.
+    @ViewBuilder private func content(_ t: SiteTool) -> some View {
+        let rel = t.relatedTools
+        if !rel.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(rel) { r in
+                        NavigationLink { r.destination.onAppear { ToolUsage.record(r.id) } } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: r.symbol).font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(r.accent)
+                                Text(r.shortTitle).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
                             }
-                            .buttonStyle(.pressable)
-                            .accessibilityLabel("أداة ذات صلة: \(r.title)")
+                            .padding(.horizontal, 12).frame(minHeight: 36)
+                            .background(Brand.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
                         }
+                        .buttonStyle(.pressable)
+                        .accessibilityLabel("أداة ذات صلة: \(r.title)")
                     }
-                    .padding(.horizontal, 2).padding(.vertical, 1)
                 }
-                .scrollClipDisabled()
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 2).padding(.vertical, 1)
             }
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 18).padding(.vertical, 22)
-        .frame(maxWidth: .infinity)
-        .background {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(LinearGradient(colors: [a.opacity(0.14), Brand.surface.opacity(0)], startPoint: .top, endPoint: .init(x: 0.5, y: 0.85)))
-                .background(Brand.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        }
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(a.opacity(0.22), lineWidth: 1))
-        .shadow(color: Color(hex: 0x0F1F17).opacity(0.06), radius: 14, y: 6)
     }
 }
 

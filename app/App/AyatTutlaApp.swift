@@ -212,6 +212,8 @@ enum DebugScreen {
         case "khatma": KhatmaView()
         case "card": AyahCardView()
         case "studio": StudioView()
+        case "notifications": NotificationCenterView()
+        case "prayer-calc": PrayerCalcView()
         case "qada": QadaView()
         case "sawm": SawmView()
         case "clip": ClipMakerView()

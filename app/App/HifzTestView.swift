@@ -49,7 +49,7 @@ Group {
                     }
                     Button("اكشف الكل") { hidden = [] }.frame(maxWidth: .infinity)
                 } footer: {
-                    Text("اضغط على الكلمة المخفية لكشفها. المخفي الآن: \(Num.int(hidden.count))")
+                    Text("المخفي الآن: \(Num.int(hidden.count))")
                 }
             }
         
