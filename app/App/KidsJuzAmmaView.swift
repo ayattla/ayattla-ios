@@ -56,7 +56,6 @@ struct KidsJuzAmmaView: View {
                 .padding(16)
                 .card()
 
-                Text("اختر سورة لتبدأ الاستماع والتكرار.").font(.ui(.subheadline)).foregroundStyle(.secondary)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 10)], spacing: 10) {
                     ForEach(KidsProgress.surahs, id: \.self) { n in

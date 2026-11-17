@@ -33,6 +33,43 @@ final class RecitationPlayer {
     /// Where the current ayah is (seconds), for the progress bar; updated four times a second.
     private(set) var elapsed: Double = 0
     private(set) var duration: Double = 0
+    /// Sleep timer: stops at this time, or at the end of the current surah.
+    private(set) var sleepAt: Date?
+    private(set) var sleepAtSurahEnd = false
+    @ObservationIgnored private var sleepTask: Task<Void, Never>?
+
+    /// The last place listened to (folder, surah, ayah), kept across launches for «تابع الاستماع».
+    static let lastKey = "listen.last"
+    static func lastListened(_ d: UserDefaults = .standard) -> (folder: String, position: Position)? {
+        guard let p = d.string(forKey: lastKey)?.split(separator: "|"), p.count == 3,
+              let s = Int(p[1]), let a = Int(p[2]) else { return nil }
+        return (String(p[0]), .init(surah: s, ayah: max(1, a)))
+    }
+
+    /// Off, 15, 30, 60 minutes, end of surah.
+    enum Sleep: Hashable { case off, minutes(Int), surahEnd }
+    var sleep: Sleep {
+        get { sleepAtSurahEnd ? .surahEnd : sleepAt.map { _ in .minutes(sleepMinutesLeft) } ?? .off }
+        set { setSleep(newValue) }
+    }
+    var sleepMinutesLeft: Int { max(1, Int(((sleepAt?.timeIntervalSinceNow ?? 0) / 60).rounded(.up))) }
+
+    func setSleep(_ s: Sleep) {
+        sleepTask?.cancel(); sleepTask = nil
+        sleepAt = nil; sleepAtSurahEnd = false
+        switch s {
+        case .off: break
+        case .surahEnd: sleepAtSurahEnd = true
+        case .minutes(let m):
+            sleepAt = Date().addingTimeInterval(Double(m) * 60)
+            sleepTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(Double(m) * 60))
+                guard !Task.isCancelled, let self else { return }
+                self.pause(); self.sleepAt = nil
+            }
+        }
+    }
+
     /// How many times the current ayah has played (for «٢ من ٣»).
     var playCount: Int { playedThisAyah + 1 }
 
@@ -77,6 +114,7 @@ final class RecitationPlayer {
         failed = false
         current = p
         playedThisAyah = 0
+        UserDefaults.standard.set("\(folder)|\(p.surah)|\(p.ayah)", forKey: Self.lastKey)
         elapsed = 0; duration = 0
         // A downloaded copy (Library → التنزيلات) plays without internet.
         let local = RecitationDownloads.shared.local(folder: folder, surah: p.surah, ayah: p.ayah)
@@ -103,7 +141,7 @@ final class RecitationPlayer {
     private func upcoming(after c: Position) -> Position? {
         if c == stopAt { return nil }
         if c.ayah < ayahCount(c.surah) { return .init(surah: c.surah, ayah: c.ayah + 1) }
-        if stopsAtSurahEnd || c.surah >= 114 { return nil }
+        if stopsAtSurahEnd || sleepAtSurahEnd || c.surah >= 114 { return nil }
         return .init(surah: c.surah + 1, ayah: 1)
     }
 
@@ -150,6 +188,7 @@ final class RecitationPlayer {
 
     func stop() {
         prefetched = nil
+        setSleep(.off)
         player.pause()
         player.replaceCurrentItem(with: nil)
         isPlaying = false
@@ -169,6 +208,7 @@ final class RecitationPlayer {
         if c == stopAt { stop(); return }
         if c.ayah < ayahCount(c.surah) { play(from: .init(surah: c.surah, ayah: c.ayah + 1)) }
         else if stopsAtSurahEnd { stop() }
+        else if sleepAtSurahEnd { sleepAtSurahEnd = false; pause() }
         else if c.surah < 114 { play(from: .init(surah: c.surah + 1, ayah: 1)) }
         else { stop() }
     }

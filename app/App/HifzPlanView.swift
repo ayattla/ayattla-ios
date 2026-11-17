@@ -87,8 +87,6 @@ struct HifzPlanView: View {
 
     private var startSection: some View {
         Section {
-            Text("مقطع جديد كل يوم، ثم يعود كل ما حفظته للمراجعة بعد يوم، ثم تتباعد المراجعة كلما أتقنته، وتعود قريبة إن صعب عليك.")
-                .font(.ui(.subheadline)).foregroundStyle(.secondary)
             Picker("الترتيب", selection: $forward) {
                 Text("من سورة الناس").tag(false)
                 Text("من الفاتحة").tag(true)
@@ -144,7 +142,7 @@ struct HifzPlanView: View {
                 if confirmReset { stored = "" } else { confirmReset = true }
             }
         } footer: {
-            Text("الخطة محفوظة على جهازك فقط. النص: مصحف التنزيل.")
+            Text("النص: مصحف التنزيل.")
         }
     }
 
@@ -227,9 +225,6 @@ struct KidsQuizView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text(pool.isEmpty ? "الأسئلة من سور جزء عم كلها. علّم السور التي حفظها طفلك لتكون الأسئلة منها."
-                                  : "الأسئلة من السور التي حفظها طفلك.")
-                    .font(.ui(.subheadline)).foregroundStyle(.secondary)
                 Text("النتيجة: \(Num.int(score)) من \(Num.int(total))").font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
                 if let q {
                     VStack(spacing: 8) {

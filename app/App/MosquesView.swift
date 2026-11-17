@@ -85,7 +85,7 @@ Group {
         } else {
             switch phase {
             case .idle:
-                Text("اختر نصف القطر ثم اضغط «حدد موقعي وابحث». يتم البحث على جهازك عبر خرائط Apple.")
+                Text("خرائط Apple على جهازك.")
                     .font(.ui(.footnote)).foregroundStyle(.secondary)
             case .searching:
                 HStack { Spacer(); ProgressView("جار البحث"); Spacer() }.frame(minHeight: 120)

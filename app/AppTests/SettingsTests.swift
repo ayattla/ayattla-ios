@@ -35,3 +35,27 @@ final class SettingsTests: XCTestCase {
         }
     }
 }
+
+final class AzkarLogTests: XCTestCase {
+    func testLogAndStreak() {
+        let d = UserDefaults(suiteName: "azlog")!
+        d.removePersistentDomain(forName: "azlog")
+        let cal = Calendar(identifier: .gregorian)
+        let now = Date()
+        for back in 0..<3 {
+            let day = cal.date(byAdding: .day, value: -back, to: now)!
+            AzkarLog.record("أذكار الصباح", 1, d, now: day)
+            AzkarLog.record("أذكار المساء", back == 2 ? 0.5 : 1, d, now: day)
+        }
+        XCTAssertEqual(AzkarLog.streak(["أذكار الصباح", "أذكار المساء"], now: now, d), 2)
+        XCTAssertEqual(AzkarLog.fraction("أذكار المساء", on: cal.date(byAdding: .day, value: -2, to: now)!, d), 0.5)
+    }
+
+    func testListenPositionIsKept() {
+        let d = UserDefaults.standard
+        d.set("ar.alafasy|18|10", forKey: RecitationPlayer.lastKey)
+        let last = RecitationPlayer.lastListened(d)
+        XCTAssertEqual(last?.folder, "ar.alafasy")
+        XCTAssertEqual(last?.position, .init(surah: 18, ayah: 10))
+    }
+}

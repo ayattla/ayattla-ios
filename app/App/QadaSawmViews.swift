@@ -91,8 +91,6 @@ Group {
                 }
                 .font(.ui(.headline)).frame(maxWidth: .infinity, minHeight: Brand.minTap)
                 .disabled(ZakatForm.number(daysText) < 1)
-            } footer: {
-                Text("يضاف العدد لكل صلاة من الصلوات الخمس، ويمكنك تعديل كل صلاة بالأزرار.")
             }
 
             Section {
@@ -145,7 +143,7 @@ Group {
                 Button("تصفير العداد", role: .destructive) { confirmReset = true }
                     .disabled(s.totalRemaining == 0 && s.done == 0)
             } footer: {
-                Text("هذه الأداة تنظم العدد فقط. اسأل أهل العلم عن أحكام القضاء وترتيبه. يحفظ على جهازك فقط.")
+                Text("اسأل أهل العلم عن أحكام القضاء وترتيبه.")
             }
         
 }.listRowBackground(Brand.surface)
@@ -255,8 +253,6 @@ Group {
                 .pickerStyle(.segmented)
                 monthHeader
                 grid(s)
-            } footer: {
-                Text("اختر قضاء أو تطوع ثم اضغط اليوم في التقويم. الضغط مرة ثانية يلغي العلامة.")
             }
         
 }.listRowBackground(Brand.surface)

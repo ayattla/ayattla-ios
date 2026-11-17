@@ -255,11 +255,12 @@ struct HomeView: View {
     /// then small chips for the other daily tools.
     private var today: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
-            SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية", subtitle: "الصلاة والأذكار والورد في مكان واحد")
+            SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية")
             NextPrayerCard()
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
                 if lib.isReady { continueReading }
+                if lib.isReady, RecitationPlayer.lastListened() != nil { continueListening }
                 NavigationLink { AzkarView() } label: {
                     VStack(alignment: .leading, spacing: 10) {
                         IconTile("sun.horizon", style: .gradient(2), size: 44)
@@ -429,6 +430,29 @@ struct HomeView: View {
             .surface(.raised)
         }
         .buttonStyle(.pressable)
+    }
+
+    /// «تابع الاستماع»: the recitation resumes where it stopped (reciter, surah and ayah).
+    @ViewBuilder private var continueListening: some View {
+        if let last = RecitationPlayer.lastListened() {
+            let name = lib.surah(last.position.surah)?.shortName ?? ""
+            Button {
+                let p = (AudioCenter.shared.active as? RecitationPlayer) ?? RecitationPlayer()
+                p.folder = last.folder
+                p.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
+                p.play(from: last.position)
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    IconTile("play.circle", style: .gradient(4), size: 44)
+                    Text("تابع الاستماع").font(.ui(.headline)).foregroundStyle(Brand.ink)
+                    Text("\(name) · آية \(Num.int(last.position.ayah))").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                }
+                .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+                .surface(.raised)
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("تابع الاستماع من \(name) آية \(Num.int(last.position.ayah))")
+        }
     }
 
     private var projects: some View {

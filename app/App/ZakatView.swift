@@ -53,7 +53,7 @@ Group {
                 LabeledContent("صافي المال الزكوي", value: summary.net).fontWeight(.semibold)
                 LabeledContent("النصاب", value: summary.nisab)
             } footer: {
-                Text("الزكاة ربع العشر (٢٫٥٪) إذا بلغ المال النصاب وحال عليه حول هجري. في زكاة الحلي المستعملة خلاف بين العلماء، والحالات الخاصة يسأل عنها أهل العلم.")
+                Text("ربع العشر (٢٫٥٪) إذا بلغ النصاب وحال الحول. في الحلي المستعملة خلاف، والحالات الخاصة يسأل عنها أهل العلم.")
             }
         
 }.listRowBackground(Brand.surface)

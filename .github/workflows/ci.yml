@@ -197,6 +197,43 @@ jobs:
           after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
           echo "crash reports: $before → $after"
           if [ "$after" -gt "$before" ]; then ls -t $REP | grep -i ayattutla | head -3; for f in $(ls -t $REP | grep -i ayattutla | head -2); do head -c 3000 "$REP/$f"; done; exit 1; fi
+      - name: iPad checks (every run)
+        # The same app on an iPad simulator: main tabs and heavy tools, landscape too; crash reports fail the run.
+        if: success()
+        run: |
+          IPAD=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[(rt,x['udid'],x['name']) for rt,xs in d.items() if 'iOS' in rt for x in xs if 'iPad' in x['name']]
+          c.sort()
+          print(c[-1][1] if c else '')")
+          if [ -z "$IPAD" ]; then echo "no iPad simulator"; exit 0; fi
+          BUNDLE=com.ayattla.AyatTutla
+          xcrun simctl boot "$IPAD" || true
+          APP=$(find app/build/Build/Products -name "AyatTutla.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$IPAD" "$APP"
+          xcrun simctl privacy "$IPAD" grant location "$BUNDLE" || true
+          mkdir -p tools-shots; REP=~/Library/Logs/DiagnosticReports
+          before=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
+          run() {
+            n=$1; w=$2; shift 2
+            xcrun simctl launch --terminate-running-process "$IPAD" "$BUNDLE" "$@" >/dev/null
+            sleep "$w"
+            xcrun simctl io "$IPAD" screenshot "tools-shots/ipad-$n.png" >/dev/null 2>&1
+            if xcrun simctl spawn "$IPAD" launchctl list | grep -q "$BUNDLE"; then echo "✓ iPad $n"; else echo "✗ iPad $n (التطبيق لم يعد يعمل)"; fi
+          }
+          run home 10
+          run tajweed-baqara 25 -screen tajweed -surah 2
+          run khatma 6 -screen khatma
+          run notifications 8 -screen notifications
+          run azkar 6 -screen azkar
+          run studio 10 -screen studio
+          run prayer 8 -screen prayer
+          run hadith 15 -screen hadith
+          xcrun simctl shutdown "$IPAD" || true
+          after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
+          echo "iPad crash reports: $before → $after"
+          [ "$after" -le "$before" ]
       - name: Publish tool screenshots to the ci-tools-shots branch
         if: always()
         run: |

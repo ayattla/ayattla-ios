@@ -26,6 +26,75 @@ enum AzkarProgress {
     }
 }
 
+/// «سجل الإنجاز»: per day, the share of each chapter completed (kept 60 days on the device).
+enum AzkarLog {
+    static let key = "azkar.log"
+
+    static func all(_ d: UserDefaults = .standard) -> [String: [String: Double]] {
+        d.dictionary(forKey: key) as? [String: [String: Double]] ?? [:]
+    }
+
+    static func record(_ title: String, _ fraction: Double, _ d: UserDefaults = .standard, now: Date = Date()) {
+        var log = all(d)
+        let day = AzkarProgress.today(now)
+        var entry = log[day] ?? [:]
+        entry[title] = min(1, max(0, fraction))
+        log[day] = entry
+        if log.count > 60 { for k in log.keys.sorted().prefix(log.count - 60) { log[k] = nil } }
+        d.set(log, forKey: key)
+    }
+
+    static func fraction(_ title: String, on day: Date, _ d: UserDefaults = .standard) -> Double {
+        all(d)[AzkarProgress.today(day)]?[title] ?? 0
+    }
+
+    /// Days in a row (ending today, or yesterday if today isn't finished yet) with every title complete.
+    static func streak(_ titles: [String], now: Date = Date(), _ d: UserDefaults = .standard) -> Int {
+        let cal = Calendar(identifier: .gregorian)
+        var day = now, n = 0
+        func full(_ x: Date) -> Bool { titles.allSatisfy { fraction($0, on: x, d) >= 1 } }
+        if !full(day) { day = cal.date(byAdding: .day, value: -1, to: day)! }
+        while full(day) && n < 60 { n += 1; day = cal.date(byAdding: .day, value: -1, to: day)! }
+        return n
+    }
+}
+
+/// Seven days of the morning and evening azkar, with the streak.
+struct AzkarWeekLog: View {
+    let titles = ["أذكار الصباح", "أذكار المساء"]
+
+    var body: some View {
+        let cal = Calendar(identifier: .gregorian)
+        let days = (0..<7).reversed().map { cal.date(byAdding: .day, value: -$0, to: Date())! }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 0) {
+                Color.clear.frame(width: 56, height: 1)
+                ForEach(days, id: \.self) { d in
+                    Text(d.formatted(.dateTime.weekday(.narrow))).font(.ui(.caption2)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                }
+            }
+            ForEach(titles, id: \.self) { t in
+                HStack(spacing: 0) {
+                    Text(t.replacingOccurrences(of: "أذكار ", with: "")).font(.ui(.subheadline)).frame(width: 56, alignment: .leading)
+                    ForEach(days, id: \.self) { d in
+                        let f = AzkarLog.fraction(t, on: d)
+                        ZStack {
+                            Circle().fill(f >= 1 ? Brand.green : f > 0 ? Brand.green.opacity(0.35) : Brand.tint)
+                            if f >= 1 { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.white) }
+                        }
+                        .frame(width: 22, height: 22).frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            let n = AzkarLog.streak(titles)
+            Text(n > 0 ? "أتممت أذكار الصباح والمساء \(Num.int(n)) \(n == 1 ? "يوما" : "أيام") متتالية" : "أتمم أذكار اليوم لتبدأ سلسلة الإنجاز")
+                .font(.ui(.footnote)).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// Azkar from the content pack (chapters of Hisn al-Muslim), per design/Azkar.dc.html.
 /// «حصن المسلم» uses the same screen with every chapter and no daily shortcuts.
 struct AzkarView: View {
@@ -50,6 +119,7 @@ Group {
                         Section("اليومية") {
                             ForEach(pinnedCategories) { c in link(c, symbol: Self.symbol(c.title)) }
                         }
+                        Section("سجل الإنجاز") { AzkarWeekLog() }
                     }
                     Section(query.isEmpty ? "كل الأبواب (\(Num.int(categories.count)))" : "النتائج") {
                         ForEach(filtered) { c in link(c, symbol: nil) }
@@ -150,6 +220,14 @@ struct AzkarSession: View {
 
     private var current: Zikr? { items.indices.contains(index) ? items[index] : nil }
     private var completed: Int { items.filter { (done[$0.id] ?? 0) >= $0.count }.count }
+
+    /// Saves today's share of this chapter in the achievement log.
+    private func logProgress() {
+        let total = items.reduce(0) { $0 + $1.count }
+        guard total > 0 else { return }
+        let did = items.reduce(0) { $0 + min(done[$1.id] ?? 0, $1.count) }
+        AzkarLog.record(category.title, Double(did) / Double(total))
+    }
     private var remaining: Int { current.map { max($0.count - (done[$0.id] ?? 0), 0) } ?? 0 }
 
     private var counter: some View {
@@ -211,7 +289,7 @@ struct AzkarSession: View {
         }
         let n = (done[z.id] ?? 0) + 1
         done[z.id] = n
-        AzkarProgress.set(z.id, n)
+        AzkarProgress.set(z.id, n); logProgress()
         if haptics { UIImpactFeedbackGenerator(style: n >= z.count ? .medium : .light).impactOccurred() }
         if n >= z.count, index < items.count - 1 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { withAnimation { index += 1 } }
@@ -219,7 +297,7 @@ struct AzkarSession: View {
     }
 
     private func resetAll() {
-        for z in items { done[z.id] = 0; AzkarProgress.set(z.id, 0) }
+        for z in items { done[z.id] = 0; AzkarProgress.set(z.id, 0) }; logProgress()
         index = 0
     }
 }
