@@ -103,9 +103,9 @@ struct PrayerTimesView: View {
 
     /// The week ahead at a glance.
     private func weekCard(_ d: Day) -> some View {
-        var cal = Calendar(identifier: .gregorian); cal.timeZone = d.place.zone
+        let cal: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = d.place.zone; return c }()
         let five = Prayer.allCases.filter(\.isPrayer)
-        let f = DateFormatter(); f.locale = Locale(identifier: "ar"); f.dateFormat = "EEE d"; f.timeZone = d.place.zone
+        let f: DateFormatter = { let f = DateFormatter(); f.locale = Locale(identifier: "ar"); f.dateFormat = "EEE d"; f.timeZone = d.place.zone; return f }()
         return VStack(spacing: 6) {
             Text("مواقيت الأسبوع").font(.ui(.headline)).foregroundStyle(Brand.ink)
             HStack(spacing: 2) {

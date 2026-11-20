@@ -135,9 +135,14 @@ Group {
 struct HijriMonthGrid: View {
     let month: Hijri.Date
 
+    private var cal: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "UTC")!
+        return c
+    }
+
     var body: some View {
         let first = Hijri.toGregorian(Hijri.Date(year: month.year, month: month.month, day: 1)) ?? Date()
-        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         let next = Hijri.toGregorian(Hijri.Date(year: month.month == 12 ? month.year + 1 : month.year, month: month.month == 12 ? 1 : month.month + 1, day: 1))
         let len = next.map { cal.dateComponents([.day], from: first, to: $0).day ?? 30 } ?? 30
         let weekday = cal.component(.weekday, from: first)   // 1 = Sunday … 7 = Saturday
