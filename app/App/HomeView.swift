@@ -24,19 +24,39 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var scheme
     @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
+    @AppStorage(HomeLayoutStore.key) private var layoutRaw = ""
+    @State private var customizing = false
     private let lib = ContentLibrary.shared
+
+    @ViewBuilder private func section(_ id: HomeSectionID) -> some View {
+        switch id {
+        case .prayer: PrayerHeroCard()
+        case .head: head
+        case .wird: HomeWirdCard()
+        case .quiz: if lib.isReady { HomeDailyQuiz() }
+        case .create: HomeCreateBento()
+        case .today: today
+        case .tools: HomeToolLauncher()
+        case .ayah: if lib.isReady { ayahCard }
+        case .gallery: HomeMediaGallery()
+        case .presets: PresetStrip()
+        case .recent: RecentProjectsStrip()
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: Brand.Space.xxl) {
-                head
-                HomeCreateBento()
-                today
-                HomeToolLauncher()
-                if lib.isReady { ayahCard }
-                HomeMediaGallery()
-                PresetStrip()
-                RecentProjectsStrip()
+                ForEach(HomeLayoutStore.decode(layoutRaw).filter(\.shown), id: \.id) { item in
+                    section(item.id)
+                }
+                Button { customizing = true } label: {
+                    Label("تخصيص الرئيسية", systemImage: "slider.horizontal.3")
+                        .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
                 footer
             }
             .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.l)
@@ -56,12 +76,17 @@ struct HomeView: View {
         }
         .navigationTitle("آيات تتلى")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $customizing) { HomeCustomizeSheet().presentationDetents([.medium, .large]) }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Image("LogoHorizontal").resizable().scaledToFit().frame(height: 30)
+                Image("LogoHorizontal").resizable().scaledToFit().frame(height: 34)
                     .accessibilityLabel("آيات تتلى")
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink { UnifiedSearchView() } label: { Image(systemName: "magnifyingglass") }
+                    .accessibilityLabel("البحث الشامل")
+                NavigationLink { NotificationCenterView() } label: { Image(systemName: "bell") }
+                    .accessibilityLabel("مركز التنبيهات")
                 NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
                     .accessibilityLabel("الإعدادات")
             }
@@ -256,7 +281,7 @@ struct HomeView: View {
     private var today: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية")
-            NextPrayerCard()
+            if !HomeLayoutStore.decode(layoutRaw).contains(where: { $0.id == .prayer && $0.shown }) { NextPrayerCard() }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
                 if lib.isReady { continueReading }
