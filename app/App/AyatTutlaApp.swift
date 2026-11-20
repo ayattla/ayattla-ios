@@ -139,6 +139,8 @@ struct StartView: View {
     var body: some View {
         content
             .modifier(RouteSheet())
+            // Text is centred by default across the app (the owner's rule); lists and fields keep their own alignment.
+            .multilineTextAlignment(.center)
             #if DEBUG
             // CI: `-link <url>` follows a deep link at launch (simctl openurl shows a system prompt).
             .task {
