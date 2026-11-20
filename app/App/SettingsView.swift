@@ -61,6 +61,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.translation) private var translation = ""
     @AppStorage(Prefs.fontScale) private var fontScale = FontScale.m.rawValue
     @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
+    @AppStorage(IntroView.key) private var introEnabled = true
     @AppStorage(Prefs.notifyAzkar) private var notifyAzkar = false
     @AppStorage(Prefs.notifyDailyAyah) private var notifyDailyAyah = false
     @AppStorage(Prefs.notifyKhatma) private var notifyKhatma = false
@@ -98,6 +99,7 @@ Group {
             Section("المظهر") {
                 AppearancePicker(selection: $appearance)
                     .listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
+                Toggle("الافتتاحية عند فتح التطبيق", isOn: $introEnabled).tint(Brand.green)
             }
 
             Section {
