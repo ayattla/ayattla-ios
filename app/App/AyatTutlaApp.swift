@@ -243,6 +243,8 @@ enum DebugScreen {
         case "topics": TopicsView()
         case "juz": JuzListView()
         case "status": StatusSourceView()
+        case "status-jumuah": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "jumuah" }) { StatusOccasionView(occasion: o) }
+        case "status-card": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "marriage" }), let i = o.items.first(where: { $0.s == nil }) { StatusCardDestination(occasion: o, item: i) }
         case "home-mid": ScrollView { VStack(spacing: 32) { HomeCreateBento(); HomeMediaGallery() }.padding(16) }.brandScreen()
         case "home-low": ScrollView { HomeToolLauncher().padding(16) }.brandScreen()
         case "about": AboutAppView()

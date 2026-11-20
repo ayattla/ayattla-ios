@@ -97,6 +97,7 @@ struct ClipMakerView: View {
     @State private var ratio: CardOptions.Ratio
     @State private var background: ClipBackground
     @State private var fontScale: Double
+    @State private var ornament = CardOrnament.none
     @State private var template: CardOptions.Template
     @State private var name: String
     @State private var photoItem: PhotosPickerItem?
@@ -146,6 +147,7 @@ struct ClipMakerView: View {
         if let q = e.quality { _quality = State(initialValue: q) }
         if let x = e.extras { _extras = State(initialValue: x) }
         if let p = e.pauses { _pauses = State(initialValue: p) }
+        if let o = e.ornament.flatMap(CardOrnament.init(rawValue:)) { _ornament = State(initialValue: o) }
     }
 
     var body: some View {
@@ -257,6 +259,8 @@ struct ClipMakerView: View {
                               selection: $ratio)
                 Text("حجم خط الآية").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
                 SiteSegmented(CardOptions.fontScales.map { (id: $0.1, title: $0.0, detail: String?.none) }, selection: $fontScale)
+                Text("الزخرفة والإطار").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                OrnamentSwatches(selected: ornament, background: stillBackground) { o in withAnimation(.snappy) { ornament = o } }
                 Divider().overlay(Brand.line)
                 TemplatePicker(template: $template)
                 if !template.id.isEmpty {
@@ -484,7 +488,7 @@ struct ClipMakerView: View {
 
     private var emptyModel: CardCanvas.Model {
         .init(text: "", reference: "", template: nil, name: nil, background: stillBackground, fontScale: fontScale,
-              ratio: ratio, lightBackground: stillBackground.id == "sand", clearBackground: textOnly, layer: layer)
+              ratio: ratio, lightBackground: stillBackground.light, clearBackground: textOnly, layer: layer, ornament: ornament)
     }
 
     private var currentTemplate: StudioTemplate {
@@ -503,7 +507,7 @@ struct ClipMakerView: View {
         EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue,
                        background: mediaID.flatMap { _ in mediaRefKey.map { "media:" + $0 } } ?? background.id,
                        fontScale: fontScale, template: template.id, name: name, reciter: reciter,
-                       layer: layer, motion: motionSettings, quality: quality, extras: extras, pauses: pauses)
+                       layer: layer, motion: motionSettings, quality: quality, extras: extras, pauses: pauses, ornament: ornament.rawValue)
     }
 
     private func job(folder: String) -> ClipJob {
@@ -522,7 +526,7 @@ struct ClipMakerView: View {
         job.animation = motionSettings
         job.pauses = items.map { pauses["\($0.surah):\($0.ayah)"] ?? 0 }
         job.quality = quality
-        job.lightPlain = !textOnly && stillBackground.id == "sand"
+        job.lightPlain = !textOnly && stillBackground.light
         if highlight, let id = qfID, !job.usesAnimatedEngine { job.highlight = (id, hiColor.rawValue) }
         return job
     }
@@ -536,7 +540,7 @@ struct ClipMakerView: View {
         func model(_ text: String, _ ref: String) -> CardCanvas.Model {
             .init(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
                   name: name.isEmpty ? nil : name, background: stillBackground, fontScale: fontScale,
-                  ratio: ratio, lightBackground: stillBackground.id == "sand", clearBackground: textOnly, layer: layer)
+                  ratio: ratio, lightBackground: stillBackground.light, clearBackground: textOnly, layer: layer, ornament: ornament)
         }
         var out: [ClipJob.Item] = []
         if from == 1, s?.hasBasmala == true, let b = lib.basmala {

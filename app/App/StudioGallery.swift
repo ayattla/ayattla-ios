@@ -42,7 +42,7 @@ struct StudioPreset: Identifiable {
         let bg = CardOptions.backgrounds.first { $0.id == e.background } ?? CardOptions.backgrounds[0]
         return .init(text: text, reference: ref, template: template?.name, name: nil, background: bg,
                      fontScale: e.fontScale, ratio: CardOptions.Ratio(rawValue: e.ratio) ?? .square,
-                     lightBackground: bg.id == "sand")
+                     lightBackground: bg.light)
     }
 }
 
