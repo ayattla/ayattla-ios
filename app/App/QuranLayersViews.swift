@@ -247,20 +247,46 @@ struct RuqyaView: View {
     private let lib = ContentLibrary.shared
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     @State private var player = RecitationPlayer()
+    @State private var tab = 0
+
+    /// The site's passages, then those scholars name for ruqya that it does not list (Ibn Baz's list for
+    /// treating magic: Al-A'raf 117–119, Yunus 79–82, Taha 65–69), by reference: the text is the pack's mushaf.
+    private var passages: [DuasData.QuranRef] {
+        let site = data?.items ?? []
+        let extra = [DuasData.QuranRef(s: 7, a: 117, b: 119), .init(s: 10, a: 79, b: 82), .init(s: 20, a: 65, b: 69)]
+            .filter { e in !site.contains { $0.s == e.s && $0.a <= e.a && $0.b >= e.b } }
+        return site + extra
+    }
+
+    /// Hisn al-Muslim chapters in the pack on ruqya and visiting the sick, with their references.
+    private var sunnah: [(ZikrCategory, [Zikr])] {
+        lib.azkarCategories.filter { c in ["رقي", "الرقى", "المريض", "العين"].contains { c.title.contains($0) } }
+            .map { ($0, (try? lib.store?.azkar(category: $0.id)) ?? []) }
+            .filter { !$0.1.isEmpty }
+    }
 
     var body: some View {
-        Group {
-            if let d = data {
-                List {
-                    ToolHeadSection(id: "ruqya")
-Group {
-                    Section { Text(d.title).font(.ui(.headline)) }
-                    ForEach(d.items, id: \.self) { q in
+        List {
+            ToolHeadSection(id: "ruqya")
+            Group {
+                if let t = data?.title, !t.isEmpty {
+                    Section { Text(t).font(.ui(.headline)).frame(maxWidth: .infinity).multilineTextAlignment(.center) }
+                }
+                Section {
+                    Picker("", selection: $tab) {
+                        Text("من القرآن").tag(0)
+                        if !sunnah.isEmpty { Text("من السنة").tag(1) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                if tab == 0 {
+                    ForEach(passages, id: \.self) { q in
                         let ayat = (try? lib.store?.ayat(surah: q.s, from: q.a, to: q.b)) ?? []
                         let name = lib.surah(q.s)?.shortName ?? ""
-                        Section(q.a == q.b ? "\(name) · \(Num.int(q.a))" : "\(name) · \(Num.int(q.a))–\(Num.int(q.b))") {
+                        Section(q.a == q.b ? "سورة \(name) · \(Num.int(q.a))" : "سورة \(name) · \(Num.int(q.a))–\(Num.int(q.b))") {
                             Text(ayat.map { $0.textUthmani + " " + QuranText.marker($0.ayah) }.joined(separator: " "))
                                 .font(.custom(ContentLibrary.mushafFont, size: 21, relativeTo: .body)).lineSpacing(8)
+                                .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                             if folder != nil {
                                 Button {
                                     player.folder = folder
@@ -271,12 +297,22 @@ Group {
                             }
                         }
                     }
-                
-}.listRowBackground(Brand.surface)
-}
-            } else {
-                ContentUnavailableView("الرقية غير متاحة", systemImage: "book", description: Text("لم تجهز حزمة المحتوى في هذه النسخة"))
+                } else {
+                    ForEach(sunnah, id: \.0.id) { cat, items in
+                        Section(cat.title) {
+                            ForEach(items, id: \.id) { z in
+                                VStack(spacing: 6) {
+                                    Text(z.text).font(.custom("Amiri", size: 19, relativeTo: .body)).lineSpacing(6)
+                                    if z.count > 1 { Text("يقال \(Num.int(z.count)) مرات").font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk) }
+                                    if let r = z.reference, !r.isEmpty { Text(r).font(.ui(.caption2)).foregroundStyle(Brand.muted) }
+                                }
+                                .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                            }
+                        }
+                    }
+                }
             }
+            .listRowBackground(Brand.surface)
         }
         .brandScreen()
         .navigationTitle("الرقية الشرعية")

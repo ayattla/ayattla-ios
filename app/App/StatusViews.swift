@@ -163,8 +163,6 @@ struct StatusSourceView: View {
                     .buttonStyle(.pressable)
                 }
                 PresetStrip(title: "حالات جاهزة", subtitle: "اضغط على حالة لتعدلها وتشاركها", presets: StudioPreset.statuses)
-                Text("لا ننشر دعاء أو عبارة دينية بلا مصدر. النصوص كما في الموقع.")
-                    .font(.ui(.caption)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
             }
             .padding(Brand.Space.l)
             .frame(maxWidth: Brand.readableWidth)

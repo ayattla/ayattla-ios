@@ -186,6 +186,10 @@ jobs:
           run status-jumuah 8 -screen status-jumuah
           run status-card 8 -screen status-card
           run prayer-week 8 -screen prayer
+          run kaffarah 6 -screen kaffarah
+          run crypto-zakat 6 -screen crypto-zakat
+          run ruqya-new 8 -screen ruqya
+          run mushaf-page 8 -screen mushaf
           run tajweed-fatiha 10 -screen tajweed -surah 1
           run tajweed-baqara 25 -screen tajweed -surah 2
           run tajweed-kahf 15 -screen tajweed -surah 18

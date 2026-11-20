@@ -209,21 +209,11 @@ struct MushafPage: View {
         let scale = self.scale * min(max(geo.size.width / 400, 1), 1.7)
         ScrollView {
             VStack(spacing: 16) {
+                runningHead(ayat)
                 ForEach(Array(blocks(ayat).enumerated()), id: \.offset) { _, block in
                     switch block {
                     case .header(let s):
-                        // Surah title between two fine rules: no ornaments over or near the ayat.
-                        HStack(spacing: 12) {
-                            Rectangle().fill(Brand.lineStrong).frame(height: 1)
-                            Text(s.namePlain)
-                                .font(.custom(ContentLibrary.mushafFont, size: 21 * scale, relativeTo: .title3))
-                                .foregroundStyle(Brand.primaryInk)
-                                .fixedSize()
-                            Rectangle().fill(Brand.lineStrong).frame(height: 1)
-                        }
-                        .frame(minHeight: 46)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isHeader)
+                        SurahCartouche(surah: s, scale: scale)
                     case .basmala(let text):
                         Text(text).font(.custom(ContentLibrary.mushafFont, size: 23 * scale, relativeTo: .title3))
                             .foregroundStyle(Color(light: 0x1B1A16, dark: 0xECE8DC))
@@ -232,20 +222,38 @@ struct MushafPage: View {
                             // Room above and below each line so the marks never touch the next line.
                             .font(.custom(ContentLibrary.mushafFont, size: 25 * scale, relativeTo: .title2))
                             .lineSpacing(15 * scale)
-                            .foregroundStyle(Color(light: 0x1B1A16, dark: 0xECE8DC))
+                            .foregroundStyle(MushafStyle.ink)
                             .multilineTextAlignment(.center)
                             .tint(.primary)
                             .frame(maxWidth: .infinity)
                     }
                 }
+                PageMedallion(number: number).padding(.top, 4)
             }
-            // Plain page: no card, border or shadow around the ayat.
-            .padding(.horizontal, 22).padding(.vertical, 18)
+            .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 8)
+            // The page in a mushaf frame: paper inside a double gold rule.
+            .background(MushafStyle.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay { MushafBorder() }
+            .padding(10)
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            Text(Num.int(number)).font(.ui(.caption)).foregroundStyle(.secondary).padding(.bottom, 8)
         }
         }
+    }
+
+    /// Running head: the surah at the start, the juz at the end, over a fine gold rule.
+    private func runningHead(_ ayat: [Ayah]) -> some View {
+        let first = ayat.first
+        return VStack(spacing: 6) {
+            HStack {
+                Text(first.flatMap { lib.surah($0.surah)?.namePlain } ?? "")
+                Spacer()
+                Text("الجزء \(Num.int(first?.juz ?? 1))")
+            }
+            .font(.ui(.caption, .medium)).foregroundStyle(MushafStyle.gold)
+            Rectangle().fill(MushafStyle.gold.opacity(0.45)).frame(height: 0.8)
+        }
+        .padding(.top, 12)
     }
 
     enum Block { case header(Surah), basmala(String), text([Ayah]) }

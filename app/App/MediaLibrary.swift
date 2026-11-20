@@ -252,9 +252,6 @@ struct MediaLibrarySheet: View {
                     searchField.padding(.horizontal, 16)
                     CategorySelector(chips, selection: $collection)
                     grid.padding(.horizontal, 16)
-                    Text("الصور والمقاطع من Pixabay وPexels عبر موقع آيات تتلى. تعرض المعاينة مؤقتا، والملف الكامل يجلب عند الاستخدام فقط.")
-                        .font(.ui(.caption)).foregroundStyle(Brand.muted)
-                        .frame(maxWidth: .infinity).multilineTextAlignment(.center)
                         .padding(.horizontal, 24).padding(.bottom, 24)
                 }
                 .padding(.top, 8)

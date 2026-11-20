@@ -84,8 +84,6 @@ struct KidsJuzAmmaView: View {
                         .background(Brand.primary, in: Capsule())
                 }
 
-                Text("النص: مصحف التنزيل. الصوت: EveryAyah.").font(.ui(.footnote)).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
             }
             .padding(16)
         }

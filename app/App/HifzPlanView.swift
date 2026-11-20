@@ -141,8 +141,6 @@ struct HifzPlanView: View {
             Button(confirmReset ? "اضغط مرة أخرى لحذف الخطة" : "إعادة بدء الخطة", role: .destructive) {
                 if confirmReset { stored = "" } else { confirmReset = true }
             }
-        } footer: {
-            Text("النص: مصحف التنزيل.")
         }
     }
 
@@ -250,7 +248,6 @@ struct KidsQuizView: View {
                             .background(Brand.goldGradient, in: Capsule()).foregroundStyle(Brand.primary)
                     }
                 }
-                Text("النص: مصحف التنزيل كما هو.").font(.ui(.footnote)).foregroundStyle(.secondary)
             }
             .padding(16)
         }

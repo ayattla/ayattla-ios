@@ -7,7 +7,7 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, tracker, services, today, wird, dhikr, quiz, create, ayah, gallery, presets, recent, head, tools
+    case prayer, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -20,7 +20,7 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
         case .quiz: "مسابقة اليوم"
         case .create: "صناعة المحتوى"
         case .today: "تابع من حيث توقفت"
-        case .tools: "كل الأدوات (شبكة)"
+        case .tools: "أقسام الأدوات"
         case .ayah: "آية اليوم"
         case .gallery: "معرض الخلفيات"
         case .presets: "القوالب الجاهزة"
@@ -34,11 +34,11 @@ struct HomeLayoutItem: Equatable { var id: HomeSectionID; var shown: Bool }
 extension HomeSectionID {
     /// Off until turned on: the greeting and search repeat the prayer card and the toolbar search,
     /// and the full grid repeats «الوصول السريع».
-    static let hiddenByDefault: Set<HomeSectionID> = [.head, .tools]
+    static let hiddenByDefault: Set<HomeSectionID> = [.head, .services]
 }
 
 enum HomeLayoutStore {
-    static let key = "home.layout.v5"
+    static let key = "home.layout.v6"
     static func decode(_ raw: String) -> [HomeLayoutItem] {
         var out: [HomeLayoutItem] = raw.split(separator: ",").compactMap { e in
             let p = e.split(separator: ":")

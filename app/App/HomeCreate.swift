@@ -174,7 +174,7 @@ struct HomeMediaGallery: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
             SiteSectionHead(eyebrow: "المعرض", "خلفيات ومقاطع حقيقية",
-                            subtitle: "من مكتبة الموقع (Pixabay وPexels). اضغط أي خلفية لتبدأ بها")
+                            subtitle: "اضغط أي خلفية لتبدأ بها")
             CategorySelector(categories, selection: $category)
                 .padding(.horizontal, -Brand.Space.l)
             ScrollView(.horizontal, showsIndicators: false) {
