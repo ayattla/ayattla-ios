@@ -180,6 +180,12 @@ jobs:
             xcrun simctl io "$UDID" screenshot "tools-shots/$n.png" >/dev/null 2>&1
             if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BUNDLE"; then echo "✓ $n"; else echo "✗ $n (التطبيق لم يعد يعمل)"; fi
           }
+          run intro-mid 1 -screen intro
+          run intro-end 5 -screen intro
+          run status-occasions 8 -screen status
+          run status-jumuah 8 -screen status-jumuah
+          run status-card 8 -screen status-card
+          run prayer-week 8 -screen prayer
           run tajweed-fatiha 10 -screen tajweed -surah 1
           run tajweed-baqara 25 -screen tajweed -surah 2
           run tajweed-kahf 15 -screen tajweed -surah 18

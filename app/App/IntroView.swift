@@ -8,6 +8,8 @@ import AyatDesign
 /// A tap skips it; skipped with Reduce Motion or when turned off in Settings.
 struct IntroView: View {
     static let key = "intro.enabled"
+    /// CI screenshots: keep the final frame instead of fading out.
+    var holdAtEnd = false
     var onDone: () -> Void
     @State private var ring: CGFloat = 0
     @State private var star: CGFloat = 0
@@ -146,6 +148,7 @@ struct IntroView: View {
             withAnimation(out.speed(1 / 0.65).delay(1.05)) { word = 1 }
             withAnimation(out.speed(1 / 0.5).delay(1.45)) { tag = 1 }
             try? await Task.sleep(nanoseconds: 2_370_000_000)
+            if holdAtEnd { return }
             withAnimation(.timingCurve(0.65, 0, 0.35, 1, duration: 0.42)) { exit = true }
             try? await Task.sleep(nanoseconds: 440_000_000)
             onDone()
