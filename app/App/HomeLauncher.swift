@@ -52,34 +52,71 @@ struct HomeToolLauncher: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.l) {
-            SiteSectionHead(eyebrow: "الأدوات", "كل الأدوات في مكان واحد",
-                            subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية، اضغط أي أداة لتفتحها")
+            SiteSectionHead(eyebrow: "الأدوات", "أقسام الأدوات",
+                            subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية في \(Num.int(SiteTool.Group.allCases.count)) أقسام")
             ForEach(SiteTool.Group.allCases) { g in
-                let tools = SiteTool.all.filter { $0.group == g && !Self.featured.contains($0.id) }
+                let tools = SiteTool.all.filter { $0.group == g }
                 if !tools.isEmpty { section(g, tools) }
             }
         }
     }
 
+    /// Section colours, symbol and band.
+    private func look(_ g: SiteTool.Group) -> (symbol: String, top: UInt32, bottom: UInt32) {
+        switch g {
+        case .content: ("play.rectangle.fill", 0x1F7A4E, 0x0E3B2C)
+        case .quran: ("book.fill", 0x2A5C8A, 0x13304D)
+        case .daily: ("sun.max.fill", 0xB0832F, 0x6B4A12)
+        case .hadith: ("graduationcap.fill", 0x6B3F8E, 0x3A1F55)
+        }
+    }
+
     private func section(_ g: SiteTool.Group, _ tools: [SiteTool]) -> some View {
-        VStack(alignment: .leading, spacing: Brand.Space.m) {
-            HStack(spacing: 8) {
-                Capsule().fill(Brand.siteGradient).frame(width: 4, height: 18)
-                Text(g.title).font(.ui(.headline)).foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
-                Text(Num.int(tools.count)).font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
-                    .padding(.horizontal, 8).padding(.vertical, 2).background(Brand.tint, in: Capsule())
-                Spacer()
-                NavigationLink { ToolsView(filter: .group(g)) } label: {
+        let l = look(g)
+        let makers = g == .content ? tools.filter { Self.featured.contains($0.id) } : []
+        let rest = tools.filter { !makers.contains($0) }
+        return VStack(spacing: 0) {
+            NavigationLink { ToolsView(filter: .group(g)) } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: l.symbol).font(.ui(.title3, .semibold)).foregroundStyle(Color(hex: 0xF3DFA2))
+                        .frame(width: 42, height: 42)
+                        .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 13).strokeBorder(Color(hex: 0xE3CB8E).opacity(0.55), lineWidth: 1))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(g.title).font(.ui(.headline, .bold)).foregroundStyle(.white).accessibilityAddTraits(.isHeader)
+                        Text("\(Num.int(tools.count)) أداة").font(.ui(.caption, .semibold)).foregroundStyle(Color(hex: 0xF3DFA2))
+                    }
+                    .multilineTextAlignment(.leading)
+                    Spacer()
                     HStack(spacing: 2) {
                         Text("عرض الكل")
                         Image(systemName: "chevron.left").font(.system(size: 11, weight: .bold))
                     }
-                    .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
-                    .frame(minHeight: Brand.minTap)
+                    .font(.ui(.footnote, .semibold)).foregroundStyle(.white.opacity(0.9))
                 }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(LinearGradient(colors: [Color(hex: l.top), Color(hex: l.bottom)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            }
+            .buttonStyle(.plain)
+            if !makers.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(Array(makers.enumerated()), id: \.element.id) { i, t in
+                        NavigationLink { t.destination.onAppear { ToolUsage.record(t.id) } } label: {
+                            VStack(spacing: 8) {
+                                Image(systemName: t.symbol).font(.ui(.title2, .semibold)).foregroundStyle(Color(hex: 0xF3DFA2))
+                                Text(t.shortTitle).font(.ui(.footnote, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
+                            }
+                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                            .background(LinearGradient(colors: [Color(hex: [0x1F7A4E, 0x2A5C8A, 0xB0832F][i % 3]), Color(hex: 0x0E2A20)],
+                                                       startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                        .buttonStyle(.pressable)
+                    }
+                }
+                .padding([.horizontal, .top], 12)
             }
             LazyVGrid(columns: columns, alignment: .center, spacing: 18) {
-                ForEach(tools) { t in
+                ForEach(rest) { t in
                     NavigationLink {
                         t.destination
                             .onAppear { ToolUsage.record(t.id) }
@@ -88,9 +125,10 @@ struct HomeToolLauncher: View {
                         .buttonStyle(.pressable)
                 }
             }
+            .padding(12)
         }
-        .padding(Brand.Space.l)
         .surface(.raised)
+        .clipShape(RoundedRectangle(cornerRadius: Brand.Radius.card, style: .continuous))
     }
 
     private func tile(_ t: SiteTool) -> some View {
@@ -135,7 +173,6 @@ struct AboutAppView: View {
                 .frame(maxWidth: .infinity)
                 HomeSteps()
                 HomeFeatures()
-                HomeSources()
                 HomeStats()
                 HomeClosing()
                 Text("© آيات تتلى — ayattla.com").font(.ui(.caption2)).foregroundStyle(Brand.muted)

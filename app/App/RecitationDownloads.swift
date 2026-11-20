@@ -116,7 +116,7 @@ Group {
                 }
                 if let f = dl.failed { Text(f).font(.ui(.footnote)).foregroundStyle(.red) }
             } header: { Text("تنزيل سورة") } footer: {
-                Text("التلاوة من EveryAyah آية آية، وتستخدم في المصحف وصانع المقاطع دون اتصال.")
+                Text("تستخدم في المصحف وصانع المقاطع دون اتصال.")
             }
             ForEach(Catalog.reciters.filter { folders[$0.id].map { inv[$0] != nil } ?? false }) { r in
                 let folder = folders[r.id]!

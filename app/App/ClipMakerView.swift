@@ -292,7 +292,7 @@ struct ClipMakerView: View {
                     .font(.ui(.caption)).foregroundStyle(Brand.muted)
             }
 
-            Text("يصنع المقطع على جهازك. تجلب التلاوة من EveryAyah والخلفية من مكتبة الموقع عند الإنشاء ثم تحذف. يحفظ المقطع في مكتبتي.")
+            Text("يحفظ المقطع في مكتبتي.")
                 .font(.ui(.caption)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
         } bar: {
