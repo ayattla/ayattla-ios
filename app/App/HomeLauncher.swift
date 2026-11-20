@@ -16,7 +16,7 @@ extension SiteTool {
             "hifz-test": "اختبار الحفظ", "duas": "الأدعية", "mushaf": "المصحف", "ruqya": "الرقية",
             "asma-ul-husna": "الأسماء الحسنى", "hadith": "الأحاديث", "hadith-checker": "تحقق من حديث",
             "prayer-guide": "الوضوء والصلاة", "kids-juz-amma": "تحفيظ الأطفال", "group-khatma": "الختمة الجماعية",
-            "qada-salah": "قضاء الصلوات", "sawm-tracker": "متتبع الصيام", "nearby-mosques": "المساجد القريبة",
+            "qada-salah": "قضاء الصلوات", "sawm-tracker": "متتبع الصيام", "nearby-mosques": "المساجد القريبة", "kaffarah": "الكفارات", "crypto-zakat": "زكاة الرقمية",
             "azkar": "الأذكار", "hisn-almuslim": "حصن المسلم",
         ][id] ?? title
     }

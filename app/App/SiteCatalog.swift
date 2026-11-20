@@ -67,6 +67,8 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "group-khatma", title: "الختمة الجماعية", subtitle: "وزع الأجزاء على المجموعة برابط واحد", symbol: "person.3", group: .quran, isNew: true),
         .init(id: "qada-salah", title: "متتبع قضاء الصلوات", subtitle: "عداد لكل صلاة وخطة يومية", symbol: "checklist", group: .daily, isNew: true),
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
+        .init(id: "kaffarah", title: "حاسبة الكفارات", subtitle: "كفارة اليمين وفدية الصيام وكفارة رمضان مع الدليل", symbol: "function", group: .daily, isNew: true),
+        .init(id: "crypto-zakat", title: "زكاة العملات الرقمية", subtitle: "قيمة عملاتك مقابل نصاب الذهب وربع العشر", symbol: "bitcoinsign.circle", group: .daily, isNew: true),
         .init(id: "nearby-mosques", title: "المساجد القريبة", subtitle: "أقرب المساجد مع المسافة والاتجاهات", symbol: "mappin.and.ellipse", group: .daily, isNew: true),
     ]
 
@@ -95,6 +97,8 @@ struct SiteTool: Identifiable, Hashable {
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "zakat": ZakatView()
+        case "kaffarah": KaffarahView()
+        case "crypto-zakat": CryptoZakatView()
         case "tasbih": TasbihView()
         case "hadith-card", "hadith": HadithView()
         case "tajweed": TajweedView()

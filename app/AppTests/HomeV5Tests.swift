@@ -27,3 +27,12 @@ final class HomeV5Tests: XCTestCase {
         XCTAssertEqual(r.text.count, 8)
     }
 }
+
+final class KaffarahTests: XCTestCase {
+    func testMeals() {
+        XCTAssertEqual(Kaffarah.meals(.oath, 1), 10)
+        XCTAssertEqual(Kaffarah.meals(.oath, 3), 30)
+        XCTAssertEqual(Kaffarah.meals(.fidya, 29), 29)
+        XCTAssertEqual(Kaffarah.meals(.ramadan, 1), 60)
+    }
+}
