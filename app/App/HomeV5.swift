@@ -7,11 +7,14 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, head, wird, quiz, create, today, tools, ayah, gallery, presets, recent
+    case prayer, tracker, services, head, wird, dhikr, quiz, create, today, tools, ayah, gallery, presets, recent
     var id: String { rawValue }
     var title: String {
         switch self {
         case .prayer: "الصلاة القادمة"
+        case .tracker: "صلواتي اليوم"
+        case .services: "خدمات المسلم"
+        case .dhikr: "الذكر السريع"
         case .head: "الترحيب والبحث"
         case .wird: "الورد والختمة"
         case .quiz: "مسابقة اليوم"
@@ -348,5 +351,151 @@ struct UnifiedSearchView: View {
         }
         .navigationTitle("البحث الشامل")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Today's prayers tracker
+
+/// «صلواتي اليوم»: tick each prayer once prayed, with a 7-day strip. On the device only.
+struct HomePrayerTracker: View {
+    @AppStorage("prayer.tracker") private var raw = ""   // "yyyy-MM-dd:fajr,dhuhr;…"
+
+    private static func dayKey(_ d: Date) -> String {
+        let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: d)
+    }
+    private func map() -> [String: Set<String>] {
+        var m: [String: Set<String>] = [:]
+        for e in raw.split(separator: ";") {
+            let p = e.split(separator: ":", maxSplits: 1)
+            guard let k = p.first else { continue }
+            m[String(k)] = Set((p.count > 1 ? p[1] : "").split(separator: ",").map(String.init))
+        }
+        return m
+    }
+    private func save(_ m: [String: Set<String>]) {
+        let keep = m.keys.sorted().suffix(30)
+        raw = keep.map { "\($0):\(m[$0]!.sorted().joined(separator: ","))" }.joined(separator: ";")
+    }
+
+    var body: some View {
+        let today = Self.dayKey(Date())
+        let m = map()
+        let done = m[today] ?? []
+        VStack(spacing: Brand.Space.m) {
+            CenteredHead("صلواتي اليوم")
+            VStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    ForEach(Prayer.allCases.filter(\.isPrayer)) { p in
+                        let key = "\(p.rawValue)"
+                        let on = done.contains(key)
+                        Button {
+                            var mm = m; var d = done
+                            if on { d.remove(key) } else { d.insert(key) }
+                            mm[today] = d; save(mm)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: "checkmark").font(.ui(.footnote, .bold))
+                                Text(p.name).font(.ui(.caption, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                            }
+                            .foregroundStyle(on ? .white : Brand.ink)
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .background(on ? Brand.green : Brand.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(on ? Brand.green : Brand.line, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(p.name) \(on ? "صليت" : "لم تسجل")")
+                        .animation(.easeOut(duration: 0.2), value: on)
+                    }
+                }
+                HStack {
+                    Text("\(Num.int(done.count)) من \(Num.int(5)) اليوم").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
+                    Spacer()
+                    ForEach((0..<7).reversed(), id: \.self) { i in
+                        let n = (m[Self.dayKey(Date().addingTimeInterval(-86400 * Double(i)))] ?? []).count
+                        Circle().fill(n >= 5 ? Brand.green : n > 0 ? Brand.green.opacity(0.35) : Brand.tint).frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(14).surface()
+        }
+    }
+}
+
+// MARK: - Muslim services
+
+struct HomeServices: View {
+    private let items: [(String, String, String)] = [
+        ("القبلة", "location.north.line", "qibla"), ("المساجد", "mappin.and.ellipse", "nearby-mosques"),
+        ("الإذاعات", "radio", "radio"), ("الأدعية", "hands.sparkles", "duas"),
+        ("الرقية", "shield.lefthalf.filled", "ruqya"), ("الهجري", "calendar", "hijri"),
+        ("الزكاة", "percent", "zakat"), ("الأطفال", "star.circle", "kids-juz-amma"),
+    ]
+    var body: some View {
+        VStack(spacing: Brand.Space.m) {
+            CenteredHead("خدمات المسلم")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 14) {
+                ForEach(items, id: \.2) { t in
+                    if let tool = SiteTool.all.first(where: { $0.id == t.2 }) {
+                        NavigationLink { tool.destination.onAppear { ToolUsage.record(tool.id) } } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: t.1).font(.ui(.title3, .semibold)).foregroundStyle(.white)
+                                    .frame(width: 46, height: 46)
+                                    .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                Text(t.0).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink).lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.vertical, 14).padding(.horizontal, 8).surface()
+        }
+    }
+}
+
+// MARK: - Quick dhikr
+
+/// A small tasbih on the home page; shares the count with «المسبحة».
+struct HomeQuickDhikr: View {
+    @AppStorage("tasbih.count") private var count = 0
+    @AppStorage("tasbih.phrase") private var phrase = ""
+    private let phrases = ["سبحان الله", "الحمد لله", "لا إله إلا الله", "الله أكبر"]
+
+    var body: some View {
+        let current = phrase.isEmpty ? phrases[0] : phrase
+        VStack(spacing: Brand.Space.m) {
+            CenteredHead("الذكر السريع")
+            HStack(spacing: 14) {
+                Button {
+                    count += 1
+                    UIImpactFeedbackGenerator(style: count % 33 == 0 ? .heavy : .light).impactOccurred()
+                } label: {
+                    Text(Num.int(count)).font(.ui(.title, .bold)).foregroundStyle(.white).monospacedDigit()
+                        .contentTransition(.numericText())
+                        .frame(width: 96, height: 96)
+                        .background(LinearGradient(colors: [Color(hex: 0x2E9145), Color(hex: 0x102D27)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("سبّح: \(current)، العدد \(count)")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(current).font(.ui(.title3, .semibold)).foregroundStyle(Brand.ink).lineLimit(1)
+                    ProgressView(value: Double(count % 33), total: 33).tint(Brand.accent)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(phrases, id: \.self) { p in
+                                Button(p) { phrase = p; count = 0 }
+                                    .font(.ui(.caption, .semibold)).padding(.horizontal, 10).frame(minHeight: 32)
+                                    .foregroundStyle(p == current ? .white : Brand.primaryInk)
+                                    .background(p == current ? Brand.primary : Brand.tint, in: Capsule())
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(14).surface()
+        }
     }
 }

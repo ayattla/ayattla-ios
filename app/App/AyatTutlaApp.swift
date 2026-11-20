@@ -163,8 +163,17 @@ struct StartView: View {
         #endif
     }
 
+    @AppStorage(IntroView.key) private var introEnabled = true
+    @State private var introDone = false
+
     @ViewBuilder private var normal: some View {
-        if onboardingDone { RootView() } else { OnboardingView() }
+        ZStack {
+            if onboardingDone { RootView() } else { OnboardingView() }
+            if introEnabled && !introDone {
+                IntroView { withAnimation(.easeOut(duration: 0.2)) { introDone = true } }
+                    .transition(.opacity).zIndex(1)
+            }
+        }
     }
 }
 
