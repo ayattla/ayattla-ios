@@ -1,69 +1,153 @@
 import SwiftUI
 import AyatDesign
 
-/// «الافتتاحية»: picks up where the launch screen ends (same deep green), draws the gold
-/// eight-point star, rings out, then the full logo rises in with the tagline and fades into the app.
-/// About 2.2 s; a tap skips; skipped with Reduce Motion or when turned off in Settings.
+/// «الافتتاحية» (about 2.6 s, once per launch): the launch screen hands over on the same deep green; a gold
+/// geometric rosette is traced line by line (rings, the eight-point star, the inner star, sixteen rays) while a
+/// warm light blooms at its centre; the gold book rises into that light and a sheen sweeps across it; the
+/// calligraphic name and the tagline follow; then the scene eases forward and dissolves into the app.
+/// A tap skips it; skipped with Reduce Motion or when turned off in Settings.
 struct IntroView: View {
     static let key = "intro.enabled"
     var onDone: () -> Void
-    @State private var draw: CGFloat = 0
     @State private var ring: CGFloat = 0
-    @State private var logo: CGFloat = 0
+    @State private var star: CGFloat = 0
+    @State private var inner: CGFloat = 0
+    @State private var rays: CGFloat = 0
+    @State private var bloom: CGFloat = 0
+    @State private var book: CGFloat = 0
+    @State private var sheen: CGFloat = -0.4
+    @State private var word: CGFloat = 0
     @State private var tag: CGFloat = 0
     @State private var spin = false
-    @State private var out = false
+    @State private var exit = false
+    @State private var start = Date()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let gold = Color(hex: 0xE3CB8E)
+    private let gold = Color(hex: 0xE8C878)
+    private let goldLight = Color(hex: 0xFFF1C2)
+    private let goldDeep = Color(hex: 0xB8893F)
+    private var goldGradient: LinearGradient {
+        LinearGradient(colors: [goldLight, gold, goldDeep, gold], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
 
     var body: some View {
-        ZStack {
-            RadialGradient(colors: [Color(hex: 0x2E9145), Color(hex: 0x1F5A3C), Color(hex: 0x102D27)],
-                           center: .center, startRadius: 0, endRadius: 620)
-                .ignoresSafeArea()
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let r = min(w, h) * 0.40
+            let cy = h * 0.42
             ZStack {
-                ForEach(0..<2) { i in
-                    Circle().stroke(gold.opacity(i == 0 ? 0.22 : 0.12), lineWidth: i == 0 ? 1.2 : 0.8)
-                        .frame(width: 240 + 90 * ring + CGFloat(i) * 26, height: 240 + 90 * ring + CGFloat(i) * 26)
-                        .opacity(Double(ring))
+                RadialGradient(colors: [Color(hex: 0x2A8A57), Color(hex: 0x17623F), Color(hex: 0x0A2E22)],
+                               center: .center, startRadius: 0, endRadius: max(w, h) * 0.85)
+                // Light bloom.
+                RadialGradient(colors: [Color(hex: 0xFFE7A6).opacity(0.5), Color(hex: 0xF2C96B).opacity(0.14), .clear],
+                               center: .center, startRadius: 0, endRadius: r * 1.25)
+                    .frame(width: r * 2.5, height: r * 2.5)
+                    .position(x: w / 2, y: cy)
+                    .opacity(Double(bloom))
+                // Rosette.
+                ZStack {
+                    Circle().trim(from: 0, to: ring).stroke(goldGradient, lineWidth: 2).opacity(0.55)
+                        .frame(width: r * 2.04, height: r * 2.04)
+                    Circle().trim(from: 0, to: ring).stroke(goldGradient, lineWidth: 1).opacity(0.28)
+                        .frame(width: r * 2.2, height: r * 2.2)
+                    ForEach(0..<16, id: \.self) { i in
+                        Circle().fill(gold).frame(width: i.isMultiple(of: 2) ? 6 : 3.6, height: i.isMultiple(of: 2) ? 6 : 3.6)
+                            .offset(x: r * 1.02).rotationEffect(.degrees(Double(i) * 22.5))
+                            .opacity(Double(ring) * 0.8)
+                    }
+                    ForEach(0..<16, id: \.self) { i in
+                        Capsule().fill(gold.opacity(0.14)).frame(width: r * 0.66 * rays, height: 1)
+                            .offset(x: r * 0.30 + r * 0.33 * rays).rotationEffect(.degrees(Double(i) * 22.5))
+                    }
+                    StarShape().fill(LinearGradient(colors: [Color(hex: 0x2C9862).opacity(0.45), Color(hex: 0x0E4A33).opacity(0.45)],
+                                                    startPoint: .top, endPoint: .bottom))
+                        .opacity(Double(star))
+                        .frame(width: r * 1.96, height: r * 1.96)
+                    StarShape().trim(from: 0, to: star)
+                        .stroke(goldGradient, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .frame(width: r * 1.96, height: r * 1.96)
+                    StarShape().trim(from: 0, to: inner)
+                        .stroke(goldGradient, style: StrokeStyle(lineWidth: 1.4, lineCap: .round, lineJoin: .round)).opacity(0.5)
+                        .frame(width: r * 1.6, height: r * 1.6)
                 }
-                StarShape().fill(Color(hex: 0x102D27).opacity(0.45 * Double(draw)))
-                    .frame(width: 215, height: 215)
-                StarShape().trim(from: 0, to: draw)
-                    .stroke(LinearGradient(colors: [gold, Color(hex: 0xC3A66B)], startPoint: .top, endPoint: .bottom),
-                            style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                    .frame(width: 215, height: 215)
+                .rotationEffect(.degrees(spin ? 10 : 0))
+                .position(x: w / 2, y: cy)
+                // Gold dust.
+                TimelineView(.animation) { t in
+                    Canvas { ctx, size in
+                        let e = t.date.timeIntervalSince(start)
+                        for i in 0..<22 {
+                            let seed = Double(i * 73 % 100) / 100
+                            let x = size.width * Double(i * 37 % 100) / 100
+                            let y = size.height * (1.05 - (seed + e / 3.2 * (0.25 + seed * 0.3)).truncatingRemainder(dividingBy: 1.1))
+                            let a = (0.15 + 0.45 * Double(i * 17 % 10) / 10) * Double(bloom)
+                            let s = 2.4 + Double(i % 3) * 2
+                            ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: s, height: s)), with: .color(goldLight.opacity(a)))
+                        }
+                    }
+                }
+                .allowsHitTesting(false)
+                // The gold book with a passing sheen.
+                Image("IntroBook").resizable().scaledToFit()
+                    .frame(width: r * 1.42)
+                    .overlay {
+                        GeometryReader { g in
+                            LinearGradient(colors: [.clear, .white.opacity(0.85), .clear], startPoint: .leading, endPoint: .trailing)
+                                .frame(width: g.size.width * 0.36)
+                                .offset(x: g.size.width * sheen - g.size.width * 0.18)
+                                .blendMode(.sourceAtop)
+                        }
+                    }
+                    .compositingGroup()
+                    .scaleEffect(0.92 + 0.08 * book)
+                    .offset(y: (1 - book) * 26)
+                    .opacity(Double(book))
+                    .position(x: w / 2, y: cy + 10)
+                // Name.
+                Image("IntroWord").resizable().scaledToFit()
+                    .frame(width: r * 1.42 * 0.82)
+                    .offset(y: (1 - word) * 14)
+                    .opacity(Double(word))
+                    .position(x: w / 2, y: cy + r * 1.18 + r * 0.25)
+                    .accessibilityHidden(true)
+                // Tagline.
+                VStack(spacing: 6) {
+                    Spacer()
+                    Capsule().fill(LinearGradient(colors: [.clear, gold, .clear], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: 72 * tag, height: 1.5)
+                    Text("القرآن والأذكار وأدوات المسلم اليومية").font(.ui(.callout, .semibold)).foregroundStyle(.white.opacity(0.94))
+                    Text("مجاني · بلا حساب · يعمل دون إنترنت").font(.ui(.footnote)).foregroundStyle(gold.opacity(0.9))
+                }
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 48)
+                .opacity(Double(tag)).offset(y: (1 - tag) * 10)
             }
-            .rotationEffect(.degrees(spin ? 22 : 0))
-            Image("LogoFull").resizable().scaledToFit().frame(width: 170, height: 170)
-                .environment(\.colorScheme, .dark)
-                .opacity(Double(logo)).scaleEffect(0.86 + 0.14 * logo).offset(y: (1 - logo) * 24)
-            VStack(spacing: 6) {
-                Spacer()
-                Capsule().fill(LinearGradient(colors: [.clear, gold, .clear], startPoint: .leading, endPoint: .trailing))
-                    .frame(width: 60 * tag, height: 2)
-                Text("القرآن والأذكار وأدوات المسلم اليومية").font(.ui(.callout, .semibold)).foregroundStyle(.white.opacity(0.92))
-                Text("مجاني · بلا حساب · يعمل دون إنترنت").font(.ui(.footnote)).foregroundStyle(gold.opacity(0.9))
-            }
-            .padding(.bottom, 56)
-            .opacity(Double(tag)).offset(y: (1 - tag) * 12)
         }
-        .opacity(out ? 0 : 1)
+        .ignoresSafeArea()
+        .scaleEffect(exit ? 1.06 : 1)
+        .opacity(exit ? 0 : 1)
         .contentShape(Rectangle())
         .onTapGesture { onDone() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("آيات تتلى")
         .task {
             if reduceMotion { onDone(); return }
-            withAnimation(.linear(duration: 2.6)) { spin = true }
-            withAnimation(.easeInOut(duration: 0.9)) { draw = 1 }
-            withAnimation(.easeOut(duration: 1.1).delay(0.25)) { ring = 1 }
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.85).delay(0.52)) { logo = 1 }
-            withAnimation(.easeOut(duration: 0.5).delay(1.0)) { tag = 1 }
-            try? await Task.sleep(nanoseconds: 2_150_000_000)
-            withAnimation(.easeIn(duration: 0.38)) { out = true }
-            try? await Task.sleep(nanoseconds: 400_000_000)
+            start = Date()
+            let inOut = Animation.timingCurve(0.65, 0, 0.35, 1, duration: 1)
+            let out = Animation.timingCurve(0.16, 1, 0.3, 1, duration: 1)
+            withAnimation(.linear(duration: 3.2)) { spin = true }
+            withAnimation(inOut.speed(1 / 0.7)) { ring = 1 }
+            withAnimation(inOut.speed(1 / 0.9).delay(0.12)) { star = 1 }
+            withAnimation(inOut.speed(1 / 0.8).delay(0.35)) { inner = 1 }
+            withAnimation(out.speed(1 / 0.7).delay(0.42)) { rays = 1 }
+            withAnimation(out.speed(1 / 1.1).delay(0.3)) { bloom = 1 }
+            withAnimation(out.speed(1 / 0.8).delay(0.64)) { book = 1 }
+            withAnimation(inOut.speed(1 / 0.75).delay(1.15)) { sheen = 1.4 }
+            withAnimation(out.speed(1 / 0.65).delay(1.05)) { word = 1 }
+            withAnimation(out.speed(1 / 0.5).delay(1.45)) { tag = 1 }
+            try? await Task.sleep(nanoseconds: 2_370_000_000)
+            withAnimation(.timingCurve(0.65, 0, 0.35, 1, duration: 0.42)) { exit = true }
+            try? await Task.sleep(nanoseconds: 440_000_000)
             onDone()
         }
     }
