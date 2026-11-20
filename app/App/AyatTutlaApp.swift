@@ -247,6 +247,7 @@ enum DebugScreen {
         case "status": StatusSourceView()
         case "intro": IntroView(holdAtEnd: true) {}
         case "kaffarah": KaffarahView()
+        case "mushaf": MushafReader(startPage: 50)
         case "crypto-zakat": CryptoZakatView()
         case "status-jumuah": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "jumuah" }) { StatusOccasionView(occasion: o) }
         case "status-card": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "marriage" }), let i = o.items.first(where: { $0.s == nil }) { StatusCardDestination(occasion: o, item: i) }
