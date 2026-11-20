@@ -77,6 +77,57 @@ struct PrayerTimesView: View {
         }
     }
 
+    /// Midnight and the last third of the night (between Maghrib and the next Fajr), and the length of the fast.
+    private func nightCard(_ d: Day) -> some View {
+        let night = d.tomorrow.fajr + 24 - d.today.maghrib
+        let items: [(String, String)] = [
+            ("منتصف الليل", Num.time((d.today.maghrib + night / 2).truncatingRemainder(dividingBy: 24))),
+            ("الثلث الأخير", Num.time((d.today.maghrib + night * 2 / 3).truncatingRemainder(dividingBy: 24))),
+            ("مدة الصيام", Num.duration(minutes: Int(((d.today.maghrib - d.today.fajr) * 60).rounded()))),
+        ]
+        return VStack(spacing: 10) {
+            Text("الليل والنهار").font(.ui(.headline)).foregroundStyle(Brand.ink)
+            HStack(spacing: 8) {
+                ForEach(items, id: \.0) { t, v in
+                    VStack(spacing: 4) {
+                        Text(t).font(.ui(.caption)).foregroundStyle(Brand.muted)
+                        Text(v).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).minimumScaleFactor(0.7).lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(Brand.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        }
+        .padding(14).card()
+    }
+
+    /// The week ahead at a glance.
+    private func weekCard(_ d: Day) -> some View {
+        let cal: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = d.place.zone; return c }()
+        let five = Prayer.allCases.filter(\.isPrayer)
+        let f: DateFormatter = { let f = DateFormatter(); f.locale = Locale(identifier: "ar"); f.dateFormat = "EEE d"; f.timeZone = d.place.zone; return f }()
+        return VStack(spacing: 6) {
+            Text("مواقيت الأسبوع").font(.ui(.headline)).foregroundStyle(Brand.ink)
+            HStack(spacing: 2) {
+                Text("اليوم").frame(maxWidth: .infinity)
+                ForEach(five) { Text($0.name).frame(maxWidth: .infinity) }
+            }
+            .font(.ui(.caption2, .semibold)).foregroundStyle(Brand.muted)
+            ForEach(0..<7, id: \.self) { i in
+                let date = cal.date(byAdding: .day, value: i, to: d.now) ?? d.now
+                let t = Day(place: d.place, now: date).today
+                HStack(spacing: 2) {
+                    Text(f.string(from: date)).frame(maxWidth: .infinity)
+                    ForEach(five) { p in Text(Num.time(t.hours(p))).frame(maxWidth: .infinity) }
+                }
+                .font(.ui(.caption2)).foregroundStyle(Brand.ink).lineLimit(1).minimumScaleFactor(0.6)
+                .padding(.vertical, 7)
+                .background(i == 0 ? Brand.tint : .clear, in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(14).card()
+    }
+
     @ViewBuilder private func content(_ d: Day) -> some View {
         VStack(spacing: 16) {
             VStack(spacing: 6) {
@@ -118,6 +169,9 @@ struct PrayerTimesView: View {
                 }
             }
             .card()
+
+            nightCard(d)
+            weekCard(d)
 
             HStack {
                 Text("طريقة الحساب")

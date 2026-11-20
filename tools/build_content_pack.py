@@ -259,6 +259,63 @@ def topics_from_site(index_path, pages_dir, db):
     return topics
 
 
+def status_from_site(index_path, pages_dir, db):
+    """«حالات واتساب»: /status/ (the occasion list, in the site's order) and /status/<slug> (one page per
+    occasion). Each card keeps its type, label, text, reference and source exactly as published, plus the
+    short explanation when the page has one. Ayat keep their reference (s, a, b), checked against this pack;
+    the app shows the ayah text from the pack."""
+    index = open(index_path, encoding="utf-8").read()
+    strip = lambda t: html.unescape(re.sub(r"<[^>]+>", "", t or "")).strip()
+    slugs = []
+    for slug in re.findall(r'href="/status/([a-z0-9-]+)"', index):
+        if slug not in slugs and slug not in ("editor", "asma", "duas"):
+            slugs.append(slug)
+    occasions = []
+    for slug in slugs:
+        path = os.path.join(pages_dir, slug + ".html")
+        if not os.path.exists(path):
+            continue
+        page = open(path, encoding="utf-8").read()
+        title = re.search(r'<span aria-current="page">(.*?)</span>', page, re.S)
+        intro = re.search(r'<section class="page-head">.*?</h1>\s*<p>(.*?)</p>', page, re.S)
+        color = re.search(r'--oc:\s*(#[0-9A-Fa-f]{6})', page)
+        items = []
+        for kind, body in re.findall(r'<article class="ayah-card st-item" data-type="(\w+)">(.*?)</article>', page, re.S):
+            text = re.search(r'<p class="(?:ay|zt)">(.*?)</p>', body, re.S)
+            item = {"type": kind, "tag": strip((re.search(r'<span class="tag">(.*?)</span>', body, re.S) or [None, ""])[1]),
+                    "text": strip(text.group(1)) if text else "",
+                    "ref": strip((re.search(r'<p class="ref">(.*?)</p>', body, re.S) or [None, ""])[1]),
+                    "src": strip((re.search(r'<p class="src">(.*?)</p>', body, re.S) or [None, ""])[1])}
+            link = re.search(r'<p class="src"><a href="([^"]+)"', body)
+            if link:
+                item["url"] = link.group(1)
+            for summary, para in re.findall(r'<details class="taf"><summary>(.*?)</summary><p>(.*?)</p>', body, re.S):
+                if "شرح" in summary:
+                    item["sharh"] = strip(para)
+                elif "كامل" in summary:
+                    item["full"] = strip(para)
+            ed = re.search(r'href="/status/editor\?([^"]+)"', body)
+            if kind == "ayah":
+                q = dict(x.split("=", 1) for x in html.unescape(ed.group(1)).split("&") if "=" in x) if ed else {}
+                try:
+                    s_, a_, b_ = int(q["s"]), int(q["a"]), int(q.get("b", q["a"]))
+                except (KeyError, ValueError):
+                    raise ValueError(f"status {slug}: ayah card without a reference")
+                n = db.execute("SELECT count(*) FROM ayah WHERE surah=? AND ayah BETWEEN ? AND ?", (s_, a_, b_)).fetchone()[0]
+                if n != b_ - a_ + 1:
+                    raise ValueError(f"status {slug}: reference {s_}:{a_}-{b_} not in the pack")
+                item.update({"s": s_, "a": a_, "b": b_})
+            if item["text"] or kind == "ayah":
+                items.append(item)
+        if items:
+            occasions.append({"slug": slug, "title": strip(title.group(1)) if title else slug,
+                              "intro": strip(intro.group(1)) if intro else "",
+                              "color": color.group(1) if color else "", "items": items})
+    if not occasions:
+        raise ValueError("no status occasions found")
+    return occasions
+
+
 def load_surahs(path):
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
@@ -341,6 +398,7 @@ def build(args):
     ruqya = ruqya_from_site(args.ruqya, db) if getattr(args, "ruqya", None) else None
     asma = asma_from_site(args.asma_html) if getattr(args, "asma_html", None) else None
     topics = topics_from_site(args.topics_html, args.topics_dir, db) if getattr(args, "topics_html", None) else None
+    status = status_from_site(args.status_html, args.status_dir, db) if getattr(args, "status_html", None) else None
 
     tasbih = tasbih_from_site(args.tasbih_html) if getattr(args, "tasbih_html", None) else []
     guide = guide_from_site(args.guide_html) if getattr(args, "guide_html", None) else None
@@ -361,6 +419,7 @@ def build(args):
             "ruqya": json.dumps(ruqya, ensure_ascii=False) if ruqya else "",
             "asma": json.dumps(asma, ensure_ascii=False) if asma else "",
             "topics": json.dumps(topics, ensure_ascii=False) if topics else "",
+            "status": json.dumps(status, ensure_ascii=False) if status else "",
             "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ayah_count": str(total), "sources_json": json.dumps(sources, ensure_ascii=False)}
     db.executemany("INSERT INTO meta VALUES(?,?)", meta.items())
@@ -378,6 +437,7 @@ def build(args):
     return {"ayat": total, "editions": editions, "reciters": reciters, "qf_ids": qf_map, "tasbih": len(tasbih),
             "ruqya": len(ruqya["items"]) if ruqya else 0, "asma": len(asma) if asma else 0,
             "topics": (len(topics), sum(len(t["items"]) for t in topics)) if topics else None,
+            "status": (len(status), sum(len(o["items"]) for o in status)) if status else None,
             "guide_items": sum(len(x["items"]) for x in guide["sections"]) if guide else 0,
             "duas": (len(duas["quran"]), len(duas["needs"])) if duas else None, "basmala_surahs": len(basmala_flags), "sha256": digest}
 
@@ -393,6 +453,8 @@ def main(argv=None):
     p.add_argument("--asma-html", help="saved ayattla.com/tools/asma-ul-husna page")
     p.add_argument("--topics-html", help="saved ayattla.com/ayat/ page (topic list)")
     p.add_argument("--topics-dir", help="folder of saved ayattla.com/ayat/<slug> pages as <slug>.html")
+    p.add_argument("--status-html", help="saved ayattla.com/status/ page (occasion list)")
+    p.add_argument("--status-dir", help="folder of saved ayattla.com/status/<slug> pages as <slug>.html")
     p.add_argument("--guide-html", help="saved ayattla.com/tools/prayer-guide page")
     p.add_argument("--duas", help="saved ayattla.com/api/duas JSON")
     p.add_argument("--tasbih-html", help="saved ayattla.com/tools/tasbih page (phrase list)")

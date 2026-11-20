@@ -23,6 +23,8 @@ struct EditorSettings: Codable, Equatable, Hashable {
     var quality: ExportQuality? = nil
     var extras: [ExtraRange]? = nil
     var pauses: [String: Double]? = nil
+    /// Card decoration (nil in projects saved before it).
+    var ornament: String? = nil
 }
 
 struct Project: Codable, Identifiable, Equatable, Hashable {

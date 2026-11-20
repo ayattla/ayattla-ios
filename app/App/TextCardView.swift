@@ -12,20 +12,27 @@ struct TextCardView: View {
     let reference: String
     @State private var ratio: CardOptions.Ratio
     @State private var background = CardOptions.backgrounds[0]
+    @State private var ornament = CardOrnament.classic
+    @State private var showHeader = true
+    /// Occasion name drawn at the top («يوم الجمعة»), never a phrase of worship.
+    let header: String?
     @State private var fontScale = 1.0
     @State private var textOffset = CGSize.zero
     @State private var saved = false
     @State private var photo: UIImage?
     @State private var mediaID: String?
 
-    init(title: String, text: String, reference: String, initialRatio: CardOptions.Ratio = .square) {
-        self.title = title; self.text = text; self.reference = reference
+    init(title: String, text: String, reference: String, initialRatio: CardOptions.Ratio = .square,
+         backgroundID: String? = nil, ornament: CardOrnament = .classic, header: String? = nil) {
+        self.title = title; self.text = text; self.reference = reference; self.header = header
         _ratio = State(initialValue: initialRatio)
+        _background = State(initialValue: CardOptions.backgrounds.first { $0.id == backgroundID } ?? CardOptions.backgrounds[0])
+        _ornament = State(initialValue: ornament)
     }
 
     private var model: CardCanvas.Model {
-        .init(text: text, reference: reference, template: nil, name: nil, background: background, fontScale: fontScale,
-              ratio: ratio, lightBackground: background.id == "sand", fontName: "Amiri", textOffset: textOffset)
+        .init(text: text, reference: reference, template: showHeader ? header : nil, name: nil, background: background, fontScale: fontScale,
+              ratio: ratio, lightBackground: background.light, fontName: "Amiri", textOffset: textOffset, ornament: ornament)
     }
 
     var body: some View {
@@ -45,6 +52,11 @@ struct TextCardView: View {
                 }
                 Text("خلفيات الموقع").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
                 BackgroundSwatches(selected: photo == nil ? background : nil) { background = $0; photo = nil; mediaID = nil }
+                Text("الزخرفة والإطار").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                OrnamentSwatches(selected: ornament, background: background) { o in withAnimation(.snappy) { ornament = o } }
+                if header != nil {
+                    Toggle("اسم المناسبة أعلى البطاقة", isOn: $showHeader).font(.ui(.subheadline)).tint(Brand.green)
+                }
             }
             EditorStep(3, "المقاس والخط") {
                 SiteSegmented([CardOptions.Ratio.story, .portrait, .square, .wide].map { (id: $0, title: $0.label, detail: Optional($0.useLabel)) },

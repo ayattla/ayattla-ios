@@ -283,31 +283,24 @@ struct HomeView: View {
     /// then small chips for the other daily tools.
     private var today: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
-            SiteSectionHead(eyebrow: "يومك", "الأدوات اليومية")
+            CenteredHead("تابع من حيث توقفت")
             if !HomeLayoutStore.decode(layoutRaw).contains(where: { $0.id == .prayer && $0.shown }) { NextPrayerCard() }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Brand.Space.m),
                                      count: typeSize.isAccessibilitySize ? 1 : 2), spacing: Brand.Space.m) {
                 if lib.isReady { continueReading }
                 if lib.isReady, RecitationPlayer.lastListened() != nil { continueListening }
                 NavigationLink { AzkarView() } label: {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(spacing: 10) {
                         IconTile("sun.horizon", style: .gradient(2), size: 44)
                         Text("أذكار اليوم").font(.ui(.headline)).foregroundStyle(Brand.ink)
                         Text("الصباح والمساء والنوم مع العداد").font(.ui(.caption)).foregroundStyle(Brand.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+                    .multilineTextAlignment(.center)
+                    .padding(16).frame(maxWidth: .infinity, minHeight: 150)
                     .surface(.raised)
                 }
                 .buttonStyle(.pressable)
-            }
-            FlowLayout(spacing: 8) {
-                dailyChip("المسبحة", "circle.circle") { AnyView(TasbihView()) }
-                dailyChip("القبلة", "location.north.line") { AnyView(QiblaView()) }
-                dailyChip("الأدعية", "hands.sparkles") { AnyView(DuasView()) }
-                dailyChip("التقويم الهجري", "calendar") { AnyView(HijriView()) }
-                dailyChip("الختمة", "book.closed") { AnyView(KhatmaView()) }
-                dailyChip("الإذاعات", "dot.radiowaves.left.and.right") { AnyView(RadioView()) }
             }
         }
     }
@@ -448,13 +441,14 @@ struct HomeView: View {
         let first = lib.page(page).first
         let name = first.flatMap { lib.surah($0.surah)?.shortName } ?? ""
         return NavigationLink { MushafReader(startPage: page) } label: {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(spacing: 10) {
                 IconTile("book.pages", style: .gradient(0), size: 44)
                 Text(lastPage > 0 ? "تابع القراءة" : "ابدأ القراءة").font(.ui(.headline)).foregroundStyle(Brand.ink)
                 Text("\(name) · صفحة \(Num.int(page))").font(.ui(.caption)).foregroundStyle(Brand.muted)
                 ProgressView(value: Double(page), total: Double(max(lib.pageCount, 1))).tint(Brand.green)
             }
-            .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+            .multilineTextAlignment(.center)
+            .padding(16).frame(maxWidth: .infinity, minHeight: 150)
             .surface(.raised)
         }
         .buttonStyle(.pressable)
@@ -470,12 +464,13 @@ struct HomeView: View {
                 p.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
                 p.play(from: last.position)
             } label: {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(spacing: 10) {
                     IconTile("play.circle", style: .gradient(4), size: 44)
                     Text("تابع الاستماع").font(.ui(.headline)).foregroundStyle(Brand.ink)
                     Text("\(name) · آية \(Num.int(last.position.ayah))").font(.ui(.caption)).foregroundStyle(Brand.muted)
                 }
-                .padding(16).frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+                .multilineTextAlignment(.center)
+            .padding(16).frame(maxWidth: .infinity, minHeight: 150)
                 .surface(.raised)
             }
             .buttonStyle(.pressable)

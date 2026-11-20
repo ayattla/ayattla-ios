@@ -139,6 +139,8 @@ struct StartView: View {
     var body: some View {
         content
             .modifier(RouteSheet())
+            // Text is centred by default across the app (the owner's rule); lists and fields keep their own alignment.
+            .multilineTextAlignment(.center)
             #if DEBUG
             // CI: `-link <url>` follows a deep link at launch (simctl openurl shows a system prompt).
             .task {
@@ -243,6 +245,9 @@ enum DebugScreen {
         case "topics": TopicsView()
         case "juz": JuzListView()
         case "status": StatusSourceView()
+        case "intro": IntroView(holdAtEnd: true) {}
+        case "status-jumuah": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "jumuah" }) { StatusOccasionView(occasion: o) }
+        case "status-card": if let o = ContentLibrary.shared.statusOccasions.first(where: { $0.slug == "marriage" }), let i = o.items.first(where: { $0.s == nil }) { StatusCardDestination(occasion: o, item: i) }
         case "home-mid": ScrollView { VStack(spacing: 32) { HomeCreateBento(); HomeMediaGallery() }.padding(16) }.brandScreen()
         case "home-low": ScrollView { HomeToolLauncher().padding(16) }.brandScreen()
         case "about": AboutAppView()

@@ -29,17 +29,29 @@ enum CardOptions {
     /// The site's still backgrounds, drawn here as gradients.
     struct Background: Identifiable, Hashable {
         let id: String; let name: String; let top: UInt32; let bottom: UInt32
+        var accent: UInt32 = 0xE0C27A
+        /// Light backgrounds take dark text.
+        var light: Bool = false
         var gradient: LinearGradient {
             LinearGradient(colors: [Color(hex: top), Color(hex: bottom)], startPoint: .top, endPoint: .bottom)
         }
+        var accentColor: Color { Color(hex: accent) }
     }
     static let backgrounds: [Background] = [
         .init(id: "emerald", name: "زمردي", top: 0x2F6B3B, bottom: 0x14301C),
         .init(id: "night", name: "ليل هادئ", top: 0x1B2433, bottom: 0x0A0F17),
         .init(id: "dusk", name: "غروب الصحراء", top: 0x8A4B2A, bottom: 0x2B1A16),
         .init(id: "dawn", name: "فجر", top: 0x3C5A7A, bottom: 0xC9A27A),
-        .init(id: "sand", name: "رملي", top: 0xE9DCC2, bottom: 0xC8B48E),
+        .init(id: "sand", name: "رملي", top: 0xE9DCC2, bottom: 0xC8B48E, accent: 0x8A5E1E, light: true),
         .init(id: "ink", name: "حبر", top: 0x1C1C1E, bottom: 0x000000),
+        .init(id: "royal", name: "ملكي", top: 0x1B2A5C, bottom: 0x0B1230),
+        .init(id: "burgundy", name: "عنابي", top: 0x5A1A2B, bottom: 0x2A0A14),
+        .init(id: "violet", name: "رمضاني", top: 0x3A2160, bottom: 0x170B2E, accent: 0xF0CF83),
+        .init(id: "teal", name: "فيروزي", top: 0x0F5A5E, bottom: 0x06292C),
+        .init(id: "olive", name: "زيتوني", top: 0x3E4A1F, bottom: 0x1C230C),
+        .init(id: "blush", name: "وردي", top: 0xFBEDEC, bottom: 0xF1D3D1, accent: 0xA8794A, light: true),
+        .init(id: "sky", name: "سماوي", top: 0xEAF4FA, bottom: 0xCFE3F0, accent: 0x8E6C2C, light: true),
+        .init(id: "ivory", name: "عاجي", top: 0xFBF8F1, bottom: 0xEFE9DC, accent: 0x7A5F28, light: true),
     ]
 
     static let fontScales: [(String, Double)] = [("صغير", 0.85), ("متوسط", 1.0), ("كبير", 1.15)]
@@ -71,6 +83,7 @@ struct AyahCardView: View {
     @State private var template = CardOptions.templates[0]
     @State private var name = ""
     @State private var background = CardOptions.backgrounds[0]
+    @State private var ornament = CardOrnament.classic
     @State private var fontScale = 1.0
     @State private var textOffset = CGSize.zero
     @State private var photoItem: PhotosPickerItem?
@@ -107,12 +120,13 @@ struct AyahCardView: View {
         _textOffset = State(initialValue: CGSize(width: e.textX ?? 0, height: e.textY ?? 0))
         if let l = e.layer { _layer = State(initialValue: l) }
         if let q = e.quality { _quality = State(initialValue: q) }
+        _ornament = State(initialValue: e.ornament.flatMap(CardOrnament.init(rawValue:)) ?? .none)
     }
 
     private var settings: EditorSettings {
         EditorSettings(surah: surah, from: from, to: to, ratio: ratio.rawValue, background: photo == nil ? background.id : "photo",
                        fontScale: fontScale, template: template.id, name: name, reciter: reciter,
-                       textX: textOffset.width, textY: textOffset.height, layer: layer, quality: quality)
+                       textX: textOffset.width, textY: textOffset.height, layer: layer, quality: quality, ornament: ornament.rawValue)
     }
 
     /// Quick picks, as on the site's makers (الفاتحة، آية الكرسي، خواتيم البقرة …).
@@ -186,6 +200,8 @@ struct AyahCardView: View {
                 }
                 Text("خلفيات الموقع").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
                 BackgroundSwatches(selected: photo == nil ? background : nil) { b in background = b; photo = nil; photoItem = nil; mediaID = nil }
+                Text("الزخرفة والإطار").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink).padding(.top, 4)
+                OrnamentSwatches(selected: ornament, background: background) { o in withAnimation(.snappy) { ornament = o } }
                 PhotosPicker(selection: $photoItem, matching: .images) {
                     Label(photo == nil ? "أو ارفع صورة من جهازك" : "غير الصورة", systemImage: "photo.badge.plus")
                         .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.primaryInk)
@@ -315,7 +331,7 @@ struct AyahCardView: View {
             let ref = a == b ? "[\(s): \(Num.int(a))]" : "[\(s): \(Num.int(a))–\(Num.int(b))]"
             return CardCanvas.Model(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
                          name: name.isEmpty ? nil : name, background: background, fontScale: fontScale,
-                         ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset, layer: layer)
+                         ratio: ratio, lightBackground: background.light, textOffset: textOffset, layer: layer, ornament: ornament)
         }
     }
 
@@ -327,7 +343,7 @@ struct AyahCardView: View {
         let ref = from == to ? "[\(s): \(Num.int(from))]" : "[\(s): \(Num.int(from))–\(Num.int(to))]"
         return .init(text: text, reference: ref, template: template.id.isEmpty ? nil : template.name,
                      name: name.isEmpty ? nil : name, background: background, fontScale: fontScale,
-                     ratio: ratio, lightBackground: background.id == "sand", textOffset: textOffset, layer: layer)
+                     ratio: ratio, lightBackground: background.light, textOffset: textOffset, layer: layer, ornament: ornament)
     }
 }
 
@@ -356,6 +372,8 @@ struct CardCanvas: View {
         var visibleWords: Int? = nil
         /// Draws only the background (for animated clips the text is laid over it frame by frame).
         var backgroundOnly = false
+        /// Decoration drawn over the background in its accent colour.
+        var ornament: CardOrnament = .none
     }
 
     let model: Model
@@ -394,6 +412,9 @@ struct CardCanvas: View {
                     Color.black.opacity(0.45)
                 } else {
                     model.background.gradient
+                }
+                if model.ornament != .none && !model.clearBackground {
+                    OrnamentLayer(kind: model.ornament, accent: photo == nil ? model.background.accentColor : Color(hex: 0xE0C27A))
                 }
                 if !model.backgroundOnly {
                 VStack(spacing: 14 * unit) {

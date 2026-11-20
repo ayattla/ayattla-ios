@@ -7,20 +7,20 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, tracker, services, head, wird, dhikr, quiz, create, today, tools, ayah, gallery, presets, recent
+    case prayer, tracker, services, today, wird, dhikr, quiz, create, ayah, gallery, presets, recent, head, tools
     var id: String { rawValue }
     var title: String {
         switch self {
         case .prayer: "الصلاة القادمة"
         case .tracker: "صلواتي اليوم"
-        case .services: "خدمات المسلم"
+        case .services: "الوصول السريع"
         case .dhikr: "الذكر السريع"
         case .head: "الترحيب والبحث"
         case .wird: "الورد والختمة"
         case .quiz: "مسابقة اليوم"
         case .create: "صناعة المحتوى"
-        case .today: "الأدوات اليومية"
-        case .tools: "كل الأدوات"
+        case .today: "تابع من حيث توقفت"
+        case .tools: "كل الأدوات (شبكة)"
         case .ayah: "آية اليوم"
         case .gallery: "معرض الخلفيات"
         case .presets: "القوالب الجاهزة"
@@ -31,6 +31,12 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
 
 struct HomeLayoutItem: Equatable { var id: HomeSectionID; var shown: Bool }
 
+extension HomeSectionID {
+    /// Off until turned on: the greeting and search repeat the prayer card and the toolbar search,
+    /// and the full grid repeats «الوصول السريع».
+    static let hiddenByDefault: Set<HomeSectionID> = [.head, .tools]
+}
+
 enum HomeLayoutStore {
     static let key = "home.layout.v5"
     static func decode(_ raw: String) -> [HomeLayoutItem] {
@@ -39,7 +45,7 @@ enum HomeLayoutStore {
             guard let n = p.first, let s = HomeSectionID(rawValue: String(n)) else { return nil }
             return HomeLayoutItem(id: s, shown: p.count < 2 || p[1] != "0")
         }
-        for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: true)) }
+        for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: !HomeSectionID.hiddenByDefault.contains(s))) }
         return out
     }
     static func encode(_ l: [HomeLayoutItem]) -> String { l.map { "\($0.id.rawValue):\($0.shown ? 1 : 0)" }.joined(separator: ",") }
@@ -133,7 +139,7 @@ struct HomeWirdCard: View {
         VStack(spacing: Brand.Space.m) {
             CenteredHead("الورد والختمة")
             NavigationLink { KhatmaView() } label: {
-                HStack(spacing: 16) {
+                VStack(spacing: 12) {
                     let frac = plan.map { Double($0.completedDays.count) / Double(max(1, $0.days)) } ?? 0
                     ZStack {
                         Circle().stroke(Brand.tint, lineWidth: 7)
@@ -141,7 +147,7 @@ struct HomeWirdCard: View {
                         Text(plan == nil ? "—" : "\(Num.int(Int(frac * 100)))٪").font(.ui(.subheadline, .bold)).foregroundStyle(Brand.primaryInk)
                     }
                     .frame(width: 74, height: 74)
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(spacing: 4) {
                         if let plan {
                             let day = min(max(1, plan.day(on: Date())), plan.days)
                             Text(plan.isFinished ? "أتممت الختمة" : "ورد اليوم\(plan.completedDays.contains(day) ? " ✓" : "")")
@@ -155,8 +161,8 @@ struct HomeWirdCard: View {
                             Text("حدد المدة ويقسمها التطبيق وردا يوميا").font(.ui(.footnote)).foregroundStyle(Brand.muted)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.forward").foregroundStyle(Brand.muted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(16)
                 .surface()
@@ -427,14 +433,14 @@ struct HomePrayerTracker: View {
 
 struct HomeServices: View {
     private let items: [(String, String, String)] = [
-        ("القبلة", "location.north.line", "qibla"), ("المساجد", "mappin.and.ellipse", "nearby-mosques"),
-        ("الإذاعات", "radio", "radio"), ("الأدعية", "hands.sparkles", "duas"),
-        ("الرقية", "shield.lefthalf.filled", "ruqya"), ("الهجري", "calendar", "hijri"),
+        ("المصحف", "book", "search"), ("أسماء الله", "sparkles", "asma-ul-husna"),
+        ("المساجد", "mappin.and.ellipse", "nearby-mosques"), ("الإذاعات", "radio", "radio"),
+        ("الأدعية", "hands.sparkles", "duas"), ("الرقية", "shield.lefthalf.filled", "ruqya"),
         ("الزكاة", "percent", "zakat"), ("الأطفال", "star.circle", "kids-juz-amma"),
     ]
     var body: some View {
         VStack(spacing: Brand.Space.m) {
-            CenteredHead("خدمات المسلم")
+            CenteredHead("الوصول السريع")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 14) {
                 ForEach(items, id: \.2) { t in
                     if let tool = SiteTool.all.first(where: { $0.id == t.2 }) {

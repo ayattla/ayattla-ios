@@ -15,9 +15,10 @@ public struct SectionHeader<Trailing: View>: View {
         self.title = title; self.subtitle = subtitle; self.trailing = trailing()
     }
 
+    /// Centred title (the owner's rule); an action, if any, keeps its place at the end.
     public var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
+        ZStack(alignment: .trailing) {
+            VStack(spacing: 4) {
                 Text(title).font(.ui(.title3, .semibold)).foregroundStyle(Brand.ink)
                     .accessibilityAddTraits(.isHeader)
                 if let subtitle {
@@ -25,7 +26,9 @@ public struct SectionHeader<Trailing: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Spacer(minLength: 8)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, Trailing.self == EmptyView.self ? 0 : 64)
             trailing
         }
     }
