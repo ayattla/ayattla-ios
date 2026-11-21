@@ -180,9 +180,9 @@ struct OnboardingView: View {
 
     private func title(_ s: Step) -> (String, String) {
         switch s {
-        case .uses: ("ما الذي تريد استخدام آيات تتلى من أجله؟", "اختر ما يهمك، وسنقدّمه لك في الرئيسية")
+        case .uses: ("ما الذي تريد استخدام آيات تتلى من أجله؟", "اختر ما يهمك، وسنقدمه لك في الرئيسية")
         case .likes: ("ما نوع المحتوى الذي تفضله؟", "يساعدنا في اقتراح ما يناسبك")
-        case .listen: ("كيف تفضل الاستماع إلى القرآن؟", "يُستخدم في المصحف المسموع وصانع المقاطع")
+        case .listen: ("كيف تفضل الاستماع إلى القرآن؟", "يستخدم في المصحف المسموع وصانع المقاطع")
         case .reminders: ("ما التذكيرات التي ترغب فيها؟", "تذكيرات لطيفة، وتستطيع تغييرها في أي وقت")
         default: ("كيف تفضل عرض التطبيق؟", "يتغير المظهر فورا لترى الفرق")
         }
@@ -207,7 +207,7 @@ struct OnboardingView: View {
                 }
                 .accessibilityElement()
                 .accessibilityLabel("السؤال \(Num.int(index + 1)) من \(Num.int(Welcome.questions.count))")
-                Button("تخطَّ") {
+                Button("تخطي") {
                     if s == .reminders { reminders = []; Welcome.save(reminders: []) }
                     next(skipped: true)
                 }
@@ -316,7 +316,7 @@ struct OnboardingView: View {
                 }
             }
             row("قراء متنوعون", "أتنقل بين القراء", "shuffle", on: listen == "various") { listen = "various" }
-            row("لا أفضّل خيارا الآن", nil, "clock", on: listen == "later") { listen = "later" }
+            row("لا أفضل خيارا الآن", nil, "clock", on: listen == "later") { listen = "later" }
         }
     }
 
@@ -328,7 +328,7 @@ struct OnboardingView: View {
                 case "morning": "بعد الفجر بنصف ساعة"
                 case "evening": "بعد العصر بنصف ساعة"
                 case "journey": "التاسعة مساء، ولا يصلك إن أكملت هدفك"
-                case "khatma": "حين تُنشئ خطة ختمتك"
+                case "khatma": "حين تنشئ خطة ختمتك"
                 default: "التاسعة صباحا"
                 }
                 row(r.label, sub, r.symbol, on: on, check: true) { if on { reminders.remove(r.id) } else { reminders.insert(r.id) } }
@@ -354,7 +354,7 @@ struct OnboardingView: View {
                 Image(systemName: "checkmark").font(.ui(size: 40, .bold)).foregroundStyle(.white)
                     .frame(width: 88, height: 88).background(Brand.green, in: Circle())
                     .padding(.top, 72).accessibilityHidden(true)
-                Text("أهلاً بك في آيات تتلى").font(.ui(.title2, .bold)).foregroundStyle(Brand.ink).multilineTextAlignment(.center)
+                Text("أهلا بك في آيات تتلى").font(.ui(.title2, .bold)).foregroundStyle(Brand.ink).multilineTextAlignment(.center)
                 Text("جهزنا لك تجربة تناسب اهتماماتك").font(.ui(.body)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
                 let picked = Welcome.uses.filter { uses.contains($0.id) }
                 if !picked.isEmpty {
@@ -367,14 +367,14 @@ struct OnboardingView: View {
                     .padding(.top, Brand.Space.s)
                 }
                 if notifyDenied {
-                    Text("لم تُفعَّل التذكيرات لأن إذن الإشعارات لم يُمنح، ويمكنك تفعيلها لاحقا من مركز التنبيهات.")
+                    Text("لم تفعل التذكيرات لأن إذن الإشعارات لم يمنح، ويمكنك تفعيلها لاحقا من مركز التنبيهات.")
                         .font(.ui(.footnote)).foregroundStyle(Brand.goldInk).multilineTextAlignment(.center)
                 }
                 Button { finish(leftEarly: false) } label: {
                     Text("ابدأ الآن").font(.ui(.headline)).frame(maxWidth: .infinity, minHeight: 56)
                 }
                 .buttonStyle(.brandPrimary).padding(.top, Brand.Space.xl)
-                Text("نرسل إحصاءات استخدام مجهولة بلا أي بيانات شخصية لنحسّن التطبيق، ويمكنك إيقافها من الإعدادات.")
+                Text("نرسل إحصاءات استخدام مجهولة بلا أي بيانات شخصية لنحسن التطبيق، ويمكنك إيقافها من الإعدادات.")
                     .font(.ui(.caption)).foregroundStyle(Brand.muted).multilineTextAlignment(.center)
             }
             .padding(.horizontal, 24).frame(maxWidth: 520).frame(maxWidth: .infinity)
@@ -401,7 +401,7 @@ struct HomeForYou: View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
             VStack(spacing: 2) {
                 Text(greeting).font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
-                Text(picked.isEmpty ? "اختر اهتماماتك لنقدّم لك ما يناسبك أولا" : "مختارات تناسب اهتماماتك")
+                Text(picked.isEmpty ? "اختر اهتماماتك لنقدم لك ما يناسبك أولا" : "مختارات تناسب اهتماماتك")
                     .font(.ui(.subheadline)).foregroundStyle(Brand.muted)
             }
             .frame(maxWidth: .infinity)
@@ -452,7 +452,7 @@ struct StatsNoticeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("ساعدنا في تحسين آيات تتلى").font(.ui(.headline)).foregroundStyle(Brand.ink)
-            Text("نجمع أعدادا مجهولة لاستخدام الأدوات والخطوات، بلا اسم ولا رقم ولا موقع ولا أي معرّف لجهازك. يمكنك إيقافها الآن أو من الإعدادات.")
+            Text("نجمع أعدادا مجهولة لاستخدام الأدوات والخطوات، بلا اسم ولا رقم ولا موقع ولا أي معرف لجهازك. يمكنك إيقافها الآن أو من الإعدادات.")
                 .font(.ui(.footnote)).foregroundStyle(Brand.muted).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Button { Welcome.statsNoticeSeen(); onClose() } label: { Text("حسنا").frame(maxWidth: .infinity, minHeight: 44) }
