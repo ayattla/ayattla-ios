@@ -159,7 +159,8 @@ Group {
             guard mine == request else { return }
             if cats.isEmpty || r.offline == true { cats = r.cats }
             fromSaved = r.offline == true
-            items = more ? items + r.items : r.items
+            // A saved page can repeat hadith already shown; ids stay unique in the list.
+            if more { let have = Set(items.map(\.id)); items += r.items.filter { !have.contains($0.id) } } else { items = r.items }
             total = r.total; page = p
         } catch {
             guard mine == request else { return }
