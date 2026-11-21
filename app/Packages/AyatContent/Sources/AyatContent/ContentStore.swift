@@ -39,6 +39,10 @@ public struct Ayah: Equatable, Sendable, Identifiable {
     public let page: Int?
     public let juz: Int?
     public var id: String { "\(surah):\(ayah)" }
+
+    public init(surah: Int, ayah: Int, textUthmani: String, page: Int?, juz: Int?) {
+        self.surah = surah; self.ayah = ayah; self.textUthmani = textUthmani; self.page = page; self.juz = juz
+    }
 }
 
 public struct ZikrCategory: Equatable, Sendable, Identifiable { public let id: Int; public let title: String }

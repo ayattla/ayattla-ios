@@ -69,6 +69,8 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
         .init(id: "kaffarah", title: "حاسبة الكفارات", subtitle: "كفارة اليمين وفدية الصيام وكفارة رمضان مع الدليل", symbol: "function", group: .daily, isNew: true),
         .init(id: "crypto-zakat", title: "زكاة العملات الرقمية", subtitle: "قيمة عملاتك مقابل نصاب الذهب وربع العشر", symbol: "bitcoinsign.circle", group: .daily, isNew: true),
+        .init(id: "tasmee", title: "التسميع الذكي", subtitle: "اقرأ من حفظك فتظهر الآيات مع قراءتك", symbol: "waveform.and.mic", group: .quran, isNew: true),
+        .init(id: "voice-search", title: "البحث بالصوت", subtitle: "اقرأ كلمات من آية فيجدها في المصحف", symbol: "mic.circle", group: .quran, isNew: true),
         .init(id: "journey", title: "رحلتي مع القرآن", subtitle: "هدفك اليومي وسلسلة أيامك وتقدمك في الأسبوع والشهر", symbol: "chart.line.uptrend.xyaxis", group: .quran, isNew: true),
         .init(id: "offline", title: "الاستخدام بدون إنترنت", subtitle: "ما يعمل بلا اتصال، وتجهيز التطبيق والتلاوات", symbol: "checkmark.icloud", group: .daily, isNew: true),
         .init(id: "nearby-mosques", title: "المساجد القريبة", subtitle: "أقرب المساجد مع المسافة والاتجاهات", symbol: "mappin.and.ellipse", group: .daily, isNew: true),
@@ -124,6 +126,8 @@ struct SiteTool: Identifiable, Hashable {
         case "nearby-mosques": MosquesView()
         case "offline": OfflineCenterView()
         case "journey": JourneyView()
+        case "tasmee": TasmeeView()
+        case "voice-search": VoiceSearchView()
         default: EmptyState(title, symbol: symbol)
         }
     }

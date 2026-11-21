@@ -157,6 +157,10 @@ struct HifzPlanView: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text("سورة \(name) · \(Num.int(u.from))–\(Num.int(u.to))").font(.ui(.footnote, .semibold)).foregroundStyle(Brand.goldInk)
             Text(text).font(.custom(ContentLibrary.mushafFont, size: 22)).lineSpacing(10)
+            NavigationLink { TasmeeView(surah: u.surah, from: u.from, to: min(u.to, u.from + TasmeeView.maxAyat - 1)) } label: {
+                Label("سمّع بصوتك", systemImage: "waveform.and.mic").font(.ui(.subheadline, .semibold))
+            }
+            .buttonStyle(.bordered).tint(Brand.primaryInk)
         }
     }
 }

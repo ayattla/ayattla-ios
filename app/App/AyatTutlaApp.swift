@@ -233,6 +233,8 @@ enum DebugScreen {
         case "kids": KidsJuzAmmaView()
         case "offline": OfflineCenterView()
         case "journey": JourneyView()
+        case "tasmee": TasmeeView()
+        case "voice-search": VoiceSearchView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "mosques": MosquesView()
