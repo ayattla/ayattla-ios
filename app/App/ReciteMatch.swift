@@ -36,7 +36,12 @@ enum Recite {
     static func skeleton(_ key: String) -> String { String(key.filter { !"اويء".contains($0) }) }
 
     /// Words of an ayah as shown (stop marks and the ayah number stay with the word before them).
-    static func tokens(_ text: String) -> [String] { text.split(whereSeparator: \.isWhitespace).map(String.init) }
+    /// Split on the space characters themselves (not on grapheme clusters: a stop mark after a space
+    /// joins that space into one cluster), the same as Android.
+    static func tokens(_ text: String) -> [String] {
+        text.unicodeScalars.split { CharacterSet.whitespacesAndNewlines.contains($0) }
+            .map { String(String.UnicodeScalarView($0)) }
+    }
 
     /// Indexes into [tokens] of the words that are recited (tokens with letters).
     static func wordIndexes(_ tokens: [String]) -> [Int] { tokens.indices.filter { !key(tokens[$0]).isEmpty } }
