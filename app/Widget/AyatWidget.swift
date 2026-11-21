@@ -116,6 +116,7 @@ struct AyatWidgetBundle: WidgetBundle {
     var body: some Widget {
         DailyAyahWidget()
         ListeningLiveActivity()
+        PrayerLiveActivity()
     }
 }
 
@@ -161,6 +162,61 @@ struct ListeningLiveActivity: Widget {
                 Image(systemName: context.state.isPlaying ? "pause.fill" : "play.fill").foregroundStyle(Color(hex: 0xD9C28E))
             } minimal: {
                 Image(systemName: "waveform").foregroundStyle(Color(hex: 0xD9C28E))
+            }
+        }
+    }
+}
+
+// MARK: - Live Activity (next prayer)
+
+struct PrayerLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: PrayerAttributes.self) { context in
+            let s = context.state
+            HStack(spacing: 12) {
+                Image(systemName: "moon.stars.fill").font(.title3).foregroundStyle(Color(hex: 0xD9C28E))
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("صلاة \(s.prayer) \(s.time)").font(.ui(.headline)).foregroundStyle(Color(hex: 0xF6F2E9)).lineLimit(1)
+                    Text(s.place).font(.ui(.caption)).foregroundStyle(Color(hex: 0xF6F2E9).opacity(0.8)).lineLimit(1)
+                }
+                Spacer()
+                if s.at > Date() {
+                    Text(timerInterval: Date()...s.at, countsDown: true)
+                        .font(.ui(size: 24, .semibold)).monospacedDigit().foregroundStyle(Color(hex: 0xD9C28E))
+                        .multilineTextAlignment(.trailing).frame(maxWidth: 110)
+                } else {
+                    Text("حان الوقت").font(.ui(.headline)).foregroundStyle(Color(hex: 0xD9C28E))
+                }
+            }
+            .padding(16)
+            .environment(\.layoutDirection, .rightToLeft)
+            .activityBackgroundTint(Color(hex: 0x102D27))
+            .activitySystemActionForegroundColor(Color(hex: 0xD9C28E))
+            .widgetURL(URL(string: "ayattla://tools/prayer-times"))
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: "moon.stars.fill").foregroundStyle(Color(hex: 0xD9C28E))
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    Text("صلاة \(context.state.prayer) \(context.state.time)").font(.ui(.subheadline, .semibold)).lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    if context.state.at > Date() {
+                        Text(timerInterval: Date()...context.state.at, countsDown: true).font(.ui(.title3)).monospacedDigit()
+                            .multilineTextAlignment(.center)
+                    }
+                }
+            } compactLeading: {
+                Text(context.state.prayer).font(.ui(.caption2, .semibold)).foregroundStyle(Color(hex: 0xD9C28E))
+            } compactTrailing: {
+                if context.state.at > Date() {
+                    Text(timerInterval: Date()...context.state.at, countsDown: true).monospacedDigit().frame(maxWidth: 52)
+                }
+            } minimal: {
+                Image(systemName: "moon.stars.fill").foregroundStyle(Color(hex: 0xD9C28E))
             }
         }
     }

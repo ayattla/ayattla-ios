@@ -223,6 +223,7 @@ final class RecitationPlayer {
 
     private func finishedAyah() {
         playedThisAyah += 1
+        Journey.shared.listened()
         if repeatEach == 0 || playedThisAyah < repeatEach {
             player.seek(to: .zero)
             player.playImmediately(atRate: speed)

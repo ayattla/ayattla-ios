@@ -32,6 +32,10 @@ struct AyatTutlaApp: App {
                     try? await Task.sleep(nanoseconds: 8_000_000_000)
                     OfflinePrep.shared.maybeAuto()
                 }
+                Task { @MainActor in
+                    JourneyReminder.reschedule()
+                    await PrayerLive.refresh()
+                }
                 Task { await Reminders.reschedule() }
             }
         }
@@ -228,6 +232,7 @@ enum DebugScreen {
         case "zakat": ZakatView()
         case "kids": KidsJuzAmmaView()
         case "offline": OfflineCenterView()
+        case "journey": JourneyView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "mosques": MosquesView()

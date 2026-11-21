@@ -7,11 +7,12 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
+    case prayer, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
     var id: String { rawValue }
     var title: String {
         switch self {
         case .prayer: "الصلاة القادمة"
+        case .journey: "رحلتي مع القرآن"
         case .tracker: "صلواتي اليوم"
         case .services: "الوصول السريع"
         case .dhikr: "الذكر السريع"

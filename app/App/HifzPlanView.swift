@@ -114,7 +114,7 @@ struct HifzPlanView: View {
                     portionText(u)
                 } else {
                     portionText(u)
-                    Button("حفظته") { update { $0.learned(ayahCount: count) } }
+                    Button("حفظته") { update { $0.learned(ayahCount: count) }; Journey.shared.hifzDone() }
                         .font(.ui(.headline)).frame(maxWidth: .infinity, minHeight: Brand.minTap)
                 }
             } else {
@@ -145,7 +145,7 @@ struct HifzPlanView: View {
     }
 
     private func gradeButton(_ title: String, _ r: HifzPlan.Review, _ g: Int) -> some View {
-        Button(title) { update { $0.rate(r, grade: g) } }
+        Button(title) { update { $0.rate(r, grade: g) }; Journey.shared.hifzDone() }
             .buttonStyle(.bordered).tint(g == 2 ? Brand.green : Brand.goldInk)
             .frame(maxWidth: .infinity)
     }
