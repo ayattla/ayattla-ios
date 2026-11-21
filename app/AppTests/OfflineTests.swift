@@ -40,7 +40,7 @@ final class OfflineTests: XCTestCase {
         XCTAssertTrue(SiteAPI.checkHadithSaved("كلام لا علاقة له بشيء هنا").isEmpty)
     }
 
-    func testRecitationEstimateForJuzAmma() {
+    @MainActor func testRecitationEstimateForJuzAmma() {
         let mb = OfflinePrep.estimateMB(Array(78...114))
         XCTAssertGreaterThan(mb, 20)
         XCTAssertLessThan(mb, 60)
