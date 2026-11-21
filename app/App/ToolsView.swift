@@ -89,8 +89,9 @@ enum ToolUsage {
         let c = counts
         let used = SiteTool.all.filter { (c[$0.id] ?? 0) > 0 }.sorted { (c[$0.id] ?? 0) > (c[$1.id] ?? 0) }
         // Before there is any use, the tools matching the first-run interests come first.
-        let defaults = (c.isEmpty ? Welcome.suggested : []) + ["listen", "prayer-times", "azkar", "qibla", "tasbih", "search", "hadith-card", "khatma"]
-            .compactMap { id in SiteTool.all.first { $0.id == id } }
+        let base: [String] = ["listen", "prayer-times", "azkar", "qibla", "tasbih", "search", "hadith-card", "khatma"]
+        let ids: [String] = (c.isEmpty ? Welcome.suggested : []) + base
+        let defaults: [SiteTool] = ids.compactMap { id in SiteTool.tool(id) }
         var out: [SiteTool] = []
         for t in used + defaults where !out.contains(where: { $0.id == t.id }) { out.append(t) }
         return Array(out.prefix(n))
