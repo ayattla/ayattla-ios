@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import AyatDesign
+import AyatCalc
 
 /// «تجربة البداية»: a short welcome, five optional questions and a done screen, the same flow as Android.
 /// Every question can be skipped, «ادخل مباشرة» leaves at once, answers are saved as they are given
