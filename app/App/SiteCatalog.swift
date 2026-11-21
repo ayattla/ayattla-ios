@@ -69,6 +69,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
         .init(id: "kaffarah", title: "حاسبة الكفارات", subtitle: "كفارة اليمين وفدية الصيام وكفارة رمضان مع الدليل", symbol: "function", group: .daily, isNew: true),
         .init(id: "crypto-zakat", title: "زكاة العملات الرقمية", subtitle: "قيمة عملاتك مقابل نصاب الذهب وربع العشر", symbol: "bitcoinsign.circle", group: .daily, isNew: true),
+        .init(id: "offline", title: "الاستخدام بدون إنترنت", subtitle: "ما يعمل بلا اتصال، وتجهيز التطبيق والتلاوات", symbol: "checkmark.icloud", group: .daily, isNew: true),
         .init(id: "nearby-mosques", title: "المساجد القريبة", subtitle: "أقرب المساجد مع المسافة والاتجاهات", symbol: "mappin.and.ellipse", group: .daily, isNew: true),
     ]
 
@@ -77,7 +78,10 @@ struct SiteTool: Identifiable, Hashable {
     /// Position in the full list: drives the tile colour, as the site's nth-child cycle does.
     var index: Int { Self.all.firstIndex(of: self) ?? 0 }
 
-    @ViewBuilder var destination: some View {
+    /// The tool's page, with its offline state shown on top while there is no connection.
+    var destination: some View { destinationBody.modifier(OfflineToolInset(id: id)) }
+
+    @ViewBuilder private var destinationBody: some View {
         switch id {
         case "clip": ClipMakerView()
         case "ayah-card": AyahCardView()
@@ -117,6 +121,7 @@ struct SiteTool: Identifiable, Hashable {
         case "qada-salah": QadaView()
         case "sawm-tracker": SawmView()
         case "nearby-mosques": MosquesView()
+        case "offline": OfflineCenterView()
         default: EmptyState(title, symbol: symbol)
         }
     }
@@ -138,11 +143,14 @@ struct SiteToolCard: View {
     let tool: SiteTool
     var compact = false
     var body: some View {
-        if compact {
-            LauncherTile(tool.title, symbol: tool.symbol, style: .accent(tool.accent))
-        } else {
-            ServiceCard(tool.title, subtitle: tool.subtitle, symbol: tool.symbol,
-                        badge: tool.isNew ? "جديد" : nil, style: .accent(tool.accent))
+        Group {
+            if compact {
+                LauncherTile(tool.title, symbol: tool.symbol, style: .accent(tool.accent))
+            } else {
+                ServiceCard(tool.title, subtitle: tool.subtitle, symbol: tool.symbol,
+                            badge: tool.isNew ? "جديد" : nil, style: .accent(tool.accent))
+            }
         }
+        .offlineDim(tool)
     }
 }

@@ -48,7 +48,8 @@ struct LayerPage: View {
                     .card()
                 }
                 if failed {
-                    Text("تعذر التحميل من Quran.com الآن. تحقق من الاتصال.").font(.ui(.footnote)).foregroundStyle(.secondary)
+                    Text(Net.isOnline ? "تعذر التحميل من Quran.com الآن. تحقق من الاتصال." : "بدون إنترنت: تظهر الطبقة للسور التي فتحتها أو جهزتها من قبل.")
+                        .font(.ui(.footnote)).foregroundStyle(.secondary)
                 }
                 Text(sourceLine).font(.ui(.caption2)).foregroundStyle(.secondary)
             }
@@ -151,7 +152,12 @@ Group {
                 TajweedLegend().listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
             }
             Section {
-                if failed {
+                if failed && !Net.isOnline {
+                    OfflineNotice(title: "هذه السورة غير محفوظة على جهازك",
+                                  message: "السور التي فتحتها من قبل تعمل بدون إنترنت. جهّز جزء عم والسور المشهورة مرة واحدة عند الاتصال.",
+                                  action: "طريقة التجهيز")
+                        .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                } else if failed {
                     Text("تعذر تحميل السورة من Quran.com، حاول لاحقا.").foregroundStyle(.secondary)
                 } else if chunks.isEmpty {
                     HStack { Spacer(); ProgressView(); Spacer() }
@@ -206,7 +212,14 @@ Group {
                     ForEach(QF.wordLanguages, id: \.0) { Text($0.1).tag($0.0) }
                 }
             }
-            if failed {
+            if failed && !Net.isOnline {
+                Section {
+                    OfflineNotice(title: "معاني هذه السورة غير محفوظة",
+                                  message: "السور التي فتحتها من قبل تعمل بدون إنترنت، ويحفظ التجهيز معاني جزء عم والسور المشهورة.",
+                                  action: "طريقة التجهيز")
+                        .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                }
+            } else if failed {
                 Text("تعذر التحميل من Quran.com الآن.").foregroundStyle(.secondary)
             } else if verses.isEmpty {
                 HStack { Spacer(); ProgressView(); Spacer() }

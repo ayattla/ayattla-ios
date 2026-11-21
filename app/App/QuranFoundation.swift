@@ -67,14 +67,21 @@ enum QF {
                       key: "rec-\(id)-\(chapter)")
     }
 
-    private static let dir: URL = {
-        let d = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("qf", isDirectory: true)
+    /// Kept in Application Support so the tajweed and meanings of surahs opened or prepared work offline.
+    static var dir: URL {
+        let d = OfflinePrep.root.appendingPathComponent("qf", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
-    }()
+    }
+
+    static func hasTajweed(_ chapter: Int) -> Bool { FileManager.default.fileExists(atPath: dir.appendingPathComponent("tj-\(chapter)").path) }
 
     private static func get<T: Decodable>(_ url: URL, key: String) async throws -> T {
         let file = dir.appendingPathComponent(key)
+        if !Net.isOnline {
+            if let data = try? Data(contentsOf: file), let v = try? JSONDecoder().decode(T.self, from: data) { return v }
+            throw URLError(.notConnectedToInternet)
+        }
         if let attrs = try? FileManager.default.attributesOfItem(atPath: file.path),
            let date = attrs[.modificationDate] as? Date, Date().timeIntervalSince(date) < maxAge,
            let data = try? Data(contentsOf: file), let v = try? JSONDecoder().decode(T.self, from: data) {
@@ -95,12 +102,13 @@ enum QF {
         }
     }
 
-    /// Removes cached Quran.com data older than 6 days (called at launch).
+    /// Removes saved Quran.com data not refreshed for 4 months (called at launch). Newer copies stay
+    /// for offline use and are refreshed when older than 6 days and the phone is online.
     static func purgeOld() {
         let fm = FileManager.default
         for f in (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
             if let d = try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-               Date().timeIntervalSince(d) > maxAge { try? fm.removeItem(at: f) }
+               Date().timeIntervalSince(d) > 120 * 86_400 { try? fm.removeItem(at: f) }
         }
     }
 }

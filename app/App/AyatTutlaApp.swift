@@ -12,6 +12,7 @@ struct AyatTutlaApp: App {
         // Media library previews and site reads go through URLSession.shared; the default cache
         // (a few MB) let thumbnails reload on every visit. Respects the servers' cache headers.
         URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024, diskCapacity: 200 * 1024 * 1024)
+        _ = Net.shared                 // starts watching the connection
     }
 
     var body: some Scene {
@@ -27,6 +28,10 @@ struct AyatTutlaApp: App {
         .onChange(of: phase) { _, p in
             if p == .active {
                 QF.purgeOld()
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 8_000_000_000)
+                    OfflinePrep.shared.maybeAuto()
+                }
                 Task { await Reminders.reschedule() }
             }
         }
@@ -75,6 +80,17 @@ struct RootView: View {
     @Environment(\.horizontalSizeClass) private var size
     @State private var tab: Tab = .home
     @State private var audio = AudioCenter.shared
+    @State private var net = Net.shared
+    @State private var stripClosed = false
+    @State private var showOffline = false
+
+    /// «أنت بدون إنترنت» above the tab bar while there is no connection; closed until the next drop.
+    @ViewBuilder private var offlineStrip: some View {
+        if !net.isOnline && !stripClosed {
+            OfflinePill(onOpen: { showOffline = true }, onClose: { withAnimation { stripClosed = true } })
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
 
     var body: some View {
         Group {
@@ -87,7 +103,7 @@ struct RootView: View {
                     .navigationTitle("آيات تتلى")
                 } detail: {
                     NavigationStack { screen(tab) }
-                        .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
+                        .safeAreaInset(edge: .bottom) { VStack(spacing: 6) { offlineStrip; MiniPlayerBar() } }
                 }
             } else {
                 // The system tab bar is hidden; the site's floating bar (FloatingTabBar) replaces it.
@@ -101,6 +117,7 @@ struct RootView: View {
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     VStack(spacing: 6) {
+                        offlineStrip
                         MiniPlayerBar()
                         FloatingTabBar(selection: $tab)
                     }
@@ -108,6 +125,9 @@ struct RootView: View {
             }
         }
         .sheet(isPresented: $audio.nowPlayingSheet) { NowPlayingSheet() }
+        .sheet(isPresented: $showOffline) { NavigationStack { OfflineCenterView() } }
+        .animation(.easeOut(duration: 0.2), value: net.isOnline)
+        .onChange(of: net.isOnline) { _, on in if on { stripClosed = false } }
     }
 
     @ViewBuilder private func screen(_ t: Tab) -> some View {
@@ -207,6 +227,7 @@ enum DebugScreen {
         case "qibla": QiblaView()
         case "zakat": ZakatView()
         case "kids": KidsJuzAmmaView()
+        case "offline": OfflineCenterView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "mosques": MosquesView()

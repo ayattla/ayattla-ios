@@ -74,6 +74,8 @@ struct HadithView: View {
     @State private var total = 0
     @State private var loading = false
     @State private var failed = false
+    @State private var fromSaved = false
+    @State private var net = Net.shared
     /// Only the latest request may write results (a quick category switch used to let an older
     /// response overwrite a newer one).
     @State private var request = 0
@@ -100,7 +102,7 @@ Group {
                     Button("عرض المزيد") { Task { await load(more: true) } }.frame(maxWidth: .infinity)
                 }
             } header: {
-                if total > 0 { Text("\(Num.int(total)) حديثا") }
+                if total > 0 { Text(fromSaved ? "\(Num.int(total)) حديثا من المحفوظ على جهازك" : "\(Num.int(total)) حديثا") }
             } footer: {
                 Text("من موسوعة الأحاديث النبوية (hadeethenc.com)، بالتخريج والحكم ورابط الشرح.")
             }
@@ -108,7 +110,12 @@ Group {
 }.listRowBackground(Brand.surface)
 }
         .overlay {
-            if failed && items.isEmpty {
+            if failed && items.isEmpty && !net.isOnline {
+                OfflineNotice(title: "لا توجد أحاديث محفوظة بعد",
+                              message: "جهّز التطبيق مرة واحدة عند الاتصال، فتتصفح الأحاديث وتبحث فيها بدون إنترنت.",
+                              action: "طريقة التجهيز")
+                    .padding(16)
+            } else if failed && items.isEmpty {
                 ContentUnavailableView {
                     Label("تعذر التحميل الآن", systemImage: "wifi.exclamationmark")
                 } description: { Text("تحقق من الاتصال ثم حاول مرة أخرى") } actions: {
@@ -124,6 +131,7 @@ Group {
         .onSubmit(of: .search) { Task { await load(more: false) } }
         .onChange(of: query) { _, q in if q.isEmpty { Task { await load(more: false) } } }
         .task { if items.isEmpty { await load(more: false) } }
+        .onChange(of: net.isOnline) { _, _ in Task { await load(more: false) } }
     }
 
     private func chip(_ title: String, _ value: String) -> some View {
@@ -149,7 +157,8 @@ Group {
         do {
             let r = try await SiteAPI.hadith(cat: cat, page: p, query: query.trimmingCharacters(in: .whitespaces))
             guard mine == request else { return }
-            if cats.isEmpty { cats = r.cats }
+            if cats.isEmpty || r.offline == true { cats = r.cats }
+            fromSaved = r.offline == true
             items = more ? items + r.items : r.items
             total = r.total; page = p
         } catch {
@@ -167,10 +176,15 @@ struct HadithCheckerView: View {
     @State private var result: SiteAPI.HadithCheck?
     @State private var loading = false
     @State private var failed = false
+    @State private var savedCheck = false
+    @State private var net = Net.shared
 
     var body: some View {
         Form {
             ToolHeadSection(id: "hadith-checker")
+            if !net.isOnline {
+                Section { Text("بدون إنترنت: يبحث في الأحاديث المحفوظة على جهازك").font(.ui(.footnote)).foregroundStyle(Brand.goldInk) }
+            }
 Group {
             Section {
                 TextField("الصق نص الحديث أو جزءا منه", text: $text, axis: .vertical)
@@ -189,6 +203,9 @@ Group {
                 Section { Text("تعذر التحقق الآن، تحقق من الاتصال").foregroundStyle(.secondary) }
             }
             if let r = result {
+                if savedCheck {
+                    Section { Text("بحثنا في الأحاديث المحفوظة على جهازك فقط. للبحث في كل المصادر اتصل بالإنترنت.").font(.ui(.footnote)).foregroundStyle(.secondary) }
+                }
                 Section(r.items.isEmpty ? "لم يعثر على حديث مطابق في الموسوعة" : "أقرب النتائج") {
                     ForEach(r.items) { h in
                         HadithRow(text: h.text, source: h.source, grade: h.grade, category: h.cat, url: h.url, match: h.match)
@@ -205,7 +222,16 @@ Group {
 
     private func check() async {
         loading = true; failed = false
-        do { result = try await SiteAPI.checkHadith(text) } catch { failed = true }
+        // Offline (or the site busy): the pasted text is matched against the hadith saved on the phone.
+        if !Net.isOnline {
+            savedCheck = true
+            result = SiteAPI.HadithCheck(query_words: nil, items: SiteAPI.checkHadithSaved(text))
+        } else {
+            do { result = try await SiteAPI.checkHadith(text); savedCheck = false } catch {
+                let saved = SiteAPI.checkHadithSaved(text)
+                if saved.isEmpty { failed = true } else { savedCheck = true; result = SiteAPI.HadithCheck(query_words: nil, items: saved) }
+            }
+        }
         loading = false
     }
 }
