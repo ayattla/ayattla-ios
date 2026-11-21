@@ -221,6 +221,8 @@ jobs:
           run offline-radio 8 -screen radio -offline 1
           run offline-prayer 6 -screen prayer -offline 1
           run journey 6 -screen journey
+          run tasmee 6 -screen tasmee
+          run voice-search 6 -screen voice-search
           xcrun simctl shutdown "$UDID" || true
           after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
           echo "crash reports: $before → $after"

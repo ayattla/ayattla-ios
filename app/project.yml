@@ -57,6 +57,8 @@ targets:
         NSPhotoLibraryAddUsageDescription: لحفظ المقاطع والبطاقات في الصور
         NSPhotoLibraryUsageDescription: لاختيار صورة خلفية من جهازك
         NSCameraUsageDescription: لالتقاط صورة خلفية
+        NSMicrophoneUsageDescription: للتسميع الذكي والبحث بالصوت، ولا يُسجَّل صوتك ولا يُحفظ
+        NSSpeechRecognitionUsageDescription: لمتابعة قراءتك في التسميع والبحث عن الآية بالصوت، دون حفظ ما تقوله
         # Declared so they load before the first frame (also registered at run time for the pack folder).
         UIAppFonts:
           - Content/AmiriQuran-Regular.ttf

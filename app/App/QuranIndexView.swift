@@ -54,6 +54,12 @@ Group {
         .brandScreen()
         .navigationTitle("القرآن")
         .searchable(text: $query, prompt: "ابحث في السور والآيات")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                NavigationLink { VoiceSearchView() } label: { Image(systemName: "mic") }
+                    .accessibilityLabel("البحث بالصوت")
+            }
+        }
     }
 
     @Environment(\.dynamicTypeSize) private var typeSize

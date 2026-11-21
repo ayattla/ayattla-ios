@@ -71,7 +71,9 @@ enum OfflineLevel: CaseIterable {
 enum OfflineTools {
     static let online: Set<String> = ["radio", "nearby-mosques"]
     static let saved: Set<String> = ["clip", "listen", "ruqya", "kids-juz-amma", "hadith", "hadith-card", "hadith-checker",
-                                     "tajweed", "word-by-word", "asma-ul-husna", "crypto-zakat"]
+                                     "tajweed", "word-by-word", "asma-ul-husna", "crypto-zakat",
+                                     // Speech recognition works offline where iOS supports Arabic on the device.
+                                     "tasmee", "voice-search"]
 
     static func level(_ id: String) -> OfflineLevel {
         if online.contains(id) { return .online }
