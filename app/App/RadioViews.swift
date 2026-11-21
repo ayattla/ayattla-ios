@@ -111,7 +111,12 @@ Group {
             }
 }
         .overlay {
-            if failed && radios.isEmpty {
+            if failed && radios.isEmpty && !Net.isOnline {
+                OfflineNotice(title: "الإذاعات بث مباشر يحتاج إنترنت",
+                              message: "تعمل تلقائيا عند عودة الاتصال. تقدر الآن تستمع للسور المحمّلة وما استمعت إليه من قبل.",
+                              action: "التلاوات المحفوظة")
+                    .padding(16)
+            } else if failed && radios.isEmpty {
                 ContentUnavailableView("تعذر تحميل الإذاعات", systemImage: "antenna.radiowaves.left.and.right.slash",
                                        description: Text("تحقق من الاتصال ثم حاول مرة أخرى"))
             } else if radios.isEmpty {

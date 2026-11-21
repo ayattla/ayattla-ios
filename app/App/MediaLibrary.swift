@@ -570,12 +570,13 @@ final class VideoFrames {
 enum MediaCache {
     static let limit: Int64 = 300 * 1024 * 1024
 
-    private static let dir: URL = {
+    private static var dir: URL {
         let d = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("media-library", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
-    }()
+    }
+    static var directory: URL { dir }
 
     static func file(_ key: String) -> URL {
         dir.appendingPathComponent(key.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "x")
@@ -584,6 +585,10 @@ enum MediaCache {
     /// Cached bytes younger than `maxAge`, else `fetch` (stored on success), else any older copy.
     static func data(_ url: URL, key: String, maxAge: TimeInterval, _ fetch: () async throws -> Data) async throws -> Data {
         let f = file(key)
+        if !Net.isOnline {
+            if let data = try? Data(contentsOf: f) { touch(f); return data }
+            throw URLError(.notConnectedToInternet)
+        }
         if let d = try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
            Date().timeIntervalSince(d) < maxAge, let data = try? Data(contentsOf: f) {
             touch(f)

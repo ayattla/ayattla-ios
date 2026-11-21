@@ -27,10 +27,58 @@ final class RecitationDownloads {
         root.appendingPathComponent(folder, isDirectory: true).appendingPathComponent(String(format: "%03d%03d.mp3", surah, ayah))
     }
 
-    /// Local file if this ayah has been downloaded.
+    /// Local file if this ayah has been downloaded, or kept after being heard.
     func local(folder: String, surah: Int, ayah: Int) -> URL? {
         let f = file(folder: folder, surah: surah, ayah: ayah)
-        return FileManager.default.fileExists(atPath: f.path) ? f : nil
+        if FileManager.default.fileExists(atPath: f.path) { return f }
+        let h = heardFile(folder: folder, surah: surah, ayah: ayah)
+        return FileManager.default.fileExists(atPath: h.path) ? h : nil
+    }
+
+    // ── Heard recitations: every ayah streamed is also kept (up to 600 MB, least recently heard out
+    //    first), so a surah listened to once plays again without internet. Files are unchanged.
+    static let keepHeardKey = "audio.keepHeard"
+    static let heardLimit: Int64 = 600 * 1024 * 1024
+
+    var heardRoot: URL {
+        let d = root.deletingLastPathComponent().appendingPathComponent("HeardRecitations", isDirectory: true)
+        try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        return d
+    }
+
+    func heardFile(folder: String, surah: Int, ayah: Int) -> URL {
+        heardRoot.appendingPathComponent(folder, isDirectory: true).appendingPathComponent(String(format: "%03d%03d.mp3", surah, ayah))
+    }
+
+    /// Fetches a streamed ayah in the background and keeps it (Wi-Fi or cellular; skipped offline or when turned off).
+    func keepHeard(folder: String, surah: Int, ayah: Int) {
+        guard UserDefaults.standard.object(forKey: Self.keepHeardKey) as? Bool ?? true, Net.isOnline,
+              local(folder: folder, surah: surah, ayah: ayah) == nil,
+              let url = RecitationPlayer.url(folder: folder, surah: surah, ayah: ayah) else { return }
+        let dest = heardFile(folder: folder, surah: surah, ayah: ayah)
+        Task.detached(priority: .utility) {
+            guard let (tmp, resp) = try? await URLSession.shared.download(from: url),
+                  (resp as? HTTPURLResponse)?.statusCode == 200 else { return }
+            try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? FileManager.default.removeItem(at: dest)
+            try? FileManager.default.moveItem(at: tmp, to: dest)
+            RecitationDownloads.trimHeard(dest.deletingLastPathComponent().deletingLastPathComponent())
+        }
+    }
+
+    nonisolated static func trimHeard(_ dir: URL) {
+        let keys: [URLResourceKey] = [.fileSizeKey, .contentModificationDateKey]
+        guard let e = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: keys) else { return }
+        var files: [(URL, Int64, Date)] = []
+        for case let f as URL in e {
+            guard let r = try? f.resourceValues(forKeys: Set(keys)), let size = r.fileSize else { continue }
+            files.append((f, Int64(size), r.contentModificationDate ?? .distantPast))
+        }
+        var total = files.reduce(0) { $0 + $1.1 }
+        guard total > heardLimit else { return }
+        for (f, size, _) in files.sorted(by: { $0.2 < $1.2 }) where total > heardLimit {
+            try? FileManager.default.removeItem(at: f); total -= size
+        }
     }
 
     func isDownloaded(folder: String, surah: Int, ayahCount: Int) -> Bool {
@@ -63,7 +111,12 @@ final class RecitationDownloads {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         for a in 1...max(ayahCount, 1) {
             if Task.isCancelled { return }
-            if local(folder: folder, surah: surah, ayah: a) != nil { active?.progress = Double(a) / Double(ayahCount); continue }
+            if FileManager.default.fileExists(atPath: file(folder: folder, surah: surah, ayah: a).path) { active?.progress = Double(a) / Double(ayahCount); continue }
+            // Heard before: moved from the kept recitations, no download needed.
+            let heard = heardFile(folder: folder, surah: surah, ayah: a)
+            if FileManager.default.fileExists(atPath: heard.path), (try? FileManager.default.moveItem(at: heard, to: file(folder: folder, surah: surah, ayah: a))) != nil {
+                active?.progress = Double(a) / Double(ayahCount); continue
+            }
             guard let url = RecitationPlayer.url(folder: folder, surah: surah, ayah: a) else { continue }
             do {
                 let (tmp, resp) = try await URLSession.shared.download(from: url)
@@ -71,7 +124,7 @@ final class RecitationDownloads {
                 try? FileManager.default.removeItem(at: file(folder: folder, surah: surah, ayah: a))
                 try FileManager.default.moveItem(at: tmp, to: file(folder: folder, surah: surah, ayah: a))
             } catch {
-                failed = "تعذر تنزيل الآية \(Num.int(a))، تحقق من الاتصال"
+                failed = Net.isOnline ? "تعذر تنزيل الآية \(Num.int(a))، تحقق من الاتصال" : "التنزيل يحتاج اتصالا بالإنترنت"
                 return
             }
             active?.progress = Double(a) / Double(ayahCount)

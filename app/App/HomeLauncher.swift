@@ -17,7 +17,7 @@ extension SiteTool {
             "asma-ul-husna": "الأسماء الحسنى", "hadith": "الأحاديث", "hadith-checker": "تحقق من حديث",
             "prayer-guide": "الوضوء والصلاة", "kids-juz-amma": "تحفيظ الأطفال", "group-khatma": "الختمة الجماعية",
             "qada-salah": "قضاء الصلوات", "sawm-tracker": "متتبع الصيام", "nearby-mosques": "المساجد القريبة", "kaffarah": "الكفارات", "crypto-zakat": "زكاة الرقمية",
-            "azkar": "الأذكار", "hisn-almuslim": "حصن المسلم",
+            "azkar": "الأذكار", "hisn-almuslim": "حصن المسلم", "offline": "بدون إنترنت",
         ][id] ?? title
     }
 }
@@ -147,6 +147,7 @@ struct HomeToolLauncher: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .top)
+        .offlineDim(t)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(t.isNew ? "\(t.title)، جديد" : t.title)
         .accessibilityHint(t.subtitle)

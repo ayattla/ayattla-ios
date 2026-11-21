@@ -94,6 +94,7 @@ Group {
                 } label: { row("الترجمة", "character.book.closed", 1) }
                 .pickerStyle(.navigationLink)
                 fontScalePicker
+                NavigationLink { OfflineCenterView() } label: { row("الاستخدام بدون إنترنت", "checkmark.icloud", 2) }
             }
 
             Section("المظهر") {

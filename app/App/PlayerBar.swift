@@ -27,7 +27,7 @@ struct PlayerBar: View {
                 }
                 Spacer(minLength: 4)
                 if player.failed {
-                    Label("تعذر التشغيل", systemImage: "wifi.exclamationmark")
+                    Label(Net.isOnline ? "تعذر التشغيل" : "غير محمّلة · حمّلها للاستماع بدون إنترنت", systemImage: Net.isOnline ? "wifi.exclamationmark" : "icloud.slash")
                         .font(.ui(.caption, .semibold)).foregroundStyle(Color(hex: 0xB42318))
                 } else if player.current != nil && player.repeatEach != 1 {
                     Text(player.repeatEach == 0 ? "تكرار \(Num.int(player.playCount))"

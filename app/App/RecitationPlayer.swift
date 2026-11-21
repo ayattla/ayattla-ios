@@ -125,6 +125,8 @@ final class RecitationPlayer {
             item = AVPlayerItem(url: local ?? url)
         }
         prefetched = nil
+        // Streamed: also kept on the phone, so it plays again without internet.
+        if local == nil { RecitationDownloads.shared.keepHeard(folder: folder, surah: p.surah, ayah: p.ayah) }
         statusObserver = item.observe(\.status) { [weak self] item, _ in
             if item.status == .failed {
                 DispatchQueue.main.async { self?.failed = true; self?.isPlaying = false; AudioCenter.shared.changed() }

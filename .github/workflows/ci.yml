@@ -211,6 +211,15 @@ jobs:
           run topics 6 -screen topics
           run prayer 8 -screen prayer
           run qibla 6 -screen qibla
+          # Without internet (the app's own offline state): what was opened above must keep working.
+          run offline-center 6 -screen offline
+          run offline-center-off 6 -screen offline -offline 1
+          run offline-home 10 -screen home -offline 1
+          run offline-tajweed 10 -screen tajweed -surah 2 -offline 1
+          run offline-hadith 10 -screen hadith -offline 1
+          run offline-checker 6 -screen checker -offline 1
+          run offline-radio 8 -screen radio -offline 1
+          run offline-prayer 6 -screen prayer -offline 1
           xcrun simctl shutdown "$UDID" || true
           after=$(ls $REP 2>/dev/null | grep -ci ayattutla || true)
           echo "crash reports: $before → $after"
