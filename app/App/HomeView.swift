@@ -31,6 +31,7 @@ struct HomeView: View {
     @ViewBuilder private func section(_ id: HomeSectionID) -> some View {
         switch id {
         case .prayer: PrayerHeroCard()
+        case .journey: HomeJourneyCard()
         case .tracker: HomePrayerTracker()
         case .services: HomeServices()
         case .dhikr: HomeQuickDhikr()

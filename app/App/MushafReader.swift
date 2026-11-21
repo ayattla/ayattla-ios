@@ -101,6 +101,12 @@ struct MushafReader: View {
         // Playback carries on after leaving the mushaf; the mini player takes over.
         .onDisappear { AudioCenter.shared.fullPlayerShown = false }
         .onChange(of: page) { _, p in lastPage = p }
+        // A page that stays on screen two seconds counts as read for «رحلتي مع القرآن».
+        .task(id: page) {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            Journey.shared.readPage(page); JourneyReminder.goalCheck()
+        }
         .onChange(of: player.current) { _, c in
             if let c, let p = (try? lib.store?.ayat(surah: c.surah, from: c.ayah, to: c.ayah))?.first?.page, p != page {
                 page = p
