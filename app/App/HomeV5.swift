@@ -7,11 +7,12 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
+    case prayer, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
     var id: String { rawValue }
     var title: String {
         switch self {
         case .prayer: "الصلاة القادمة"
+        case .forYou: "مختارات لك"
         case .journey: "رحلتي مع القرآن"
         case .tracker: "صلواتي اليوم"
         case .services: "الوصول السريع"
@@ -41,6 +42,10 @@ extension HomeSectionID {
 enum HomeLayoutStore {
     static let key = "home.layout.v6"
     static func decode(_ raw: String) -> [HomeLayoutItem] {
+        // Before any manual arrangement: the order follows the first-run interests (nothing hidden).
+        if raw.isEmpty {
+            return Welcome.homeOrder(HomeSectionID.allCases).map { .init(id: $0, shown: !HomeSectionID.hiddenByDefault.contains($0)) }
+        }
         var out: [HomeLayoutItem] = raw.split(separator: ",").compactMap { e in
             let p = e.split(separator: ":")
             guard let n = p.first, let s = HomeSectionID(rawValue: String(n)) else { return nil }

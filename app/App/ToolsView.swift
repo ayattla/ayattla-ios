@@ -82,13 +82,14 @@ enum ToolUsage {
         get { (UserDefaults.standard.dictionary(forKey: key) as? [String: Int]) ?? [:] }
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }
-    static func record(_ id: String) { var c = counts; c[id, default: 0] += 1; counts = c }
+    static func record(_ id: String) { var c = counts; c[id, default: 0] += 1; counts = c; Stats.event("tool_opened", id) }
 
     /// Most used first; the site's own leading tools fill the row until there is history.
     static func top(_ n: Int) -> [SiteTool] {
         let c = counts
         let used = SiteTool.all.filter { (c[$0.id] ?? 0) > 0 }.sorted { (c[$0.id] ?? 0) > (c[$1.id] ?? 0) }
-        let defaults = ["listen", "prayer-times", "azkar", "qibla", "tasbih", "search", "hadith-card", "khatma"]
+        // Before there is any use, the tools matching the first-run interests come first.
+        let defaults = (c.isEmpty ? Welcome.suggested : []) + ["listen", "prayer-times", "azkar", "qibla", "tasbih", "search", "hadith-card", "khatma"]
             .compactMap { id in SiteTool.all.first { $0.id == id } }
         var out: [SiteTool] = []
         for t in used + defaults where !out.contains(where: { $0.id == t.id }) { out.append(t) }

@@ -13,6 +13,7 @@ struct AyatTutlaApp: App {
         // (a few MB) let thumbnails reload on every visit. Respects the servers' cache headers.
         URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024, diskCapacity: 200 * 1024 * 1024)
         _ = Net.shared                 // starts watching the connection
+        Welcome.migrate()              // people updating from a version with the old onboarding are not asked again
     }
 
     var body: some Scene {
@@ -37,6 +38,11 @@ struct AyatTutlaApp: App {
                     await PrayerLive.refresh()
                 }
                 Task { await Reminders.reschedule() }
+                // Anonymous usage counts (Settings → «الإحصاءات المجهولة»), a little after start.
+                Task {
+                    try? await Task.sleep(nanoseconds: 12_000_000_000)
+                    await Stats.flush()
+                }
             }
         }
     }

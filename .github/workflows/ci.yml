@@ -181,6 +181,11 @@ jobs:
             if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BUNDLE"; then echo "✓ $n"; else echo "✗ $n (التطبيق لم يعد يعمل)"; fi
           }
           run intro-mid 1 -screen intro
+          # «تجربة البداية»: each step (the saved step is where a closed app resumes), dark mode and the largest text.
+          for st in hello uses likes listen reminders theme done; do run welcome-$st 5 -screen onboarding -welcome.step $st; done
+          run welcome-uses-dark 5 -screen onboarding -welcome.step uses -settings.appearance dark
+          run welcome-uses-xxxl 5 -screen onboarding -welcome.step uses -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
+          run welcome-home 8 -screen home -welcome.uses '(quran,status,azkar)'
           run intro-end 5 -screen intro
           run status-occasions 8 -screen status
           run status-jumuah 8 -screen status-jumuah
