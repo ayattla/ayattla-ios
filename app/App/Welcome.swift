@@ -13,7 +13,7 @@ enum Welcome {
 
     static let uses: [Choice] = [
         .init(id: "quran", label: "قراءة القرآن الكريم", symbol: "book", tools: ["mushaf", "khatma", "journey", "search", "tajweed"]),
-        .init(id: "listen", label: "الاستماع إلى القرآن والقراء", symbol: "headphones", tools: ["listen", "radio", "downloads", "ruqya"]),
+        .init(id: "listen", label: "الاستماع إلى القرآن والقراء", symbol: "headphones", tools: ["listen", "radio", "offline", "ruqya"]),
         .init(id: "status", label: "تصميم حالات واتساب", symbol: "sparkles", tools: ["status", "ayah-card", "hadith-card", "occasions"]),
         .init(id: "clips", label: "إنشاء مقاطع قرآنية ومشاركتها", symbol: "play.rectangle", tools: ["clip", "ayah-card", "status"]),
         .init(id: "azkar", label: "الأذكار والأدعية", symbol: "leaf", tools: ["azkar", "hisn-almuslim", "duas", "tasbih"]),
