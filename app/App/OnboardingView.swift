@@ -432,13 +432,21 @@ struct HomeForYou: View {
                                         Text(t.subtitle).font(.ui(.caption)).foregroundStyle(Brand.muted)
                                             .multilineTextAlignment(.center).lineLimit(3)
                                     }
-                                    .padding(14).frame(width: 158, alignment: .top).frame(minHeight: 170, alignment: .top)
+                                    .padding(14).frame(width: 158, alignment: .top)
+                                    .frame(minHeight: 170, maxHeight: .infinity, alignment: .top)
                                     .surface(.raised, radius: 18)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
+                        // One height for every card in the row.
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.vertical, 4)
                     }
+                    // Edge to edge, and the soft shadows are never cut into a band at the row's edges.
+                    .scrollClipDisabled()
+                    .contentMargins(.horizontal, Brand.Space.l, for: .scrollContent)
+                    .padding(.horizontal, -Brand.Space.l)
                 }
             }
         }
