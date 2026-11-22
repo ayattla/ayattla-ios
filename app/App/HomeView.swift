@@ -26,11 +26,13 @@ struct HomeView: View {
     @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
     @AppStorage(HomeLayoutStore.key) private var layoutRaw = ""
     @State private var customizing = false
+    @State private var statsNotice = Welcome.statsNoticeDue
     private let lib = ContentLibrary.shared
 
     @ViewBuilder private func section(_ id: HomeSectionID) -> some View {
         switch id {
         case .prayer: PrayerHeroCard()
+        case .forYou: HomeForYou()
         case .journey: HomeJourneyCard()
         case .tracker: HomePrayerTracker()
         case .services: HomeServices()
@@ -51,6 +53,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Brand.Space.xxl) {
+                if statsNotice { StatsNoticeCard { statsNotice = false } }
                 ForEach(HomeLayoutStore.decode(layoutRaw).filter(\.shown), id: \.id) { item in
                     section(item.id)
                 }

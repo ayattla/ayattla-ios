@@ -24,11 +24,9 @@ final class SettingsTests: XCTestCase {
     }
 
     func testOnboardingHasEveryStepAndNoTashkeel() {
-        for step in OnboardingView.Step.allCases {
-            let p = try! XCTUnwrap(OnboardingView.pages[step])
-            for text in [p.title, p.body] {
-                XCTAssertNil(text.rangeOfCharacter(from: tashkeel), text)
-            }
+        XCTAssertEqual(Welcome.Step.allCases.count, 7)
+        for c in Welcome.uses + Welcome.likes + Welcome.reminders {
+            XCTAssertNil(c.label.rangeOfCharacter(from: tashkeel), c.label)
         }
         for name in Catalog.reciters.map(\.name) + Catalog.translations.map(\.name) {
             XCTAssertNil(name.rangeOfCharacter(from: tashkeel), name)

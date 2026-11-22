@@ -63,3 +63,33 @@ final class ReciteTests: XCTestCase {
         XCTAssertTrue(vs.find("كتب عليكم الصيام").isEmpty)
     }
 }
+
+final class WelcomeTests: XCTestCase {
+    /// Every answer points only to tools that really exist in the app.
+    func testAnswersPointToRealTools() {
+        for id in (Welcome.uses + Welcome.likes).flatMap(\.tools) { XCTAssertNotNil(SiteTool.tool(id), "missing tool \(id)") }
+    }
+
+    func testSameIdsAsAndroid() {
+        XCTAssertEqual(Welcome.Step.allCases.map(\.rawValue), ["hello", "uses", "likes", "listen", "reminders", "theme", "done"])
+        XCTAssertEqual(Welcome.uses.map(\.id), ["quran", "listen", "status", "clips", "azkar", "hadith", "cards", "gifts", "tafsir", "hifz", "all"])
+    }
+
+    func testHomeOrderMovesInterestsUpWithoutHidingAnything() {
+        let base = HomeSectionID.allCases
+        UserDefaults.standard.set(["azkar"], forKey: "welcome.uses")
+        defer { UserDefaults.standard.removeObject(forKey: "welcome.uses") }
+        let order = Welcome.homeOrder(base)
+        XCTAssertEqual(Set(order), Set(base))
+        XCTAssertEqual(order.count, base.count)
+        XCTAssertEqual(order.first, .prayer)
+        XCTAssertLessThan(order.firstIndex(of: .dhikr)!, order.firstIndex(of: .create)!)
+    }
+
+    func testStatsKeysAreCleaned() {
+        XCTAssertEqual(Stats.clean("tool_opened"), "tool_opened")
+        XCTAssertEqual(Stats.clean("prayer-times"), "prayer-times")
+        XCTAssertEqual(Stats.clean("نص حر"), "")
+        XCTAssertLessThanOrEqual(Stats.clean(String(repeating: "x", count: 100)).count, 48)
+    }
+}

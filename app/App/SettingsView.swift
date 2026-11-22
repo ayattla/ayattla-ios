@@ -58,6 +58,7 @@ enum Appearance: String, CaseIterable, Identifiable {
 /// Settings, per design/Settings.dc.html.
 struct SettingsView: View {
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
+    @State private var statsOn = Stats.enabled
     @AppStorage(Prefs.translation) private var translation = ""
     @AppStorage(Prefs.fontScale) private var fontScale = FontScale.m.rawValue
     @AppStorage(Prefs.appearance) private var appearance = Appearance.light.rawValue
@@ -101,6 +102,23 @@ Group {
                 AppearancePicker(selection: $appearance)
                     .listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
                 Toggle("الافتتاحية عند فتح التطبيق", isOn: $introEnabled).tint(Brand.green)
+            }
+
+            Section {
+                NavigationLink { OnboardingView(editing: true) } label: { row("تعديل اهتماماتي", "slider.horizontal.3", 1) }
+                Toggle(isOn: $statsOn) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("الإحصاءات المجهولة")
+                        Text("أعداد استخدام الأدوات والخطوات فقط، بلا اسم ولا رقم ولا موقع ولا أي معرف لجهازك")
+                            .font(.ui(.caption)).foregroundStyle(Brand.muted)
+                    }
+                }
+                .tint(Brand.green)
+                .onChange(of: statsOn) { _, on in Stats.setEnabled(on) }
+            } header: {
+                Text("تجربتك")
+            } footer: {
+                Text("اهتماماتك ترتب مختارات الرئيسية واختصاراتك ولا تخفي أي أداة.")
             }
 
             Section {
