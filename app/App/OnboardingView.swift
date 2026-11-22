@@ -333,7 +333,7 @@ struct OnboardingView: View {
                 }
                 row(r.label, sub, r.symbol, on: on, check: true) { if on { reminders.remove(r.id) } else { reminders.insert(r.id) } }
             }
-            Text("أوقات الأذكار حسب مدينة \(cityName)، ولا نحتاج موقعك. إن اخترت تذكيرا نطلب إذن الإشعارات عند الضغط على «التالي».")
+            Text("أوقات الأذكار حسب مدينة \(cityName)، ولا نحتاج موقعك. إن اخترت تذكيرا نطلب إذن الإشعارات حين تتابع.")
                 .font(.ui(.caption)).foregroundStyle(Brand.muted).padding(.top, 4)
         }
     }
