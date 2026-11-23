@@ -95,7 +95,7 @@ enum Welcome {
         if u.contains("cards") || u.contains("status") { boost.append(.gallery) }
         if u.contains("tafsir") { boost.append(.ayah) }
         if u.contains("all") { boost.append(.tools) }
-        var out: [HomeSectionID] = base.prefix { $0 == .prayer }
+        var out: [HomeSectionID] = [.prayer, .daily]
         for s in boost + base where !out.contains(s) { out.append(s) }
         return out
     }

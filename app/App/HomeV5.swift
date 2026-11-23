@@ -7,11 +7,12 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
+    case prayer, daily, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
     var id: String { rawValue }
     var title: String {
         switch self {
         case .prayer: "الصلاة القادمة"
+        case .daily: "يومي"
         case .forYou: "مختارات لك"
         case .journey: "رحلتي مع القرآن"
         case .tracker: "صلواتي اليوم"
@@ -50,6 +51,11 @@ enum HomeLayoutStore {
             let p = e.split(separator: ":")
             guard let n = p.first, let s = HomeSectionID(rawValue: String(n)) else { return nil }
             return HomeLayoutItem(id: s, shown: p.count < 2 || p[1] != "0")
+        }
+        // «يومي» (2.6) joins right after the prayer card, even in an arrangement saved before it existed.
+        if !out.contains(where: { $0.id == .daily }) {
+            let i = out.firstIndex(where: { $0.id == .prayer }).map { $0 + 1 } ?? 0
+            out.insert(.init(id: .daily, shown: true), at: i)
         }
         for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: !HomeSectionID.hiddenByDefault.contains(s))) }
         return out
