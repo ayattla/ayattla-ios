@@ -107,8 +107,8 @@ struct HomeDaily: View {
                                 Self.seasonDestination(n.route).onAppear { Stats.event("season_opened", n.key) }
                             } label: {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(n.title).font(.ui(.subheadline, .bold)).foregroundStyle(Brand.goldInk)
-                                    Text(n.line).font(.ui(.caption)).foregroundStyle(Brand.goldInk.opacity(0.8))
+                                    Text(Num.digits(n.title)).font(.ui(.subheadline, .bold)).foregroundStyle(Brand.goldInk)
+                                    Text(Num.digits(n.line)).font(.ui(.caption)).foregroundStyle(Brand.goldInk.opacity(0.8))
                                 }
                                 .lineLimit(1)
                                 .padding(.horizontal, 12).padding(.vertical, 9)

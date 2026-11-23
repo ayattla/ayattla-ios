@@ -106,7 +106,7 @@ struct NextStepWidgetView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("يومي · بعد \(entry.slot.after.name)").font(.ui(.caption2, .semibold))
                     Text(entry.slot.title).font(.ui(.headline)).lineLimit(1)
-                    Text(entry.note?.title ?? "التالي \(entry.slot.next.title)").font(.ui(.caption2)).lineLimit(1)
+                    Text(Num.digits(entry.note?.title ?? "التالي \(entry.slot.next.title)")).font(.ui(.caption2)).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -128,7 +128,7 @@ struct NextStepWidgetView: View {
                     Text(entry.slot.line).font(.ui(.subheadline)).foregroundStyle(Brand.muted).lineLimit(1)
                     Spacer(minLength: 0)
                     if let n = entry.note {
-                        Text("\(n.title) · \(n.line)")
+                        Text(Num.digits("\(n.title) · \(n.line)"))
                             .font(.ui(.caption, .semibold)).foregroundStyle(Brand.goldInk).lineLimit(1)
                             .padding(.horizontal, 10).padding(.vertical, 6)
                             .background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
