@@ -226,6 +226,7 @@ jobs:
           run offline-radio 8 -screen radio -offline 1
           run offline-prayer 6 -screen prayer -offline 1
           run journey 6 -screen journey
+          run week 6 -screen week
           run tasmee 6 -screen tasmee
           run voice-search 6 -screen voice-search
           xcrun simctl shutdown "$UDID" || true

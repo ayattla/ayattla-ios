@@ -22,8 +22,11 @@ struct HomeDaily: View {
             let back = TodayPlan.daysBack(minute: minute, times: d.today)
             let dayNum = Journey.dayNumber() - back
             let dayDate = Calendar(identifier: .gregorian).date(byAdding: .day, value: -back, to: ctx.date) ?? ctx.date
-            let all = Dictionary(uniqueKeysWithValues: TodaySlot.allCases.map { ($0, progress($0, dayNum: dayNum, dayDate: dayDate)) })
-            card(slot: slot, all: all, dayNum: dayNum)
+            let all = Dictionary(uniqueKeysWithValues: TodaySlot.allCases.map { ($0, Self.progress($0, dayNum: dayNum, dayDate: dayDate)) })
+            let h = Hijri.fromGregorian(dayDate)
+            let notes = Seasons.notes(weekday: Seasons.isoWeekday(dayDate), hijriMonth: h.month, hijriDay: h.day, slot: slot,
+                                      maghrib: Num.time(d.today.maghrib), fajrTomorrow: Num.time((back == 1 ? d.today : d.tomorrow).fajr))
+            card(slot: slot, all: all, dayNum: dayNum, notes: notes)
                 .id(tick)
                 .task(id: slot) {
                     guard slot == .hadith, hadith == nil else { return }
@@ -37,7 +40,7 @@ struct HomeDaily: View {
 
     // MARK: - Card
 
-    @ViewBuilder private func card(slot: TodaySlot, all: [TodaySlot: Double], dayNum: Int) -> some View {
+    @ViewBuilder private func card(slot: TodaySlot, all: [TodaySlot: Double], dayNum: Int, notes: [SeasonNote]) -> some View {
         let frac = all[slot] ?? 0
         let done = frac >= 1
         VStack(alignment: .leading, spacing: 14) {
@@ -46,6 +49,7 @@ struct HomeDaily: View {
                     .font(.ui(.caption, .semibold)).foregroundStyle(Brand.primaryInk)
                     .padding(.horizontal, 10).padding(.vertical, 5).background(Brand.tint, in: Capsule())
                 Spacer()
+                NavigationLink { WeekView() } label: {
                 HStack(spacing: 5) {
                     ForEach(TodaySlot.allCases) { s in
                         let full = (all[s] ?? 0) >= 1
@@ -55,8 +59,11 @@ struct HomeDaily: View {
                             .frame(width: s == slot ? 10 : 8, height: s == slot ? 10 : 8)
                     }
                 }
+                .padding(.vertical, 8).contentShape(Rectangle())
                 .accessibilityElement()
-                .accessibilityLabel("أتممت \(all.values.filter { $0 >= 1 }.count) من خمس خطوات اليوم")
+                .accessibilityLabel("أتممت \(all.values.filter { $0 >= 1 }.count) من خمس خطوات اليوم، افتح أسبوعي")
+                }
+                .buttonStyle(.plain)
             }
 
             HStack(spacing: 12) {
@@ -90,6 +97,28 @@ struct HomeDaily: View {
 
             if slot != .hadith && !done && frac > 0 {
                 ProgressView(value: frac).tint(Brand.green)
+            }
+
+            if !notes.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(notes) { n in
+                            NavigationLink {
+                                Self.seasonDestination(n.route).onAppear { Stats.event("season_opened", n.key) }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(Num.digits(n.title)).font(.ui(.subheadline, .bold)).foregroundStyle(Brand.goldInk)
+                                    Text(Num.digits(n.line)).font(.ui(.caption)).foregroundStyle(Brand.goldInk.opacity(0.8))
+                                }
+                                .lineLimit(1)
+                                .padding(.horizontal, 12).padding(.vertical, 9)
+                                .background(Brand.goldSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .scrollClipDisabled()
             }
 
             HStack(spacing: 10) {
@@ -144,9 +173,20 @@ struct HomeDaily: View {
         }
     }
 
+    /// Shared route keys of the season notes (same as Android) to screens.
+    @ViewBuilder static func seasonDestination(_ route: String) -> some View {
+        switch route {
+        case "reader/18/1": Route.ayah(surah: 18, ayah: 1).destination
+        case "khatma": KhatmaView()
+        case "prayer": PrayerTimesView()
+        case "sawm": SiteTool.tool("sawm-tracker")?.destination
+        default: SiteTool.tool(route)?.destination
+        }
+    }
+
     // MARK: - Progress
 
-    private func progress(_ s: TodaySlot, dayNum: Int, dayDate: Date) -> Double {
+    static func progress(_ s: TodaySlot, dayNum: Int, dayDate: Date) -> Double {
         func azkar(_ word: String) -> Double {
             guard let c = ContentLibrary.shared.azkarCategories.first(where: { $0.title == "أذكار \(word)" })
                     ?? ContentLibrary.shared.azkarCategories.first(where: { $0.title.contains(word) }) else { return 0 }

@@ -82,6 +82,7 @@ targets:
         type: folder
         buildPhase: resources
     dependencies:
+      - package: AyatCalc
       - package: AyatContent
       - package: AyatDesign
       - sdk: WidgetKit.framework
