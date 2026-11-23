@@ -12,6 +12,13 @@ final class HomeV5Tests: XCTestCase {
         XCTAssertEqual(HomeLayoutStore.decode("").map(\.id), HomeSectionID.allCases)
     }
 
+    func testDailyJoinsRightAfterThePrayerCard() {
+        let l = HomeLayoutStore.decode("prayer:1,quiz:0,tools:1")
+        XCTAssertEqual(l.map(\.id).prefix(3), [.prayer, .daily, .quiz])
+        XCTAssertTrue(l[1].shown)
+        XCTAssertEqual(Set(l.map(\.id)).count, HomeSectionID.allCases.count)
+    }
+
     func testSeededRandomIsStable() {
         var a = SeededRandom(seed: 42), b = SeededRandom(seed: 42)
         XCTAssertEqual((0..<5).map { _ in a.next() }, (0..<5).map { _ in b.next() })
