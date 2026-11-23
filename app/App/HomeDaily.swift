@@ -135,7 +135,7 @@ struct HomeDaily: View {
             case .evening: Route.azkar("أذكار المساء").destination
             case .wird: JourneyView()
             case .hadith: HadithView()
-            case .night: Route.ayah(67, 1).destination
+            case .night: Route.ayah(surah: 67, ayah: 1).destination
             }
         }
         .onAppear {
