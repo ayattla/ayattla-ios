@@ -87,8 +87,8 @@ public extension View {
         }
         return background(fill, in: shape)
             .overlay(shape.strokeBorder(level == .gold ? Brand.accent.opacity(0.45) : Brand.line, lineWidth: 1))
-            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.06 : 0), radius: 1, y: 1)
-            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.14 : 0), radius: 20, y: 14)
+            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.05 : 0), radius: 1, y: 1)
+            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.08 : 0), radius: 14, y: 6)
     }
 
     /// Deep emerald panel (--gradient-brand) with the gold frame line (--frame): Quran content.
