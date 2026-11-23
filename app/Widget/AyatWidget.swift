@@ -115,6 +115,7 @@ struct AyatWidgetBundle: WidgetBundle {
 
     var body: some Widget {
         DailyAyahWidget()
+        NextStepWidget()
         ListeningLiveActivity()
         PrayerLiveActivity()
     }
