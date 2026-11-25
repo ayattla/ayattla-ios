@@ -65,6 +65,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "kids-juz-amma", title: "تحفيظ الأطفال جزء عم", subtitle: "استماع وتكرار ونجوم وشهادة باسم الطفل", symbol: "star.circle", group: .hadith, isNew: true),
         .init(id: "kids-quiz", title: "مسابقة جزء عم للأطفال", subtitle: "أكمل الآية ومن أي سورة، من نص المصحف", symbol: "questionmark.bubble", group: .hadith, isNew: true),
         .init(id: "group-khatma", title: "الختمة الجماعية", subtitle: "وزع الأجزاء على المجموعة برابط واحد", symbol: "person.3", group: .quran, isNew: true),
+        .init(id: "bio", title: "عبارات دينية قصيرة للبايو", subtitle: "آيات وأذكار موثقة جاهزة للنسخ", symbol: "quote.bubble", group: .content, isNew: true),
         .init(id: "qada-salah", title: "متتبع قضاء الصلوات", subtitle: "عداد لكل صلاة وخطة يومية", symbol: "checklist", group: .daily, isNew: true),
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
         .init(id: "kaffarah", title: "حاسبة الكفارات", subtitle: "كفارة اليمين وفدية الصيام وكفارة رمضان مع الدليل", symbol: "function", group: .daily, isNew: true),
@@ -121,6 +122,7 @@ struct SiteTool: Identifiable, Hashable {
         case "hifz-plan": HifzPlanView()
         case "notifications": NotificationCenterView()
         case "prayer-calc": PrayerCalcView()
+        case "bio": BioPhrasesView()
         case "qada-salah": QadaView()
         case "sawm-tracker": SawmView()
         case "nearby-mosques": MosquesView()
