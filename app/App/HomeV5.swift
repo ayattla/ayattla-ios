@@ -7,7 +7,7 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, daily, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head
+    case prayer, daily, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head, name
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -28,6 +28,7 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
         case .gallery: "معرض الخلفيات"
         case .presets: "القوالب الجاهزة"
         case .recent: "مشاريعي الأخيرة"
+        case .name: "اسم الله اليوم"
         }
     }
 }
@@ -37,14 +38,14 @@ struct HomeLayoutItem: Equatable { var id: HomeSectionID; var shown: Bool }
 extension HomeSectionID {
     /// Off until turned on: the greeting and search repeat the prayer card and the toolbar search,
     /// and the full grid repeats «الوصول السريع».
-    /// Home 6: nine sections in a clear order (same as Android). Sections that repeated others start
-    /// hidden; none is removed, and «تخصيص الرئيسية» shows them all.
-    static let defaultOrder: [HomeSectionID] = [.prayer, .daily, .forYou, .today, .ayah, .tracker, .create, .tools]
-    static var hiddenByDefault: Set<HomeSectionID> { Set(allCases).subtracting(defaultOrder) }
+    /// Home 6: every section in a studied order (same as Android) — the day, shortcuts, the Quran,
+    /// remembrance, learning, then making content and every tool. Only true repeats start hidden.
+    static let defaultOrder: [HomeSectionID] = [.prayer, .daily, .tracker, .forYou, .today, .journey, .wird, .ayah, .dhikr, .name, .quiz, .create, .gallery, .presets, .recent, .tools]
+    static var hiddenByDefault: Set<HomeSectionID> { [.head, .services] }
 }
 
 enum HomeLayoutStore {
-    static let key = "home.layout.v7"
+    static let key = "home.layout.v8"
     static func decode(_ raw: String) -> [HomeLayoutItem] {
         // Before any manual arrangement: the order follows the first-run interests (nothing hidden).
         if raw.isEmpty {
@@ -328,6 +329,7 @@ struct CenteredHead: View {
         if t.hasPrefix("الذكر") { return "hand.tap" }
         if t.hasPrefix("صناعة") { return "sparkles" }
         if t.hasPrefix("كل الأدوات") || t.hasPrefix("أقسام") { return "square.grid.3x3" }
+        if t.hasPrefix("اسم الله") { return "sparkles" }
         return nil
     }
     static func subtitle(_ t: String) -> String? {
@@ -621,6 +623,38 @@ struct HomeQuickDhikr: View {
                 }
             }
             .padding(14).surface()
+        }
+    }
+}
+
+/// «اسم الله اليوم»: one of the names listed in «الأسماء الحسنى», a new one each day, with a card to
+/// share it. Only the name is shown (the list carries no explanations, and none is written here).
+struct HomeNameOfTheDay: View {
+    var body: some View {
+        let names = ContentLibrary.shared.asma
+        if !names.isEmpty {
+            let day = Int(Date().timeIntervalSince1970 / 86400)
+            let name = names[day % names.count].name
+            VStack(alignment: .leading, spacing: Brand.Space.m) {
+                HomeHead("اسم الله اليوم", symbol: "sparkles") { HeadPill(label: "كل الأسماء") { AsmaView() } }
+                VStack(spacing: 10) {
+                    Text("من أسماء الله الحسنى").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.goldInk)
+                    Text(name).font(.custom(ContentLibrary.mushafFont, size: 34, relativeTo: .largeTitle)).foregroundStyle(Brand.ink)
+                    NavigationLink {
+                        TextCardView(title: "بطاقة اسم", text: name, reference: "من أسماء الله الحسنى", initialRatio: .square)
+                    } label: {
+                        Label("صمم بطاقة بالاسم", systemImage: "sparkles").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
+                            .padding(.horizontal, 18).frame(minHeight: 44)
+                            .background(Brand.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(18).frame(maxWidth: .infinity)
+                .background(LinearGradient(colors: [Brand.goldSoft, Brand.surface], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Brand.accent.opacity(0.35), lineWidth: 1))
+            }
         }
     }
 }
