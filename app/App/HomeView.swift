@@ -48,6 +48,7 @@ struct HomeView: View {
         case .gallery: HomeMediaGallery()
         case .presets: PresetStrip()
         case .recent: RecentProjectsStrip()
+        case .name: if lib.isReady { HomeNameOfTheDay() }
         }
     }
 
