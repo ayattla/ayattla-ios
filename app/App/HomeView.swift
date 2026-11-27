@@ -49,6 +49,7 @@ struct HomeView: View {
         case .presets: PresetStrip()
         case .recent: RecentProjectsStrip()
         case .name: if lib.isReady { HomeNameOfTheDay() }
+        case .dua: if lib.isReady { HomeQuranDua() }
         }
     }
 

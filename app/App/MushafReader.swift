@@ -68,6 +68,9 @@ struct MushafReader: View {
         }
         .background(MushafStyle.backdrop.ignoresSafeArea())
         .id(mushafTheme)   // the page colours are read from the chosen theme
+        // Reading the mushaf keeps the screen awake, like the leading mushaf apps.
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)

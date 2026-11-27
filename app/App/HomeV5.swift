@@ -7,7 +7,7 @@ import AyatContent
 
 /// Home sections the user can order and hide. New sections from updates join at the end, shown.
 enum HomeSectionID: String, CaseIterable, Identifiable {
-    case prayer, daily, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head, name
+    case prayer, daily, forYou, journey, create, tools, today, wird, tracker, dhikr, ayah, quiz, gallery, presets, recent, services, head, name, dua
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -29,6 +29,7 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
         case .presets: "القوالب الجاهزة"
         case .recent: "مشاريعي الأخيرة"
         case .name: "اسم الله اليوم"
+        case .dua: "دعاء من القرآن"
         }
     }
 }
@@ -40,7 +41,7 @@ extension HomeSectionID {
     /// and the full grid repeats «الوصول السريع».
     /// Home 6: every section in a studied order (same as Android) — the day, shortcuts, the Quran,
     /// remembrance, learning, then making content and every tool. Only true repeats start hidden.
-    static let defaultOrder: [HomeSectionID] = [.prayer, .daily, .tracker, .forYou, .today, .journey, .wird, .ayah, .dhikr, .name, .quiz, .create, .gallery, .presets, .recent, .tools]
+    static let defaultOrder: [HomeSectionID] = [.prayer, .daily, .tracker, .forYou, .today, .journey, .wird, .ayah, .dhikr, .name, .dua, .quiz, .create, .gallery, .presets, .recent, .tools]
     static var hiddenByDefault: Set<HomeSectionID> { [.head, .services] }
 }
 
@@ -61,6 +62,10 @@ enum HomeLayoutStore {
         if !out.contains(where: { $0.id == .daily }) {
             let i = out.firstIndex(where: { $0.id == .prayer }).map { $0 + 1 } ?? 0
             out.insert(.init(id: .daily, shown: true), at: i)
+        }
+        // «دعاء من القرآن» joins right after «اسم الله اليوم» for those who saved a layout before it.
+        if !out.contains(where: { $0.id == .dua }), let i = out.firstIndex(where: { $0.id == .name }) {
+            out.insert(.init(id: .dua, shown: true), at: i + 1)
         }
         for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: false)) }
         return out
@@ -330,6 +335,7 @@ struct CenteredHead: View {
         if t.hasPrefix("صناعة") { return "sparkles" }
         if t.hasPrefix("كل الأدوات") || t.hasPrefix("أقسام") { return "square.grid.3x3" }
         if t.hasPrefix("اسم الله") { return "sparkles" }
+        if t.hasPrefix("دعاء") { return "book" }
         return nil
     }
     static func subtitle(_ t: String) -> String? {
@@ -656,5 +662,50 @@ struct HomeNameOfTheDay: View {
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Brand.accent.opacity(0.35), lineWidth: 1))
             }
         }
+    }
+}
+
+/// «دعاء من القرآن»: one of the Quran duas listed in «الأدعية», a new one each day, shown with the
+/// mushaf text and its surah and ayah, to listen to or turn into a card. Same as Android.
+struct HomeQuranDua: View {
+    @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
+    @State private var player = RecitationPlayer()
+    private let lib = ContentLibrary.shared
+
+    var body: some View {
+        let refs = lib.duas?.quran ?? []
+        if !refs.isEmpty {
+            let r = refs[Int(Date().timeIntervalSince1970 / 86400) % refs.count]
+            let text = ((try? lib.store?.ayat(surah: r.s, from: r.a, to: r.b)) ?? []).map(\.textUthmani).joined(separator: " ")
+            let name = lib.surah(r.s)?.namePlain ?? ""
+            VStack(alignment: .leading, spacing: Brand.Space.m) {
+                HomeHead("دعاء من القرآن", subtitle: "دعاء جديد كل يوم بنص المصحف", symbol: "book") {
+                    HeadPill(label: "كل الأدعية") { DuasView() }
+                }
+                VStack(spacing: 12) {
+                    Text(text).font(.custom(ContentLibrary.mushafFont, size: 21, relativeTo: .title3)).lineSpacing(10)
+                        .multilineTextAlignment(.center).foregroundStyle(Brand.ink)
+                    Text("سورة \(name) · " + (r.a == r.b ? "الآية \(Num.int(r.a))" : "الآيات \(Num.int(r.a))-\(Num.int(r.b))"))
+                        .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.goldInk)
+                    HStack(spacing: 10) {
+                        Button("استمع") { play(r) }.buttonStyle(.brandSecondary).frame(maxWidth: .infinity)
+                        NavigationLink { AyahCardView(surah: r.s, from: r.a, to: r.b) } label: {
+                            Text("صمم بطاقة").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.brandPrimary).frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(18).frame(maxWidth: .infinity)
+                .surface(.raised, radius: 20)
+            }
+        }
+    }
+
+    private func play(_ r: DuasData.QuranRef) {
+        player.folder = lib.reciterFolders[reciter]
+        player.ayahCount = { lib.surah($0)?.ayahCount ?? 0 }
+        player.repeatEach = 1
+        player.stopAt = RecitationPlayer.Position(surah: r.s, ayah: r.b)
+        player.play(from: RecitationPlayer.Position(surah: r.s, ayah: r.a))
     }
 }
