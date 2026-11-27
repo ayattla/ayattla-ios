@@ -77,18 +77,47 @@ public struct IslamicPattern: View {
 /// panel (--s-soft); `gold` = selected/featured (--c-accent-soft).
 public enum SurfaceLevel { case raised, flat, tinted, gold }
 
-public extension View {
-    func surface(_ level: SurfaceLevel = .raised, radius: CGFloat = Brand.Radius.card) -> some View {
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        let fill: Color = switch level {
+private struct InHomeWidgetKey: EnvironmentKey { static let defaultValue = false }
+public extension EnvironmentValues {
+    /// True inside a home widget card: cards drawn there become flat, soft tiles (no second shadow).
+    var inHomeWidget: Bool {
+        get { self[InHomeWidgetKey.self] }
+        set { self[InHomeWidgetKey.self] = newValue }
+    }
+}
+
+private struct SurfaceModifier: ViewModifier {
+    let level: SurfaceLevel
+    let radius: CGFloat
+    @Environment(\.inHomeWidget) private var inWidget
+    func body(content: Content) -> some View {
+        let lv: SurfaceLevel = inWidget && (level == .raised || level == .flat) ? .tinted : level
+        let r = inWidget ? min(radius, 16) : radius
+        let shape = RoundedRectangle(cornerRadius: r, style: .continuous)
+        let fill: Color = switch lv {
         case .raised, .flat: Brand.surface
         case .tinted: Brand.surface2
         case .gold: Brand.goldSoft
         }
-        return background(fill, in: shape)
-            .overlay(shape.strokeBorder(level == .gold ? Brand.accent.opacity(0.45) : Brand.line, lineWidth: 1))
-            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.05 : 0), radius: 1, y: 1)
-            .shadow(color: Color(hex: 0x0F1F17).opacity(level == .raised ? 0.08 : 0), radius: 14, y: 6)
+        return content.background(fill, in: shape)
+            .overlay(shape.strokeBorder(lv == .gold ? Brand.accent.opacity(0.45) : Brand.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x0F1F17).opacity(lv == .raised ? 0.05 : 0), radius: 1, y: 1)
+            .shadow(color: Color(hex: 0x0F1F17).opacity(lv == .raised ? 0.08 : 0), radius: 14, y: 6)
+    }
+}
+
+public extension View {
+    func surface(_ level: SurfaceLevel = .raised, radius: CGFloat = Brand.Radius.card) -> some View {
+        modifier(SurfaceModifier(level: level, radius: radius))
+    }
+
+    /// A home widget: one white card holding its header and content; cards inside become soft tiles.
+    func homeWidget() -> some View {
+        environment(\.inHomeWidget, true)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .environment(\.inHomeWidget, false)
+            .surface(.raised, radius: Brand.Radius.card)
     }
 
     /// Deep emerald panel (--gradient-brand) with the gold frame line (--frame): Quran content.
