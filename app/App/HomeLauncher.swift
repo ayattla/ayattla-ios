@@ -52,8 +52,7 @@ struct HomeToolLauncher: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.l) {
-            SiteSectionHead(eyebrow: "الأدوات", "أقسام الأدوات",
-                            subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية في \(Num.int(SiteTool.Group.allCases.count)) أقسام")
+            HomeHead("كل الأدوات", subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية في \(Num.int(SiteTool.Group.allCases.count)) أقسام", symbol: "square.grid.3x3")
             ForEach(SiteTool.Group.allCases) { g in
                 let tools = SiteTool.all.filter { $0.group == g }
                 if !tools.isEmpty { section(g, tools) }

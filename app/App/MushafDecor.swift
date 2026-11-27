@@ -2,15 +2,48 @@ import SwiftUI
 import AyatDesign
 import AyatContent
 
-/// Mushaf gold and ink for light and dark reading.
-enum MushafStyle {
-    static let gold = Color(light: 0xB08A3E, dark: 0xC9A75F)
-    static let paper = Color(light: 0xFCF8EE, dark: 0x14211C)
-    static let ink = Color(light: 0x1B1A16, dark: 0xECE8DC)
-    static let band = Color(light: 0xE8F1EA, dark: 0x1C3A2E)
+/// The reading backgrounds of the Quran pages: calm, flat tones (no patterns), like the reading themes
+/// of the leading mushaf apps. Night follows dark mode. Same four as Android.
+enum MushafTheme: String, CaseIterable, Identifiable {
+    case paper, white, green
+    var id: String { rawValue }
+    static let key = "mushaf.theme"
+    var label: String { switch self { case .paper: "ورقي"; case .white: "أبيض"; case .green: "أخضر هادئ" } }
+    /// page, backdrop, gold, ink, band
+    var colors: (UInt32, UInt32, UInt32, UInt32, UInt32) {
+        switch self {
+        case .paper: (0xFCF8EE, 0xF4EFE2, 0xB08A3E, 0x1B1A16, 0xF2EBDA)
+        case .white: (0xFFFFFF, 0xF1F3F2, 0x9C8350, 0x1A1F1C, 0xF5F2EA)
+        case .green: (0xF4F8F2, 0xE5EEE3, 0x427E45, 0x102D27, 0xE3EEE1)
+        }
+    }
+    static var current: MushafTheme { MushafTheme(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .paper }
 }
 
-/// Double gold rule with eight-point stars at the corners, drawn behind a mushaf page.
+enum MushafStyle {
+    static var gold: Color { Color(light: MushafTheme.current.colors.2, dark: 0xC9A75F) }
+    static var paper: Color { Color(light: MushafTheme.current.colors.0, dark: 0x14211C) }
+    static var backdrop: Color { Color(light: MushafTheme.current.colors.1, dark: 0x0D1713) }
+    static var ink: Color { Color(light: MushafTheme.current.colors.3, dark: 0xECE8DC) }
+    static var band: Color { Color(light: MushafTheme.current.colors.4, dark: 0x1C3A2E) }
+}
+
+/// Picks the page background; shown in the reader's toolbar.
+struct MushafThemeMenu: View {
+    @AppStorage(MushafTheme.key) private var theme = MushafTheme.paper.rawValue
+    var body: some View {
+        Menu {
+            Picker("خلفية المصحف", selection: $theme) {
+                ForEach(MushafTheme.allCases) { Text($0.label).tag($0.rawValue) }
+            }
+        } label: {
+            Image(systemName: "paintpalette")
+        }
+        .accessibilityLabel("خلفية المصحف")
+    }
+}
+
+/// Double gold rule with soft corner brackets, drawn behind a mushaf page.
 struct MushafBorder: View {
     var body: some View {
         Canvas { ctx, size in
@@ -19,12 +52,14 @@ struct MushafBorder: View {
                        with: .color(MushafStyle.gold), lineWidth: 1.6)
             ctx.stroke(Path(roundedRect: CGRect(x: i, y: i, width: size.width - 2 * i, height: size.height - 2 * i), cornerRadius: 8),
                        with: .color(MushafStyle.gold.opacity(0.55)), lineWidth: 0.8)
-            for c in [CGPoint(x: o + 2, y: o + 2), CGPoint(x: size.width - o - 2, y: o + 2),
-                      CGPoint(x: o + 2, y: size.height - o - 2), CGPoint(x: size.width - o - 2, y: size.height - o - 2)] {
-                let s = StarShape().path(in: CGRect(x: c.x - 7, y: c.y - 7, width: 14, height: 14))
-                ctx.fill(s, with: .color(MushafStyle.paper))
-                ctx.stroke(s, with: .color(MushafStyle.gold), lineWidth: 1.2)
-                ctx.fill(StarShape().path(in: CGRect(x: c.x - 3, y: c.y - 3, width: 6, height: 6)), with: .color(MushafStyle.gold))
+            // Soft gold brackets at the corners (the modern replacement for corner stars).
+            let c: CGFloat = 2, len: CGFloat = 22, w = size.width, h = size.height
+            for (x, y, dx, dy) in [(c, c, 1.0, 1.0), (w - c, c, -1.0, 1.0), (c, h - c, 1.0, -1.0), (w - c, h - c, -1.0, -1.0)] {
+                var p = Path()
+                p.move(to: CGPoint(x: x, y: y + dy * len)); p.addLine(to: CGPoint(x: x, y: y + dy * len * 0.25))
+                p.addQuadCurve(to: CGPoint(x: x + dx * len * 0.25, y: y), control: CGPoint(x: x, y: y))
+                p.addLine(to: CGPoint(x: x + dx * len, y: y))
+                ctx.stroke(p, with: .color(MushafStyle.gold), style: StrokeStyle(lineWidth: 2, lineCap: .round))
             }
         }
         .allowsHitTesting(false)
@@ -32,7 +67,7 @@ struct MushafBorder: View {
     }
 }
 
-/// The surah title as a framed cartouche with star ends, with its place of revelation and ayah count.
+/// The surah title in a soft framed capsule, with its place of revelation and ayah count.
 struct SurahCartouche: View {
     let surah: Surah
     var scale: Double = 1
@@ -41,22 +76,15 @@ struct SurahCartouche: View {
         VStack(spacing: 6) {
             ZStack {
                 Canvas { ctx, size in
-                    let h = size.height, w = size.width, cut = h * 0.5
-                    var band = Path()
-                    band.move(to: CGPoint(x: cut, y: 0)); band.addLine(to: CGPoint(x: w - cut, y: 0)); band.addLine(to: CGPoint(x: w, y: h / 2))
-                    band.addLine(to: CGPoint(x: w - cut, y: h)); band.addLine(to: CGPoint(x: cut, y: h)); band.addLine(to: CGPoint(x: 0, y: h / 2)); band.closeSubpath()
-                    ctx.fill(band, with: .color(MushafStyle.band))
-                    ctx.stroke(band, with: .color(MushafStyle.gold), lineWidth: 1.6)
-                    let inset: CGFloat = 5
-                    var inner = Path()
-                    inner.move(to: CGPoint(x: cut + inset, y: inset)); inner.addLine(to: CGPoint(x: w - cut - inset, y: inset))
-                    inner.addLine(to: CGPoint(x: w - inset * 1.6, y: h / 2)); inner.addLine(to: CGPoint(x: w - cut - inset, y: h - inset))
-                    inner.addLine(to: CGPoint(x: cut + inset, y: h - inset)); inner.addLine(to: CGPoint(x: inset * 1.6, y: h / 2)); inner.closeSubpath()
-                    ctx.stroke(inner, with: .color(MushafStyle.gold.opacity(0.5)), lineWidth: 0.8)
-                    for x in [cut * 0.95, w - cut * 0.95] {
-                        let r1 = h * 0.17, r2 = h * 0.27
-                        ctx.fill(StarShape().path(in: CGRect(x: x - r1, y: h / 2 - r1, width: r1 * 2, height: r1 * 2)), with: .color(MushafStyle.gold))
-                        ctx.stroke(StarShape().path(in: CGRect(x: x - r2, y: h / 2 - r2, width: r2 * 2, height: r2 * 2)), with: .color(MushafStyle.gold), lineWidth: 1)
+                    // A soft capsule with a fine double gold rule and a dot at each end.
+                    let h = size.height, w = size.width, r = h / 2, i: CGFloat = 5
+                    let outer = Path(roundedRect: CGRect(x: 0, y: 0, width: w, height: h), cornerRadius: r)
+                    ctx.fill(outer, with: .color(MushafStyle.band))
+                    ctx.stroke(outer, with: .color(MushafStyle.gold), lineWidth: 1.4)
+                    ctx.stroke(Path(roundedRect: CGRect(x: i, y: i, width: w - 2 * i, height: h - 2 * i), cornerRadius: r - i),
+                               with: .color(MushafStyle.gold.opacity(0.45)), lineWidth: 0.8)
+                    for x in [r * 0.9, w - r * 0.9] {
+                        ctx.fill(Path(ellipseIn: CGRect(x: x - 3, y: h / 2 - 3, width: 6, height: 6)), with: .color(MushafStyle.gold))
                     }
                 }
                 Text(surah.namePlain)
@@ -84,16 +112,14 @@ extension Surah {
     }
 }
 
-/// Page number in a small eight-point medallion.
+/// Page number in a small gold-ruled pill.
 struct PageMedallion: View {
     let number: Int
     var body: some View {
-        ZStack {
-            StarShape().fill(MushafStyle.paper)
-            StarShape().stroke(MushafStyle.gold, lineWidth: 1.2)
-            Text(Num.int(number)).font(.ui(.caption2, .bold)).foregroundStyle(MushafStyle.gold)
-        }
-        .frame(width: 36, height: 36)
-        .accessibilityLabel("صفحة \(number)")
+        Text(Num.int(number)).font(.ui(.caption2, .bold)).foregroundStyle(MushafStyle.gold)
+            .padding(.horizontal, 14).frame(minHeight: 26)
+            .background(MushafStyle.paper, in: Capsule())
+            .overlay(Capsule().strokeBorder(MushafStyle.gold, lineWidth: 1))
+            .accessibilityLabel("صفحة \(number)")
     }
 }

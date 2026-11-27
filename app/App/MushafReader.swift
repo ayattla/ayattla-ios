@@ -14,6 +14,7 @@ struct MushafReader: View {
     @AppStorage(Prefs.fontScale) private var fontScale = FontScale.m.rawValue
     @AppStorage(Prefs.reciter) private var reciter = Prefs.defaultReciter
     @AppStorage(Favorites.key) private var favorites = ""
+    @AppStorage(MushafTheme.key) private var mushafTheme = MushafTheme.paper.rawValue
     @State private var page = 1
     @State private var layer = QuranLayer.mushaf
     /// Blurs the page while listening, to recite from memory (site: «إخفاء الآيات»).
@@ -65,7 +66,8 @@ struct MushafReader: View {
                 }
             }
         }
-        .background(Color(light: 0xFBF9F2, dark: 0x121512).ignoresSafeArea())
+        .background(MushafStyle.backdrop.ignoresSafeArea())
+        .id(mushafTheme)   // the page colours are read from the chosen theme
         .brandScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
@@ -77,6 +79,7 @@ struct MushafReader: View {
                 }
                 .accessibilityElement(children: .combine)
             }
+            ToolbarItem(placement: .topBarTrailing) { MushafThemeMenu() }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker("حجم الخط", selection: $fontScale) {
@@ -151,7 +154,7 @@ struct MushafReader: View {
                 LayerPage(number: n, layer: layer, scale: FontScale(rawValue: fontScale)?.factor ?? 1)
             }
         }
-        .background(Color(light: 0xFBF9F2, dark: 0x121512))
+        .background(MushafStyle.backdrop)
     }
 
     private var folder: String? { lib.reciterFolders[reciter] }
