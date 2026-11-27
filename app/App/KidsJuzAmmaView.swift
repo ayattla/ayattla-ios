@@ -66,7 +66,7 @@ struct KidsJuzAmmaView: View {
                                 KidsFamily.save(progress, active)
                                 active = i; KidsFamily.setActive(i); progress = KidsFamily.load(i)
                             } label: {
-                                Text("\(p.name.isEmpty ? "طفل \(Num.int(i + 1))" : p.name) · \(Num.int(p.done.count))")
+                                Text("\(p.name.isEmpty ? "طفل \(Num.int(i + 1))" : p.name) · \(Num.int(p.done.count)) سورة")
                                     .font(.ui(.subheadline, .semibold))
                                     .foregroundStyle(i == active ? .white : Brand.ink)
                                     .padding(.horizontal, 14).frame(minHeight: 40)
