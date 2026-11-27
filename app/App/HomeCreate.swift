@@ -112,7 +112,7 @@ struct HomeCreateBento: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.m) {
-            SiteSectionHead(eyebrow: "اصنع", "ابدأ صناعة المحتوى", subtitle: "مقاطع وبطاقات وحالات بخلفيات حقيقية، جاهزة للنشر")
+            HomeHead("صناعة المحتوى", subtitle: "مقاطع وبطاقات وحالات جاهزة للنشر", symbol: "sparkles")
             let v = media.videos.first
             NavigationLink { ClipMakerView(media: v?.ref) } label: {
                 MediaShortcut(title: "مقطع تلاوة بالفيديو", subtitle: "تظليل الكلمة مع التلاوة وأكثر من ٣٠ قارئا، بخلفية فيديو حقيقية",

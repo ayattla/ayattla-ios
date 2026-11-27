@@ -387,69 +387,46 @@ struct OnboardingView: View {
 /// A greeting by the time of day and, for each interest chosen at first run, a row of the real tools it
 /// covers. With no interests, one card invites the user to pick some. Every tool stays reachable from
 /// «أقسام الأدوات» whatever is chosen here.
+/// «اختصاراتك»: one tidy grid of up to seven tools — the chosen interests' tools first, then the most
+/// used — without repeats, and «الكل» last. Same as Android.
 struct HomeForYou: View {
-    private var greeting: String {
-        switch Calendar.current.component(.hour, from: Date()) {
-        case 4...11: "صباح الخير"
-        case 12...16: "طاب يومك"
-        default: "مساء الخير"
-        }
+    private var tools: [SiteTool] {
+        let ids = Welcome.pickedUses.flatMap(\.tools) + ["mushaf", "azkar", "prayer-times", "listen", "qibla", "tasbih", "hadith", "khatma"]
+        var seen = Set<String>()
+        return ids.filter { seen.insert($0).inserted }.compactMap(SiteTool.tool).prefix(7).map { $0 }
     }
 
     var body: some View {
-        let picked = Array(Welcome.pickedUses.prefix(4))
         VStack(alignment: .leading, spacing: Brand.Space.m) {
-            VStack(spacing: 2) {
-                Text(greeting).font(.ui(.title2, .bold)).foregroundStyle(Brand.ink)
-                Text(picked.isEmpty ? "اختر اهتماماتك لنقدم لك ما يناسبك أولا" : "مختارات تناسب اهتماماتك")
-                    .font(.ui(.subheadline)).foregroundStyle(Brand.muted)
+            HomeHead("اختصاراتك", subtitle: "أدواتك المفضلة في مكان واحد", symbol: "square.grid.2x2") {
+                HeadPill(label: "تعديل") { OnboardingView(editing: true) }
             }
-            .frame(maxWidth: .infinity)
-            if picked.isEmpty {
-                NavigationLink { OnboardingView(editing: true) } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "slider.horizontal.3").foregroundStyle(Brand.primaryInk)
-                        Text("اختر اهتماماتك").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-                        Spacer(minLength: 0)
-                        Text("دقيقة واحدة").font(.ui(.caption, .semibold)).foregroundStyle(Brand.goldInk)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6, alignment: .top), count: 4), spacing: 14) {
+                ForEach(tools) { t in
+                    NavigationLink { t.destination.onAppear { ToolUsage.record(t.id); Stats.event("home_shortcut_opened", t.id) } } label: {
+                        cell(t.title, symbol: t.symbol, accent: t.accent)
                     }
-                    .padding(16).frame(minHeight: 56).surface(.raised, radius: 18)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                NavigationLink { AllToolsView() } label: { cell("كل الأدوات", symbol: "square.grid.3x3", accent: Brand.primaryInk) }
+                    .buttonStyle(.plain)
             }
-            ForEach(picked) { u in
-                let tools = u.tools.compactMap(SiteTool.tool)
-                if !tools.isEmpty {
-                    Text(u.label).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(tools) { t in
-                                NavigationLink { t.destination.onAppear { ToolUsage.record(t.id); Stats.event("home_shortcut_opened", t.id) } } label: {
-                                    VStack(spacing: 8) {
-                                        IconTile(t.symbol, style: .accent(t.accent), size: 50)
-                                        Text(t.title).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.ink)
-                                            .multilineTextAlignment(.center).lineLimit(2)
-                                        Text(t.subtitle).font(.ui(.caption)).foregroundStyle(Brand.muted)
-                                            .multilineTextAlignment(.center).lineLimit(3)
-                                    }
-                                    .padding(14).frame(width: 158, alignment: .top)
-                                    .frame(minHeight: 170, maxHeight: .infinity, alignment: .top)
-                                    .surface(.raised, radius: 18)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        // One height for every card in the row.
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 4)
-                    }
-                    // Edge to edge, and the soft shadows are never cut into a band at the row's edges.
-                    .scrollClipDisabled()
-                    .contentMargins(.horizontal, Brand.Space.l, for: .scrollContent)
-                    .padding(.horizontal, -Brand.Space.l)
-                }
-            }
+            .padding(.vertical, 14).padding(.horizontal, 8)
+            .surface(.raised, radius: 20)
         }
+    }
+
+    private func cell(_ title: String, symbol: String, accent: Color) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: symbol).font(.system(size: 22, weight: .semibold)).foregroundStyle(accent)
+                .frame(width: 52, height: 52)
+                .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            Text(title).font(.ui(.caption, .medium)).foregroundStyle(Brand.ink)
+                .multilineTextAlignment(.center).lineLimit(2)
+                .frame(maxWidth: .infinity, minHeight: 32, alignment: .top)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -13,7 +13,7 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
         switch self {
         case .prayer: "الصلاة القادمة"
         case .daily: "يومي"
-        case .forYou: "مختارات لك"
+        case .forYou: "اختصاراتك"
         case .journey: "رحلتي مع القرآن"
         case .tracker: "صلواتي اليوم"
         case .services: "الوصول السريع"
@@ -23,7 +23,7 @@ enum HomeSectionID: String, CaseIterable, Identifiable {
         case .quiz: "مسابقة اليوم"
         case .create: "صناعة المحتوى"
         case .today: "تابع من حيث توقفت"
-        case .tools: "أقسام الأدوات"
+        case .tools: "كل الأدوات"
         case .ayah: "آية اليوم"
         case .gallery: "معرض الخلفيات"
         case .presets: "القوالب الجاهزة"
@@ -37,15 +37,19 @@ struct HomeLayoutItem: Equatable { var id: HomeSectionID; var shown: Bool }
 extension HomeSectionID {
     /// Off until turned on: the greeting and search repeat the prayer card and the toolbar search,
     /// and the full grid repeats «الوصول السريع».
-    static let hiddenByDefault: Set<HomeSectionID> = [.head, .services]
+    /// Home 6: nine sections in a clear order (same as Android). Sections that repeated others start
+    /// hidden; none is removed, and «تخصيص الرئيسية» shows them all.
+    static let defaultOrder: [HomeSectionID] = [.prayer, .daily, .forYou, .today, .ayah, .tracker, .create, .tools]
+    static var hiddenByDefault: Set<HomeSectionID> { Set(allCases).subtracting(defaultOrder) }
 }
 
 enum HomeLayoutStore {
-    static let key = "home.layout.v6"
+    static let key = "home.layout.v7"
     static func decode(_ raw: String) -> [HomeLayoutItem] {
         // Before any manual arrangement: the order follows the first-run interests (nothing hidden).
         if raw.isEmpty {
-            return Welcome.homeOrder(HomeSectionID.allCases).map { .init(id: $0, shown: !HomeSectionID.hiddenByDefault.contains($0)) }
+            return (HomeSectionID.defaultOrder + HomeSectionID.allCases.filter { !HomeSectionID.defaultOrder.contains($0) })
+                .map { .init(id: $0, shown: !HomeSectionID.hiddenByDefault.contains($0)) }
         }
         var out: [HomeLayoutItem] = raw.split(separator: ",").compactMap { e in
             let p = e.split(separator: ":")
@@ -57,7 +61,7 @@ enum HomeLayoutStore {
             let i = out.firstIndex(where: { $0.id == .prayer }).map { $0 + 1 } ?? 0
             out.insert(.init(id: .daily, shown: true), at: i)
         }
-        for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: !HomeSectionID.hiddenByDefault.contains(s))) }
+        for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: false)) }
         return out
     }
     static func encode(_ l: [HomeLayoutItem]) -> String { l.map { "\($0.id.rawValue):\($0.shown ? 1 : 0)" }.joined(separator: ",") }
@@ -253,17 +257,86 @@ struct HomeDailyQuiz: View {
 }
 
 /// A centred section title with a gold mark on each side.
+/// The home's section header (Canva/SaaS style): a soft icon tile, a bold title with a short line
+/// under it, and an optional action at the end. Same look and wording as Android's HomeHead.
+struct HomeHead<Action: View>: View {
+    let title: String
+    var subtitle: String?
+    var symbol: String?
+    let action: Action
+    init(_ title: String, subtitle: String? = nil, symbol: String? = nil, @ViewBuilder action: () -> Action) {
+        self.title = title; self.subtitle = subtitle; self.symbol = symbol; self.action = action()
+    }
+    var body: some View {
+        HStack(spacing: 12) {
+            if let symbol {
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(Brand.primaryInk)
+                    .frame(width: 38, height: 38)
+                    .background(Brand.tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.ui(.headline, .bold)).foregroundStyle(Brand.ink).lineLimit(1)
+                if let subtitle { Text(subtitle).font(.ui(.footnote)).foregroundStyle(Brand.muted).lineLimit(1) }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            action
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+extension HomeHead where Action == EmptyView {
+    init(_ title: String, subtitle: String? = nil, symbol: String? = nil) {
+        self.init(title, subtitle: subtitle, symbol: symbol) { EmptyView() }
+    }
+}
+
+/// A small «الكل» pill for a header's end.
+struct HeadPill<Destination: View>: View {
+    let label: String
+    @ViewBuilder let destination: () -> Destination
+    var body: some View {
+        NavigationLink(destination: destination) {
+            Text(label).font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
+                .padding(.horizontal, 14).frame(minHeight: 36)
+                .background(Brand.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Every home section header goes through here, so all carry the same tile and a short line.
 struct CenteredHead: View {
     let title: String
     init(_ title: String) { self.title = title }
-    var body: some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 1).fill(Brand.accent).frame(width: 6, height: 6)
-            Text(title).font(.ui(.title3, .bold)).foregroundStyle(Brand.ink)
-            RoundedRectangle(cornerRadius: 1).fill(Brand.accent).frame(width: 6, height: 6)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityAddTraits(.isHeader)
+    var body: some View { HomeHead(title, subtitle: Self.subtitle(title), symbol: Self.symbol(title)) }
+
+    static func symbol(_ t: String) -> String? {
+        if t.hasPrefix("تابع") { return "clock.arrow.circlepath" }
+        if t.hasPrefix("الورد") { return "book" }
+        if t.hasPrefix("رحلتي") { return "point.topleft.down.to.point.bottomright.curvepath" }
+        if t.hasPrefix("أذكار") { return "sun.haze" }
+        if t.hasPrefix("مسابقة") { return "questionmark.bubble" }
+        if t.hasPrefix("اختصاراتك") || t.hasPrefix("أدواتي") { return "square.grid.2x2" }
+        if t.hasPrefix("المناسبات") { return "calendar" }
+        if t.hasPrefix("صلواتي") { return "checkmark.circle" }
+        if t.hasPrefix("الوصول") { return "bolt" }
+        if t.hasPrefix("الذكر") { return "hand.tap" }
+        if t.hasPrefix("صناعة") { return "sparkles" }
+        if t.hasPrefix("كل الأدوات") || t.hasPrefix("أقسام") { return "square.grid.3x3" }
+        return nil
+    }
+    static func subtitle(_ t: String) -> String? {
+        if t.hasPrefix("تابع") { return "ارجع لآخر ما قرأت وسمعت" }
+        if t.hasPrefix("صلواتي") { return "سجل صلواتك الخمس بلمسة" }
+        if t.hasPrefix("المناسبات") { return "المواسم والأيام الفاضلة القادمة" }
+        if t.hasPrefix("اختصاراتك") { return "أدواتك المفضلة في مكان واحد" }
+        if t.hasPrefix("أذكار") { return "تقدمك في أذكار اليوم" }
+        return nil
     }
 }
 

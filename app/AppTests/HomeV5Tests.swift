@@ -9,7 +9,9 @@ final class HomeV5Tests: XCTestCase {
         XCTAssertEqual(l.first?.shown, false)
         XCTAssertEqual(l.count, HomeSectionID.allCases.count)
         XCTAssertEqual(HomeLayoutStore.decode(HomeLayoutStore.encode(l)), l)
-        XCTAssertEqual(HomeLayoutStore.decode("").map(\.id), HomeSectionID.allCases)
+        let d = HomeLayoutStore.decode("")
+        XCTAssertEqual(d.filter(\.shown).map(\.id), HomeSectionID.defaultOrder)
+        XCTAssertEqual(Set(d.map(\.id)).count, HomeSectionID.allCases.count)
     }
 
     func testDailyJoinsRightAfterThePrayerCard() {
