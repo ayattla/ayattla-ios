@@ -119,6 +119,14 @@ struct KidsJuzAmmaView: View {
                     }
                 }
 
+                NavigationLink { KhatmaView() } label: {
+                    Label("ختمة جماعية للأسرة", systemImage: "person.3")
+                        .font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(Brand.tint, in: Capsule())
+                }
+                .buttonStyle(.plain)
+
                 NavigationLink { KidsQuizView() } label: {
                     Label("مسابقة جزء عم", systemImage: "questionmark.bubble")
                         .font(.ui(.headline)).foregroundStyle(Brand.primary)
