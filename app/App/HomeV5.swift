@@ -301,10 +301,13 @@ struct HomeCustomizeSheet: View {
 
 // MARK: - Unified search
 
-/// «البحث الشامل»: tools, surahs and the Quran text from one field, all on the device.
+/// «البحث الشامل»: tools, surahs, the Quran text, azkar and duas from one field, all on the device.
 struct UnifiedSearchView: View {
     @State private var q = ""
     @State private var ayat: [Ayah] = []
+    private static let azkarAll: [Zikr] = (try? ContentLibrary.shared.store?.allAzkar()) ?? []
+    private static let duaItems: [(text: String, chapter: String, need: String)] =
+        (ContentLibrary.shared.duas?.needs ?? []).flatMap { n in n.chapters.flatMap { c in c.items.map { ($0.text, c.name, n.need) } } }
     @FocusState private var focused: Bool
     private let lib = ContentLibrary.shared
 
@@ -317,16 +320,19 @@ struct UnifiedSearchView: View {
         let k = norm(q.trimmingCharacters(in: .whitespaces))
         let tools = k.count < 2 ? [] : SiteTool.all.filter { norm($0.title).contains(k) || norm($0.subtitle).contains(k) }
         let surahs = k.isEmpty ? [] : lib.surahs.filter { norm($0.namePlain).contains(k) || "\($0.id)" == k }
+        let cats = k.count < 2 ? [] : lib.azkarCategories.filter { norm($0.title).contains(k) }
+        let zikrs = k.count < 3 ? [] : Array(Self.azkarAll.filter { norm($0.text).contains(k) }.prefix(30))
+        let duas = k.count < 3 ? [] : Array(Self.duaItems.filter { norm($0.text).contains(k) || norm($0.chapter).contains(k) }.prefix(30))
         List {
             if k.isEmpty {
                 Section("اقتراحات") {
                     FlowLayout(spacing: 8) {
-                        ForEach(["الكهف", "الأذكار", "القبلة", "الصبر", "الرحمة", "الملك"], id: \.self) { s in
+                        ForEach(["الكهف", "أذكار الصباح", "القبلة", "الصبر", "الرحمة", "الملك"], id: \.self) { s in
                             Button(s) { q = s }.buttonStyle(.bordered).tint(Brand.primary)
                         }
                     }
                 }
-            } else if tools.isEmpty && surahs.isEmpty && ayat.isEmpty && k.count >= 2 {
+            } else if tools.isEmpty && surahs.isEmpty && ayat.isEmpty && cats.isEmpty && zikrs.isEmpty && duas.isEmpty && k.count >= 2 {
                 ContentUnavailableView("لا نتائج", systemImage: "magnifyingglass", description: Text("جرب كلمة أخرى أو جزءا من الكلمة"))
             }
             if !tools.isEmpty {
@@ -347,6 +353,34 @@ struct UnifiedSearchView: View {
                     }
                 }
             }
+            if !cats.isEmpty || !zikrs.isEmpty {
+                Section("الأذكار") {
+                    ForEach(cats) { c in
+                        NavigationLink { Route.azkar(c.title).destination } label: { Label(c.title, systemImage: "sun.haze") }
+                    }
+                    ForEach(zikrs) { z in
+                        let cat = lib.azkarCategories.first { $0.id == z.category }?.title ?? ""
+                        NavigationLink { Route.azkar(cat).destination } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(z.text).font(.ui(.body)).lineLimit(2)
+                                Text([cat, z.reference ?? ""].filter { !$0.isEmpty }.joined(separator: " · ")).font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(1)
+                            }
+                        }
+                    }
+                }
+            }
+            if !duas.isEmpty {
+                Section("الأدعية") {
+                    ForEach(Array(duas.enumerated()), id: \.offset) { _, d in
+                        NavigationLink { DuasView() } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(d.text).font(.ui(.body)).lineLimit(2)
+                                Text("\(d.need) · \(d.chapter)").font(.ui(.caption)).foregroundStyle(Brand.muted).lineLimit(1)
+                            }
+                        }
+                    }
+                }
+            }
             if !ayat.isEmpty {
                 Section("الآيات") {
                     ForEach(ayat) { a in
@@ -360,7 +394,7 @@ struct UnifiedSearchView: View {
                 }
             }
         }
-        .searchable(text: $q, placement: .navigationBarDrawer(displayMode: .always), prompt: "ابحث عن أداة أو سورة أو آية")
+        .searchable(text: $q, placement: .navigationBarDrawer(displayMode: .always), prompt: "ابحث عن آية أو ذكر أو دعاء أو أداة")
         .task(id: k) {
             ayat = []
             guard k.count >= 2 else { return }
