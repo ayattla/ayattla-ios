@@ -157,6 +157,9 @@ enum Stats {
 
     /// Sends what was counted (enabled, at most every 6 hours); subtracted once the server accepts it.
     static func flush(force: Bool = false) async {
+        #if targetEnvironment(simulator)
+        return   // CI and simulator runs are not real use, so nothing is sent.
+        #else
         guard enabled, force || Date().timeIntervalSince1970 - d.double(forKey: sentKey) > 6 * 3600 else { return }
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let sent = (d.dictionary(forKey: pendingKey) as? [String: Int]) ?? [:]
@@ -173,5 +176,6 @@ enum Stats {
             d.set(p, forKey: pendingKey)
             d.set(Date().timeIntervalSince1970, forKey: sentKey)
         }
+        #endif
     }
 }
