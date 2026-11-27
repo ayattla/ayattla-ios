@@ -164,6 +164,14 @@ public final class ContentStore: @unchecked Sendable {
         }
     }
 
+    /// Every zikr, for the unified search (a few hundred short rows).
+    public func allAzkar() throws -> [Zikr] {
+        try rows("SELECT id, category, text, count, reference, note, audio_id FROM azkar ORDER BY id", []) {
+            Zikr(id: $0.int(0), category: $0.int(1), text: $0.text(2) ?? "", count: $0.int(3),
+                 reference: $0.text(4), note: $0.text(5), audioId: $0.intOrNil(6))
+        }
+    }
+
     /// Same normalization as tools/build_content_pack.py `clean()` (search only).
     public static func clean(_ s: String) -> String {
         var out = ""

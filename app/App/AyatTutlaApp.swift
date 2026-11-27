@@ -240,6 +240,7 @@ enum DebugScreen {
         case "offline": OfflineCenterView()
         case "journey": JourneyView()
         case "week": WeekView()
+        case "path": AyahPathView(surah: 1, ayah: 2)
         case "tasmee": TasmeeView()
         case "voice-search": VoiceSearchView()
         case "hijri": HijriView()

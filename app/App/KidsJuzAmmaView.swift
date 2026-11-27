@@ -29,8 +29,27 @@ struct KidsProgress: Codable, Equatable {
     }
 }
 
+/// Family: up to six children on one device, each with their own progress. The first child keeps the
+/// original key, so progress saved before profiles existed stays with them. Same rules as Android.
+enum KidsFamily {
+    static let max = 6
+    static func key(_ i: Int) -> String { i == 0 ? "kids.progress" : "kids.progress.\(i)" }
+    static var count: Int { min(max, Swift.max(1, UserDefaults.standard.integer(forKey: "kids.count"))) }
+    static var active: Int { min(count - 1, Swift.max(0, UserDefaults.standard.integer(forKey: "kids.active"))) }
+    static func setActive(_ i: Int) { UserDefaults.standard.set(i, forKey: "kids.active") }
+    static func load(_ i: Int) -> KidsProgress { KidsProgress.decode(UserDefaults.standard.string(forKey: key(i)) ?? "") }
+    static func save(_ p: KidsProgress, _ i: Int) { UserDefaults.standard.set(p.encoded(), forKey: key(i)) }
+    static func add() -> Int {
+        let n = count
+        guard n < max else { return n - 1 }
+        UserDefaults.standard.set(n + 1, forKey: "kids.count"); setActive(n)
+        return n
+    }
+}
+
 struct KidsJuzAmmaView: View {
-    @AppStorage("kids.progress") private var stored = ""
+    @State private var active = KidsFamily.active
+    @State private var count = KidsFamily.count
     @State private var progress = KidsProgress()
     @State private var loaded = false
     private let lib = ContentLibrary.shared
@@ -39,6 +58,38 @@ struct KidsJuzAmmaView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 ToolPageHead(id: "kids-juz-amma")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(0..<count, id: \.self) { i in
+                            let p = i == active ? progress : KidsFamily.load(i)
+                            Button {
+                                KidsFamily.save(progress, active)
+                                active = i; KidsFamily.setActive(i); progress = KidsFamily.load(i)
+                            } label: {
+                                Text("\(p.name.isEmpty ? "طفل \(Num.int(i + 1))" : p.name) · \(Num.int(p.done.count))")
+                                    .font(.ui(.subheadline, .semibold))
+                                    .foregroundStyle(i == active ? .white : Brand.ink)
+                                    .padding(.horizontal, 14).frame(minHeight: 40)
+                                    .background(i == active ? Brand.green : Brand.surface2, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        if count < KidsFamily.max {
+                            Button {
+                                KidsFamily.save(progress, active)
+                                active = KidsFamily.add(); count = KidsFamily.count; progress = KidsFamily.load(active)
+                                Stats.event("kids_profile_added")
+                            } label: {
+                                Label("طفل", systemImage: "plus").font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
+                                    .padding(.horizontal, 14).frame(minHeight: 40)
+                                    .background(Brand.tint, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("أضف طفلا")
+                        }
+                    }
+                }
+                .scrollClipDisabled()
                 VStack(alignment: .leading, spacing: 12) {
                     TextField("اسم الطفل", text: $progress.name)
                         .textContentType(.givenName)
@@ -91,8 +142,8 @@ struct KidsJuzAmmaView: View {
         .brandScreen()
         .navigationTitle("تحفيظ الأطفال جزء عم")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { if !loaded { progress = KidsProgress.decode(stored); loaded = true } }
-        .onChange(of: progress) { _, p in stored = p.encoded() }
+        .onAppear { if !loaded { progress = KidsFamily.load(active); loaded = true } }
+        .onChange(of: progress) { _, p in if loaded { KidsFamily.save(p, active) } }
     }
 
     private var badges: some View {

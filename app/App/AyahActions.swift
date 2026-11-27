@@ -22,6 +22,9 @@ Group {
                         .lineSpacing(8).padding(.vertical, 6)
                 }
                 Section {
+                    NavigationLink { AyahPathView(surah: position.surah, ayah: position.ayah) } label: {
+                        Label("مسار الآية: استمع وافهم واحفظ", systemImage: "graduationcap")
+                    }
                     if canListen {
                         Button { onListen() } label: { Label("استمع من هنا", systemImage: "play.fill") }
                     }
