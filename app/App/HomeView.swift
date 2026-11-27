@@ -33,23 +33,23 @@ struct HomeView: View {
         switch id {
         case .prayer: PrayerHeroCard()
         case .daily: HomeDaily()
-        case .forYou: HomeForYou()
-        case .journey: HomeJourneyCard()
-        case .tracker: HomePrayerTracker()
-        case .services: HomeServices()
-        case .dhikr: HomeQuickDhikr()
+        case .forYou: HomeForYou().homeWidget()
+        case .journey: HomeJourneyCard().homeWidget()
+        case .tracker: HomePrayerTracker().homeWidget()
+        case .services: HomeServices().homeWidget()
+        case .dhikr: HomeQuickDhikr().homeWidget()
         case .head: head
-        case .wird: HomeWirdCard()
-        case .quiz: if lib.isReady { HomeDailyQuiz() }
-        case .create: HomeCreateBento()
-        case .today: today
-        case .tools: HomeToolLauncher()
+        case .wird: HomeWirdCard().homeWidget()
+        case .quiz: if lib.isReady { HomeDailyQuiz().homeWidget() }
+        case .create: HomeCreateBento().homeWidget()
+        case .today: today.homeWidget()
+        case .tools: HomeToolLauncher().homeWidget()
         case .ayah: if lib.isReady { ayahCard }
         case .gallery: HomeMediaGallery()
         case .presets: PresetStrip()
         case .recent: RecentProjectsStrip()
-        case .name: if lib.isReady { HomeNameOfTheDay() }
-        case .dua: if lib.isReady { HomeQuranDua() }
+        case .name: if lib.isReady { HomeNameOfTheDay().homeWidget() }
+        case .dua: if lib.isReady { HomeQuranDua().homeWidget() }
         }
     }
 
