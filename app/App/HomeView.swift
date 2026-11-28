@@ -265,14 +265,7 @@ struct HomeView: View {
         }
         .padding(22)
         .heroSurface(radius: 30)
-        // Floating chips, as on the site's phone preview.
-        .overlay(alignment: .topLeading) {
-            chip("تظليل الكلمة مع التلاوة", symbol: "checkmark.circle.fill").offset(x: 10, y: -16)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            chip("+٣٠ قارئا", symbol: "waveform").offset(x: -10, y: 16)
-        }
-        .padding(.vertical, 12)
+
     }
 
     private func chip(_ text: String, symbol: String) -> some View {

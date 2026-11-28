@@ -126,7 +126,6 @@ public extension View {
         return background {
             ZStack {
                 Brand.gradient
-                IslamicPattern(color: Brand.accent.opacity(0.10))
                 RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topTrailing, startRadius: 0, endRadius: 320)
             }
             .clipShape(shape)

@@ -53,9 +53,22 @@ struct HomeToolLauncher: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Space.l) {
             HomeHead("كل الأدوات", subtitle: "\(Num.int(SiteTool.all.count)) أداة مجانية في \(Num.int(SiteTool.Group.allCases.count)) أقسام", symbol: "square.grid.3x3")
-            ForEach(SiteTool.Group.allCases) { g in
-                let tools = SiteTool.all.filter { $0.group == g }
-                if !tools.isEmpty { section(g, tools) }
+            // Four calm section tiles (2×2) in the brand colours; the full lists stay in «المزيد».
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                ForEach(SiteTool.Group.allCases.filter { g in SiteTool.all.contains { $0.group == g } }) { g in
+                    NavigationLink { ToolsView(filter: .group(g)) } label: {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Image(systemName: look(g).symbol).font(.system(size: 19, weight: .semibold)).foregroundStyle(Brand.primaryInk)
+                                .frame(width: 42, height: 42)
+                                .background(Brand.tint, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                            Text(g.title).font(.ui(.subheadline, .bold)).foregroundStyle(Brand.ink).lineLimit(1)
+                            Text("\(Num.int(SiteTool.all.filter { $0.group == g }.count)) أداة").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                        }
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                        .surface(.tinted, radius: 16)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }
