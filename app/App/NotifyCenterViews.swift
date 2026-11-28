@@ -38,6 +38,9 @@ struct NotificationCenterView: View {
             Section("القرآن") {
                 toggle("آية اليوم", clock(config.ayahAt), \.ayah)
                 if config.ayah { time("الوقت", \.ayahAt) }
+                if config.khatma || config.hifz {
+                    toggle("وقت قراءتي المعتاد", ReadingClock.reminderMinute.map { "قبل وقت قراءتك بربع ساعة · \(clock($0))" } ?? "يتعلمه التطبيق بعد 3 جلسات قراءة", \.wirdSmart)
+                }
                 toggle("ورد الختمة", "\(clock(config.khatmaAt)) · عند وجود خطة ختمة ولم تُتم ورد اليوم", \.khatma)
                 if config.khatma { time("الوقت", \.khatmaAt) }
                 toggle("الحفظ والمراجعة", "\(clock(config.hifzAt)) · عند وجود خطة حفظ", \.hifz)

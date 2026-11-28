@@ -59,6 +59,8 @@ struct NotifyConfig: Codable, Equatable {
     var istighfar = false, istighfarAt = 16 * 60 + 30
     var ayah = false, ayahAt = 9 * 60
     var khatma = false, khatmaAt = 20 * 60
+    /// The khatma and hifz reminders come 15 minutes before the usual reading time once it is learned.
+    var wirdSmart = false
     var hifz = false, hifzAt = 19 * 60
     var friday = false, fridayAt = 10 * 60
     var fasting = false, fastingAt = 21 * 60
@@ -92,7 +94,7 @@ struct NotifyConfig: Codable, Equatable {
         istighfar = v(.istighfar, d.istighfar); istighfarAt = v(.istighfarAt, d.istighfarAt)
         ayah = v(.ayah, d.ayah); ayahAt = v(.ayahAt, d.ayahAt)
         khatma = v(.khatma, d.khatma); khatmaAt = v(.khatmaAt, d.khatmaAt)
-        hifz = v(.hifz, d.hifz); hifzAt = v(.hifzAt, d.hifzAt)
+        hifz = v(.hifz, d.hifz); hifzAt = v(.hifzAt, d.hifzAt); wirdSmart = v(.wirdSmart, d.wirdSmart)
         friday = v(.friday, d.friday); fridayAt = v(.fridayAt, d.fridayAt)
         fasting = v(.fasting, d.fasting); fastingAt = v(.fastingAt, d.fastingAt); whiteDays = v(.whiteDays, d.whiteDays)
         personal = v(.personal, d.personal)
@@ -137,6 +139,7 @@ enum NotifyPlanner {
         var khatmaWird: (Date) -> String? = { _ in nil }
         var hifzToday: (Date) -> String? = { _ in nil }
         var hijriDay: (Date) -> Int? = { _ in nil }
+        var usualReadMinute: Int? = nil
     }
 
     static func inQuiet(minute m: Int, from: Int, to: Int) -> Bool {
@@ -179,8 +182,8 @@ enum NotifyPlanner {
             if c.sleep { add("sleep", c.sleepAt, "أذكار النوم", "قبل أن تنام: أذكار النوم", Route.azkarLink("أذكار النوم")) }
             if c.istighfar { add("istighfar", c.istighfarAt, "الاستغفار والتسبيح", "دقيقة للاستغفار والتسبيح", "\(Route.scheme)://tools/tasbih") }
             if c.ayah { add("ayah", c.ayahAt, "آية اليوم", inp.ayahText(noon) ?? "آية اليوم مع تفسيرها", "\(Route.scheme)://tools/ayah-of-the-day") }
-            if c.khatma, let w = inp.khatmaWird(noon) { add("khatma", c.khatmaAt, "ورد الختمة", w, "\(Route.scheme)://khatma") }
-            if c.hifz, let h = inp.hifzToday(noon) { add("hifz", c.hifzAt, "الحفظ والمراجعة", h, "\(Route.scheme)://tools/hifz-plan") }
+            if c.khatma, let w = inp.khatmaWird(noon) { add("khatma", c.wirdSmart ? (inp.usualReadMinute ?? c.khatmaAt) : c.khatmaAt, "ورد الختمة", w, "\(Route.scheme)://khatma") }
+            if c.hifz, let h = inp.hifzToday(noon) { add("hifz", c.wirdSmart ? (inp.usualReadMinute ?? c.hifzAt) : c.hifzAt, "الحفظ والمراجعة", h, "\(Route.scheme)://tools/hifz-plan") }
             if c.friday, comps.weekday == 6 { add("friday", c.fridayAt, "يوم الجمعة", "قراءة سورة الكهف", Route.ayahLink(18, 1)) }
             if c.fasting, let tw = cal.dateComponents([.weekday], from: noon.addingTimeInterval(86_400)).weekday, tw == 2 || tw == 5 {
                 add("fast", c.fastingAt, "تذكير بالصيام", "غدا \(tw == 2 ? "الاثنين" : "الخميس")", "\(Route.scheme)://tools/sawm-tracker")
