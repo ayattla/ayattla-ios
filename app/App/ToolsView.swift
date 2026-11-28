@@ -271,7 +271,7 @@ struct ToolsView: View {
         LazyVGrid(columns: columns, spacing: 10) {
             ForEach(tools) { t in
                 NavigationLink { open(t, "r") } label: {
-                    ServiceCard(t.title, subtitle: t.subtitle, symbol: t.symbol, badge: t.isNew ? "جديد" : nil,
+                    ServiceCard(t.title, subtitle: t.subtitle, symbol: t.symbol, badge: nil,
                                 style: .accent(t.accent), layout: .row)
                         .matchedTransitionSource(id: "r" + t.id, in: zoom)
                 }
