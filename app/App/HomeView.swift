@@ -57,7 +57,7 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: Brand.Space.xxl) {
                 if statsNotice { StatsNoticeCard { statsNotice = false } }
-                ForEach(HomeLayoutStore.decode(layoutRaw).filter(\.shown), id: \.id) { item in
+                ForEach(HomeLayoutStore.smart(layoutRaw), id: \.id) { item in
                     section(item.id)
                 }
                 footer
