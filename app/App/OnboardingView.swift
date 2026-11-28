@@ -391,7 +391,9 @@ struct OnboardingView: View {
 /// used — without repeats, and «الكل» last. Same as Android.
 struct HomeForYou: View {
     private var tools: [SiteTool] {
-        let ids = Welcome.pickedUses.flatMap(\.tools) + ["mushaf", "azkar", "prayer-times", "listen", "qibla", "tasbih", "hadith", "khatma"]
+        // What you open most (twice or more) first, then your interests, then the essentials.
+        let used = ToolUsage.counts.filter { $0.value >= 2 }.sorted { $0.value > $1.value }.map(\.key)
+        let ids = used + Welcome.pickedUses.flatMap(\.tools) + ["mushaf", "azkar", "prayer-times", "listen", "qibla", "tasbih", "hadith", "khatma"]
         var seen = Set<String>()
         return ids.filter { seen.insert($0).inserted }.compactMap(SiteTool.tool).prefix(7).map { $0 }
     }

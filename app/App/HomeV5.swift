@@ -70,6 +70,17 @@ enum HomeLayoutStore {
         for s in HomeSectionID.allCases where !out.contains(where: { $0.id == s }) { out.append(.init(id: s, shown: false)) }
         return out
     }
+    /// The smart home (same as Android): for those who never arranged it, the section that fits this hour
+    /// moves up right after «يومي» — the dhikr in the morning and evening, reading the rest of the day.
+    static func smart(_ raw: String, hour: Int = Calendar.current.component(.hour, from: Date())) -> [HomeLayoutItem] {
+        let shown = decode(raw).filter(\.shown)
+        guard raw.isEmpty else { return shown }
+        let lift: HomeSectionID = (4...11).contains(hour) || (15...20).contains(hour) ? .dhikr : .today
+        guard let item = shown.first(where: { $0.id == lift }), let d = shown.firstIndex(where: { $0.id == .daily }) else { return shown }
+        var rest = shown.filter { $0.id != lift }
+        rest.insert(item, at: min(d + 1, rest.count))
+        return rest
+    }
     static func encode(_ l: [HomeLayoutItem]) -> String { l.map { "\($0.id.rawValue):\($0.shown ? 1 : 0)" }.joined(separator: ",") }
 }
 
