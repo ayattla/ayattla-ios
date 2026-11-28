@@ -16,6 +16,8 @@ struct MushafReader: View {
     @AppStorage(Favorites.key) private var favorites = ""
     @AppStorage(MushafTheme.key) private var mushafTheme = MushafTheme.paper.rawValue
     @State private var page = 1
+    @State private var marks = MushafMarks.load()
+    @State private var showMarks = false
     @State private var layer = QuranLayer.mushaf
     /// Blurs the page while listening, to recite from memory (site: «إخفاء الآيات»).
     @State private var hideText = false
@@ -66,6 +68,9 @@ struct MushafReader: View {
                 }
             }
         }
+        // Where you are in the juz, and a bookmark for this page (same as Android).
+        .safeAreaInset(edge: .bottom) { juzBar }
+        .sheet(isPresented: $showMarks) { marksSheet }
         .background(MushafStyle.backdrop.ignoresSafeArea())
         .id(mushafTheme)   // the page colours are read from the chosen theme
         // Reading the mushaf keeps the screen awake, like the leading mushaf apps.
@@ -161,6 +166,52 @@ struct MushafReader: View {
     }
 
     private var folder: String? { lib.reciterFolders[reciter] }
+
+    private var juzBar: some View {
+        let juz = firstOnPage?.juz ?? MushafMarks.juz(of: page)
+        let (from, to) = MushafMarks.pages(juz: juz)
+        return VStack(spacing: 6) {
+            ProgressView(value: Double(page - from + 1), total: Double(to - from + 1)).tint(MushafStyle.gold)
+            HStack {
+                Text("الجزء \(Num.int(juz)) · صفحة \(Num.int(page - from + 1)) من \(Num.int(to - from + 1))")
+                    .font(.ui(.footnote, .semibold)).foregroundStyle(Brand.muted)
+                Spacer()
+                Button { marks = MushafMarks.toggle(page) } label: {
+                    Image(systemName: marks.contains(page) ? "bookmark.fill" : "bookmark").foregroundStyle(MushafStyle.gold)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(marks.contains(page) ? "إزالة علامة الصفحة" : "ضع علامة على الصفحة")
+                Button { showMarks = true } label: { Image(systemName: "list.bullet").frame(width: 44, height: 44) }
+                    .accessibilityLabel("علاماتي")
+            }
+        }
+        .padding(.horizontal, 16).padding(.top, 6)
+        .background(MushafStyle.backdrop)
+    }
+
+    private var marksSheet: some View {
+        NavigationStack {
+            List {
+                if marks.isEmpty {
+                    Text("ضع علامة على أي صفحة من زر العلامة أسفل المصحف، وترجع لها من هنا").foregroundStyle(Brand.muted)
+                }
+                ForEach(marks.sorted(), id: \.self) { p in
+                    Button {
+                        showMarks = false; page = p
+                    } label: {
+                        HStack {
+                            Image(systemName: "bookmark.fill").foregroundStyle(MushafStyle.gold)
+                            Text("صفحة \(Num.int(p))" + (lib.page(p).first.flatMap { lib.surah($0.surah)?.namePlain }.map { " · سورة \($0)" } ?? ""))
+                            Spacer()
+                            Text("الجزء \(Num.int(MushafMarks.juz(of: p)))").font(.ui(.caption)).foregroundStyle(Brand.muted)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("علاماتي").navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium, .large])
+    }
 
     private var firstOnPage: Ayah? { lib.page(page).first }
     private var title: String { firstOnPage.flatMap { lib.surah($0.surah)?.namePlain } ?? "المصحف" }
@@ -296,5 +347,24 @@ struct MushafPage: View {
             out += part
         }
         return out
+    }
+}
+
+/// Page bookmarks (kept on the device) and the juz boundaries of the Madinah mushaf (604 pages).
+enum MushafMarks {
+    static let starts = [1, 22, 42, 62, 82, 102, 121, 142, 162, 182, 201, 222, 242, 262, 282, 302, 322, 342, 362, 382, 402, 422, 442, 462, 482, 502, 522, 542, 562, 582]
+    static func juz(of page: Int) -> Int { (starts.lastIndex { $0 <= page } ?? 0) + 1 }
+    static func pages(juz: Int) -> (Int, Int) {
+        let j = min(max(juz, 1), 30)
+        return (starts[j - 1], j == 30 ? 604 : starts[j] - 1)
+    }
+    static func load() -> Set<Int> {
+        Set((UserDefaults.standard.string(forKey: "mushaf.bookmarks") ?? "").split(separator: ",").compactMap { Int($0) })
+    }
+    static func toggle(_ page: Int) -> Set<Int> {
+        var m = load()
+        if m.contains(page) { m.remove(page) } else { m.insert(page) }
+        UserDefaults.standard.set(m.map(String.init).joined(separator: ","), forKey: "mushaf.bookmarks")
+        return m
     }
 }

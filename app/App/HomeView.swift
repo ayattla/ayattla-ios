@@ -60,13 +60,6 @@ struct HomeView: View {
                 ForEach(HomeLayoutStore.decode(layoutRaw).filter(\.shown), id: \.id) { item in
                     section(item.id)
                 }
-                Button { customizing = true } label: {
-                    Label("تخصيص الرئيسية", systemImage: "slider.horizontal.3")
-                        .font(.ui(.subheadline, .semibold)).foregroundStyle(Brand.primaryInk)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
                 footer
             }
             .padding(.horizontal, Brand.Space.l).padding(.vertical, Brand.Space.l)
@@ -361,58 +354,40 @@ struct HomeView: View {
         }
     }
 
-    /// Footer (v4): an app section rather than a website footer — grouped rows to the about page,
-    /// the questions, settings and sharing the app, then a quiet sign-off with the version.
+    /// Footer (v5, same as Android): one quiet closing card — customize, about and share as three
+    /// tiles, then the site's pages as plain text links and a short sign-off.
     private var footer: some View {
-        VStack(spacing: Brand.Space.l) {
-            VStack(spacing: 0) {
-                NavigationLink { AboutAppView() } label: { footerRow("عن آيات تتلى", "info.circle", 0) }
-                Divider().padding(.leading, 64)
-                NavigationLink { FAQView() } label: { footerRow("الأسئلة الشائعة", "questionmark.circle", 2) }
-                Divider().padding(.leading, 64)
-                NavigationLink { SettingsView() } label: { footerRow("الإعدادات", "gearshape", 4) }
-                Divider().padding(.leading, 64)
+        VStack(spacing: 14) {
+            HStack(spacing: 8) {
+                Button { customizing = true } label: { footerTile("تخصيص الرئيسية", "slider.horizontal.3") }
+                NavigationLink { AboutAppView() } label: { footerTile("عن التطبيق", "info.circle") }
                 ShareLink(item: URL(string: "https://ayattla.com")!,
                           message: Text("آيات تتلى: مقاطع وبطاقات قرآنية وأدوات يومية، مجانا وبلا تسجيل")) {
-                    footerRow("شارك التطبيق", "square.and.arrow.up", 6, chevron: false)
+                    footerTile("شارك التطبيق", "square.and.arrow.up")
                 }
             }
-            .buttonStyle(.pressable)
-            .surface(.raised)
-
-            // The site's footer: logo card, the line, «ابدأ مقطعك الآن», then the legal pages as pills.
-            VStack(spacing: 12) {
-                Image("LogoFull").resizable().scaledToFit().frame(width: 56, height: 56)
-                    .padding(10)
-                    .background(Brand.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
-                    .accessibilityHidden(true)
-                Text("صانع مقاطع وبطاقات قرآنية مجاني، صدقة جارية لكل من شارك")
-                    .font(.ui(.footnote, .medium)).foregroundStyle(Brand.ink)
-                    .multilineTextAlignment(.center)
-                NavigationLink { ClipMakerView() } label: {
-                    Label("ابدأ مقطعك الآن", systemImage: "play.rectangle.fill")
+            .buttonStyle(.plain)
+            FlowLayout(spacing: 14) {
+                NavigationLink { FAQView() } label: { Text("الأسئلة الشائعة") }.buttonStyle(.plain)
+                ForEach(Self.sitePages, id: \.1) { p in
+                    Link(p.0, destination: URL(string: "https://ayattla.com" + p.1)!)
                 }
-                .buttonStyle(.brandPrimary)
-                FlowLayout(spacing: 8) {
-                    ForEach(Self.sitePages, id: \.1) { p in
-                        Link(destination: URL(string: "https://ayattla.com" + p.1)!) {
-                            Text(p.0).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink)
-                                .padding(.horizontal, 12).frame(minHeight: 34)
-                                .background(Brand.surface, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Brand.line, lineWidth: 1))
-                        }
-                        .accessibilityHint("يفتح في المتصفح")
-                    }
-                }
-                Text("© آيات تتلى · الإصدار \(SettingsView.versionText()) · ayattla.com")
-                    .font(.ui(.caption2)).foregroundStyle(Brand.muted)
-                    .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Brand.Space.l).padding(.horizontal, Brand.Space.m)
-            .background(Brand.surface2, in: RoundedRectangle(cornerRadius: Brand.Radius.hero, style: .continuous))
+            .font(.ui(.caption)).foregroundStyle(Brand.muted).tint(Brand.muted)
+            Text("آيات تتلى · صدقة جارية لكل من شارك").font(.ui(.caption2)).foregroundStyle(Brand.muted)
         }
+        .homeWidget()
+    }
+
+    private func footerTile(_ title: String, _ symbol: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol).font(.system(size: 19, weight: .semibold)).foregroundStyle(Brand.primaryInk)
+            Text(title).font(.ui(.caption, .semibold)).foregroundStyle(Brand.ink).multilineTextAlignment(.center).lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .padding(.horizontal, 4)
+        .surface(.tinted, radius: 16)
+        .contentShape(Rectangle())
     }
 
     /// The site's footer pages (opened in the browser: they are the site's own texts).
