@@ -64,7 +64,7 @@ struct SiteTool: Identifiable, Hashable {
         .init(id: "prayer-guide", title: "صفة الوضوء والصلاة", subtitle: "من الأحاديث الصحيحة مع الشرح", symbol: "drop", group: .hadith, isNew: true),
         .init(id: "kids-juz-amma", title: "تحفيظ الأطفال جزء عم", subtitle: "استماع وتكرار ونجوم وشهادة باسم الطفل", symbol: "star.circle", group: .hadith, isNew: true),
         .init(id: "kids-quiz", title: "مسابقة جزء عم للأطفال", subtitle: "أكمل الآية ومن أي سورة، من نص المصحف", symbol: "questionmark.bubble", group: .hadith, isNew: true),
-        .init(id: "group-khatma", title: "الختمة الجماعية", subtitle: "وزع الأجزاء على المجموعة برابط واحد", symbol: "person.3", group: .quran, isNew: true),
+        .init(id: "group-khatma", title: "الختمة الجماعية", subtitle: "وزع الأجزاء على المجموعة برسالة واحدة", symbol: "person.3", group: .quran, isNew: true),
         .init(id: "bio", title: "عبارات دينية قصيرة للبايو", subtitle: "آيات وأذكار موثقة جاهزة للنسخ", symbol: "quote.bubble", group: .content, isNew: true),
         .init(id: "qada-salah", title: "متتبع قضاء الصلوات", subtitle: "عداد لكل صلاة وخطة يومية", symbol: "checklist", group: .daily, isNew: true),
         .init(id: "sawm-tracker", title: "متتبع الصيام", subtitle: "قضاء رمضان والتطوع على تقويم هجري وميلادي", symbol: "moon", group: .daily, isNew: true),
@@ -101,7 +101,8 @@ struct SiteTool: Identifiable, Hashable {
         case "radio": RadioView()
         case "prayer-times": PrayerTimesView()
         case "qibla": QiblaView()
-        case "khatma", "group-khatma": KhatmaView()
+        case "khatma": KhatmaView()
+        case "group-khatma": GroupKhatmaView()
         case "hijri": HijriView()
         case "occasions": OccasionsView()
         case "zakat": ZakatView()
