@@ -411,8 +411,7 @@ struct HomeForYou: View {
                 NavigationLink { AllToolsView() } label: { cell("كل الأدوات", symbol: "square.grid.3x3", accent: Brand.primaryInk) }
                     .buttonStyle(.plain)
             }
-            .padding(.vertical, 14).padding(.horizontal, 8)
-            .surface(.raised, radius: 20)
+            .padding(.top, 4)
         }
     }
 
