@@ -95,7 +95,8 @@ enum Reminders {
                 return "ورد اليوم: من صفحة \(Num.int(r.lowerBound)) إلى \(Num.int(r.upperBound))"
             },
             hifzToday: { _ in hifz == nil ? nil : "مقطع اليوم ومراجعاتك في خطة الحفظ" },
-            hijriDay: { day in Hijri.fromGregorian(day).day }
+            hijriDay: { day in Hijri.fromGregorian(day).day },
+            usualReadMinute: ReadingClock.reminderMinute
         )
         return Array(NotifyPlanner.plan(config, now: now, days: 7, inputs).prefix(maxPending))
     }

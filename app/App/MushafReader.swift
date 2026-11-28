@@ -111,7 +111,7 @@ struct MushafReader: View {
         }
         // Playback carries on after leaving the mushaf; the mini player takes over.
         .onDisappear { AudioCenter.shared.fullPlayerShown = false }
-        .onChange(of: page) { _, p in lastPage = p }
+        .onChange(of: page) { _, p in lastPage = p; ReadingClock.record() }
         // A page that stays on screen two seconds counts as read for «رحلتي مع القرآن».
         .task(id: page) {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
