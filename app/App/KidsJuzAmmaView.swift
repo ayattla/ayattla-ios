@@ -119,7 +119,7 @@ struct KidsJuzAmmaView: View {
                     }
                 }
 
-                NavigationLink { KhatmaView() } label: {
+                NavigationLink { GroupKhatmaView() } label: {
                     Label("ختمة جماعية للأسرة", systemImage: "person.3")
                         .font(.ui(.headline)).foregroundStyle(Brand.primaryInk)
                         .frame(maxWidth: .infinity, minHeight: 52)

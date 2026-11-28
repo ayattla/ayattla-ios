@@ -221,16 +221,17 @@ struct KhatmaProgressView: View {
     }
 
     private var groupKhatma: some View {
-        HStack {
+        NavigationLink { GroupKhatmaView() } label: { HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("ختمة جماعية").font(.ui(.headline))
                 Text("وزع الأجزاء على الأهل والأصدقاء").font(.ui(.footnote)).foregroundStyle(Brand.muted)
             }
             Spacer()
-            Text("قريبا").font(.ui(.footnote)).foregroundStyle(.secondary)
+            Image(systemName: "chevron.left").foregroundStyle(Brand.muted)
         }
         .padding(16)
-        .card()
+        .card() }
+        .buttonStyle(.plain)
     }
 
     private func toggle(_ d: Int) {
